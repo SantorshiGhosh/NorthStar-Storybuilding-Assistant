@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://northstar-4twu.onrender.com/api/$1"
+      "destination": "https://northstar-4tmu.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
