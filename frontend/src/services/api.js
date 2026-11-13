@@ -31,11 +31,7 @@ export const projectService = {
   uploadManuscript: async (projectId, file) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await api.post(`/projects/${projectId}/upload`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const res = await api.post(`/projects/${projectId}/upload`, formData);
     return res.data;
   },
   getGraph: async (projectId) => {
