@@ -12,27 +12,34 @@ router = APIRouter(tags=["Projects"])
 
 @router.post("/projects", response_model=s_models.ProjectOut)
 def create_project(data: s_models.ProjectCreate, db: Session = Depends(get_db)):
-    project = models.Project(
-        name=data.name,
-        description=data.description,
-        user_id=data.user_id
-    )
-    db.add(project)
-    db.commit()
-    db.refresh(project)
+    try:
+        project = models.Project(
+            name=data.name.strip(),
+            description=data.description.strip() if data.description else None,
+            user_id=data.user_id if data.user_id else None
+        )
+        db.add(project)
+        db.commit()
+        db.refresh(project)
 
-    return s_models.ProjectOut(
-        id=project.id,
-        user_id=project.user_id,
-        name=project.name,
-        description=project.description,
-        chapter_count=0,
-        character_count=0,
-        unresolved_issues_count=0,
-        manuscript_title=None,
-        created_at=project.created_at,
-        updated_at=project.updated_at
-    )
+        return s_models.ProjectOut(
+            id=str(project.id),
+            user_id=str(project.user_id) if project.user_id else None,
+            name=project.name,
+            description=project.description,
+            chapter_count=0,
+            character_count=0,
+            unresolved_issues_count=0,
+            manuscript_title=None,
+            created_at=project.created_at,
+            updated_at=project.updated_at
+        )
+    except Exception as e:
+        db.rollback()
+        import traceback
+        print(f"[ERROR in create_project]: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Database error creating project: {str(e)}")
 
 @router.get("/projects", response_model=List[s_models.ProjectOut])
 def list_projects(db: Session = Depends(get_db)):

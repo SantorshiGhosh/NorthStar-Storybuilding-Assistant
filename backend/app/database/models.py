@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from app.database.connection import Base
 
 def gen_uuid():
-    return uuid.uuid4().hex
+    return str(uuid.uuid4())
 
 class Project(Base):
     __tablename__ = "projects"
