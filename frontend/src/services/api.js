@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// API client - points to backend via proxy or localhost
-const API_BASE = '/api';
+// API client - points to backend via env variable or local proxy
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE,
