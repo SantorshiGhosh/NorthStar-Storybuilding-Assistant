@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config import settings
 
-db_url = settings.DATABASE_URL
+db_url = settings.DATABASE_URL.strip().strip('"').strip("'")
 
 # Auto-fix legacy postgres:// scheme commonly provided by Render, Supabase, and Heroku
 if db_url.startswith("postgres://"):
