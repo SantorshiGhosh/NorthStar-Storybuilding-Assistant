@@ -12,11 +12,24 @@ connect_args = {}
 if db_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 
-engine = create_engine(
-    db_url,
-    connect_args=connect_args,
-    pool_pre_ping=True
-)
+# Attempt engine creation with automatic driver fallback (psycopg vs psycopg2)
+try:
+    engine = create_engine(
+        db_url,
+        connect_args=connect_args,
+        pool_pre_ping=True
+    )
+except Exception as e:
+    # If psycopg (v3) driver requested but missing, fallback to psycopg2
+    if "postgresql+psycopg://" in db_url:
+        fallback_url = db_url.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
+        engine = create_engine(fallback_url, connect_args=connect_args, pool_pre_ping=True)
+    # If psycopg2 driver requested but missing, fallback to psycopg
+    elif "postgresql+psycopg2://" in db_url:
+        fallback_url = db_url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
+        engine = create_engine(fallback_url, connect_args=connect_args, pool_pre_ping=True)
+    else:
+        raise e
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
