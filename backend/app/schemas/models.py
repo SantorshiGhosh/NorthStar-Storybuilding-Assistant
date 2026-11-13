@@ -1,0 +1,222 @@
+from pydantic import BaseModel, Field, field_serializer
+from typing import List, Optional, Dict, Any, Union
+from uuid import UUID
+from datetime import datetime
+
+# Helper type for IDs that can be UUID or string
+IdType = Union[str, UUID]
+
+# --- Projects ---
+class ProjectCreate(BaseModel):
+    name: str = Field(..., example="The Last Kingdom")
+    description: Optional[str] = Field(None, example="High fantasy epic about Eldoria")
+    user_id: Optional[str] = None
+
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+class ProjectOut(BaseModel):
+    id: IdType
+    user_id: Optional[IdType] = None
+    name: str
+    description: Optional[str] = None
+    chapter_count: int = 0
+    character_count: int = 0
+    unresolved_issues_count: int = 0
+    manuscript_title: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    @field_serializer('id', 'user_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
+# --- Chapters ---
+class ChapterCreate(BaseModel):
+    chapter_number: int
+    title: str
+    content: str
+
+class ChapterUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+class ChapterOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    manuscript_id: Optional[IdType] = None
+    chapter_number: int
+    title: str
+    content: str
+    word_count: int
+    created_at: datetime
+    updated_at: datetime
+
+    @field_serializer('id', 'project_id', 'manuscript_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
+# --- Entities ---
+class EntityCreate(BaseModel):
+    name: str
+    entity_type: str = "character"  # character, location, object, rule, faction
+    description: Optional[str] = None
+    traits: List[str] = []
+    first_appearance_chapter: Optional[int] = 1
+
+class EntityUpdate(BaseModel):
+    name: Optional[str] = None
+    entity_type: Optional[str] = None
+    description: Optional[str] = None
+    traits: Optional[List[str]] = None
+    first_appearance_chapter: Optional[int] = None
+
+class StoryFactOut(BaseModel):
+    id: IdType
+    fact: str
+    category: str
+    source_chapter_id: Optional[IdType] = None
+    source_chapter_number: Optional[int] = None
+    source_quote: str
+    confidence: float
+    is_active: bool
+    created_at: datetime
+
+    @field_serializer('id', 'source_chapter_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
+class EntityOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    name: str
+    entity_type: str
+    description: Optional[str] = None
+    traits: List[str] = []
+    first_appearance_chapter: Optional[int] = 1
+    facts: List[StoryFactOut] = []
+    created_at: datetime
+    updated_at: datetime
+
+    @field_serializer('id', 'project_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
+# --- Relationships ---
+class RelationshipOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    source_entity_id: IdType
+    target_entity_id: IdType
+    source_name: Optional[str] = None
+    target_name: Optional[str] = None
+    relation_type: str
+    description: Optional[str] = None
+    source_chapter_id: Optional[IdType] = None
+    created_at: datetime
+
+    @field_serializer('id', 'project_id', 'source_entity_id', 'target_entity_id', 'source_chapter_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
+# --- Graph ---
+class GraphNode(BaseModel):
+    id: str
+    type: str = "custom"
+    data: Dict[str, Any]
+    position: Dict[str, float]
+
+class GraphEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+    label: str
+    animated: bool = False
+    data: Optional[Dict[str, Any]] = None
+
+class GraphDataOut(BaseModel):
+    nodes: List[GraphNode]
+    edges: List[GraphEdge]
+
+# --- Continuity Issues ---
+class ContinuityIssueUpdate(BaseModel):
+    status: str  # unresolved, resolved, intentional, dismissed, review_later
+    author_notes: Optional[str] = None
+
+class ContinuityIssueOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    chapter_id: Optional[IdType] = None
+    issue_type: str
+    severity: str
+    confidence: float
+    explanation: str
+    earlier_passage: Optional[str] = None
+    new_passage: Optional[str] = None
+    earlier_chapter_number: Optional[int] = None
+    new_chapter_number: Optional[int] = None
+    suggestions: List[str] = []
+    status: str
+    author_notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    @field_serializer('id', 'project_id', 'chapter_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
+# --- Timeline ---
+class TimelineEventOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    title: str
+    description: Optional[str] = None
+    chapter_number: Optional[int] = None
+    chronology_order: int
+    date_or_time_label: Optional[str] = None
+    participants: List[str] = []
+    location: Optional[str] = None
+    created_at: datetime
+
+    @field_serializer('id', 'project_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
+# --- Analysis ---
+class AnalyzeChapterRequest(BaseModel):
+    chapter_id: Optional[str] = None
+    content: Optional[str] = None
+    chapter_number: Optional[int] = None
+
+class AnalyzeChapterResponse(BaseModel):
+    chapter_id: Optional[IdType] = None
+    chapter_number: int
+    issues_found: int
+    issues: List[ContinuityIssueOut]
+    entities_extracted: int
+
+    @field_serializer('chapter_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None

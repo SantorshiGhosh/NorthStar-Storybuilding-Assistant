@@ -1,0 +1,528 @@
+LIVING STORY BIBLE
+AI Continuity Guardian
+TOTAL HACKATHON DEVELOPMENT ROADMAP
+A practical product, architecture, implementation, and demonstration plan
+Planning parameter
+Selected direction
+Target users
+Novelists and screenwriters
+Development window
+1–2 days (48-hour planning target)
+Team size
+3–4 members
+Frontend
+React + Vite
+Backend
+Python + FastAPI
+Data and memory
+Supabase PostgreSQL + ChromaDB + NetworkX
+AI strategy
+Cloud LLM API; prioritize free-tier access
+Hosting
+Vercel + Render/Railway + Supabase
+Privacy
+Private access and encrypted manuscript storage
+Demo focus
+Complete Story Intelligence, with continuity detection at the centre
+Prepared as an execution guide for the hackathon team
+Document contents
+1. Product definition and vision
+2. Scope and MVP priorities
+3. Recommended technology stack
+4. System architecture and data flow
+5. Multi-agent AI design
+6. Narrative memory and database design
+7. Manuscript processing pipeline
+8. Continuity detection engine
+9. Frontend screens and UX
+10. Backend API design
+11. Security and manuscript privacy
+12. Recommended repository structure
+13. 48-hour development schedule
+14. Team allocation
+15. Sample demonstration manuscript
+16. Five-minute hackathon demo
+17. Risks and mitigations
+18. Implementation checklist
+19. Success criteria and immediate next steps
+1. Product definition and vision
+Living Story Bible is a browser-based writing environment for novelists and screenwriters. A writer can upload an existing manuscript or write in a built-in editor. The system analyzes the story and builds persistent narrative memory: characters, locations, objects, relationships, world-building rules, events, and timeline details.
+As the manuscript grows, the AI compares new passages with previously established story information. It identifies possible continuity contradictions, explains why they may be conflicts, and cites the earlier and newer passages. The author remains in control: the application must never rewrite the manuscript automatically.
+Core value proposition
+Writers should focus on creating stories. Living Story Bible should remember the details and warn them when something does not add up.
+Example continuity scenario
+Source
+Story passage
+Chapter 2 — established fact
+“Arin lost his left arm during the battle at Blackstone.”
+Chapter 8 — new passage
+“Arin lifted his left hand and opened the ancient door.”
+The application should flag this as a potential continuity contradiction, show both chapter references, and suggest that the writer clarify whether Arin has a prosthetic, recovered, or whether the passage needs editing. The issue must remain subject to author review.
+Primary product capabilities
+Import a manuscript or write in the built-in editor.
+Automatically extract characters, places, objects, relationships, facts, and events.
+Maintain persistent, editable narrative memory.
+Visualize story entities and relationships in an interactive knowledge graph.
+Detect possible continuity conflicts with source evidence.
+Track character profiles, personality signals, dialogue style, and story chronology.
+Support multiple independent projects for each user.
+2. Scope and MVP priorities
+The available development time is short. The team should build a focused, reliable MVP rather than attempt a production-grade autonomous agent platform in 48 hours.
+Level 1 — Essential working features
+Feature
+Expected functionality
+Manuscript upload
+Accept DOCX, TXT, Markdown, and PDF.
+Story analysis
+Extract characters, locations, relationships, events, and facts.
+Narrative memory
+Persist extracted information in PostgreSQL.
+Knowledge graph
+Display characters and relationships.
+Continuity detection
+Detect potential contradictions in new content.
+Evidence
+Show earlier and newer passages with chapter references.
+Suggestions
+Explain the issue and suggest possible resolutions.
+Project management
+Create and access separate story projects.
+Level 2 — Polished supporting features
+Built-in writing editor.
+Character profile pages.
+Timeline visualization.
+Editable knowledge graph.
+Searchable story memory.
+Basic character voice analysis.
+Level 3 — Post-hackathon expansion
+Fully autonomous multi-agent collaboration.
+Real-time continuity monitoring while typing.
+Advanced screenplay structure understanding.
+Character emotional development tracking.
+Complex plot-hole detection.
+Multiple LLM providers with automatic failover.
+Production-grade encryption key management.
+Priority rule: complete Level 1, make selected Level 2 screens visually impressive, and present Level 3 as the future roadmap.
+3. Recommended technology stack
+Layer
+Technology
+Responsibility
+Frontend
+React + Vite
+Application framework and development.
+Styling
+Tailwind CSS or CSS modules
+Responsive, minimalist light interface.
+Writing editor
+TipTap / ProseMirror
+Built-in rich-text manuscript editor.
+Knowledge graph UI
+React Flow
+Interactive nodes, edges, and graph controls.
+Backend
+Python + FastAPI
+REST API and application logic.
+AI provider
+Gemini API initially; provider adapter
+Narrative extraction and reasoning.
+Structured data
+Supabase PostgreSQL
+Users, projects, chapters, entities, facts, issues.
+Authentication/storage
+Supabase Auth + private Storage
+User identity and private manuscript files.
+Vector retrieval
+ChromaDB
+Semantic retrieval of relevant passages.
+Graph processing
+NetworkX
+Construct and analyze graph data.
+Frontend hosting
+Vercel
+Deploy React application.
+Backend hosting
+Render or Railway
+Deploy FastAPI service.
+Implementation decisions
+Use PostgreSQL as the source of truth for structured narrative memory.
+Use ChromaDB for semantic retrieval, not as the primary database.
+Use NetworkX to build and analyze graphs from entities and relationships stored in PostgreSQL. NetworkX is a Python library, not a persistent graph database.
+Start with one AI provider behind a provider-independent interface.
+Avoid adding LangChain, LangGraph, Redis, Celery, or other infrastructure unless a concrete requirement justifies it.
+Do not assume a free hosting tier provides durable disk storage. ChromaDB needs persistent storage; use a supported persistent volume or a fallback retrieval implementation for the demo.
+4. System architecture and data flow
+React + Vite Frontend  Dashboard | Editor | Knowledge Graph | Timeline | Continuity Report                         |                    REST / JSON                         |                 FastAPI Backend       Auth | Projects | Upload | Analysis APIs                         |                Central Orchestrator          /          |          |          \\   Extraction   Continuity  Character   Timeline      Agent       Agent       Agent       Agent          \\          |          |          /                         |          -----------------------------------          |                |                |      PostgreSQL        ChromaDB         NetworkX   structured memory  semantic memory   graph analysis
+End-to-end workflow
+The writer creates a project.
+The writer uploads a manuscript or writes in the editor.
+FastAPI extracts text and segments it into chapters and passages.
+The extraction agent identifies narrative entities, relationships, events, and facts.
+The orchestrator saves structured facts and source references.
+ChromaDB indexes passages for semantic retrieval.
+NetworkX constructs the knowledge graph from saved entities and relationships.
+The continuity agent compares new content with relevant story memory.
+The frontend displays possible issues with supporting evidence.
+The writer resolves, dismisses, or marks issues as intentional.
+For the hackathon, agents should be separate Python modules or classes called by one orchestrator. This demonstrates modular multi-agent architecture without the overhead of multiple autonomous services.
+5. Multi-agent AI design
+Central orchestrator
+The orchestrator controls task order, invokes agents, validates their outputs, handles failures, and persists results. It should enforce project boundaries and avoid letting unvalidated model output directly change the database.
+Agent 1 — Narrative Extraction Agent
+Extract characters, locations, objects, events, and facts.
+Identify relationships between characters and other entities.
+Return structured JSON validated with Pydantic.
+Include chapter IDs, passage IDs, and source quotes for extracted facts.
+Agent 2 — Continuity Guardian Agent
+Retrieve relevant earlier story facts and passages.
+Compare new content against established facts and rules.
+Identify possible contradictions and explain the reasoning.
+Cite the earlier and newer passages.
+Classify results as likely conflict, possible conflict, intentional/explainable event, or insufficient evidence.
+Agent 3 — Character Intelligence Agent
+Maintain character profiles and recurring traits.
+Compare dialogue samples for possible voice drift.
+Track relationships and character development.
+Treat voice drift as a stylistic signal, not an objective contradiction.
+Agent 4 — Timeline Agent
+Extract story events and temporal references.
+Identify explicit dates and relative event order.
+Track character locations when evidence exists.
+Flag possible chronology conflicts for review.
+Structured output example
+{  "issue_type": "character_fact_conflict",  "severity": "high",  "confidence": 0.91,  "explanation": "The character uses an arm previously established as lost.",  "evidence": [    {"chapter": 2, "quote": "Arin lost his left arm."},    {"chapter": 8, "quote": "Arin lifted his left hand."}  ],  "suggestions": [    "Clarify whether Arin has a prosthetic.",    "Explain whether the injury was reversed."  ]}
+The confidence value is a model estimate, not a calibrated probability. Validate all output against a Pydantic schema and verify that cited passages actually exist in the manuscript.
+6. Narrative memory and database design
+Memory type
+Technology
+Purpose
+Structured memory
+Supabase PostgreSQL
+Characters, facts, relationships, events, and issue status.
+Semantic memory
+ChromaDB
+Find relevant earlier manuscript passages.
+Graph memory
+NetworkX
+Explore and analyze relationships between story elements.
+Initial database tables
+Table
+Important fields
+projects
+id, user_id, name, description
+manuscripts
+id, project_id, filename, status
+chapters
+id, manuscript_id, title, chapter_number
+entities
+id, project_id, name, entity_type, description
+relationships
+id, project_id, source_entity_id, target_entity_id, relation_type
+story_facts
+id, entity_id, fact, source_chapter_id, source_quote
+continuity_issues
+id, project_id, issue_type, explanation, severity, confidence, status, evidence
+Possible later tables: events, character_profiles, entity_mentions, agent_runs, memory_versions, and project_settings.
+Knowledge graph example
+Arin -------- visited --------> Blackstone  |                                |  | participated in                | location of  v                                vBattle ----------------------> BlackstoneMira -------- knows ----------> Arin
+Each node should open a profile with known facts and source passages. Each edge should retain a relationship type and evidence reference. Facts should never be detached from their source: otherwise the AI may confuse assumptions with established canon.
+7. Manuscript processing pipeline
+Format
+Suggested parser
+DOCX
+python-docx
+TXT
+Python file handling and UTF-8 decoding
+Markdown
+Direct text parsing or a Markdown parser
+PDF
+PyMuPDF
+Processing stages
+Validate file extension, MIME type, and size. Store the upload in a private location associated with the correct project.
+Extract text while preserving chapter headings, paragraph boundaries, page numbers where available, and text offsets.
+Segment the manuscript into chapters and smaller passages. Give each passage a stable ID and source location.
+Send manageable chunks to the extraction agent. Ask for structured entities, relationships, events, and facts.
+Save structured memory to PostgreSQL, index passages in ChromaDB, and build/update the NetworkX graph.
+Run continuity checks and save the results for the frontend.
+For the first version, process one manuscript sequentially. Avoid building a complex distributed background-job system unless processing time makes it necessary.
+8. Continuity detection engine
+The continuity engine is the central differentiator. Use a hybrid approach rather than relying on one broad LLM prompt.
+Step 1 — Retrieve relevant memory
+Search ChromaDB for semantically related earlier passages.
+Query PostgreSQL for facts about mentioned characters, locations, objects, and rules.
+Use the graph to identify related entities and relationships.
+Step 2 — Run deterministic checks
+Established information
+New information
+Possible issue
+Character is dead.
+Character appears alive.
+Death continuity.
+Character lost left arm.
+Character uses left hand.
+Physical continuity.
+Character is in London.
+Character appears in Tokyo at the same time.
+Location continuity.
+Event occurred in 2040.
+Later passage places it in 2035.
+Timeline continuity.
+Rules must allow for flashbacks, dreams, unreliable narration, resurrection, prosthetics, time travel, and deliberate twists. A rule should generate a candidate issue, not automatically declare the author wrong.
+Step 3 — Contextual LLM assessment
+Provide the model with the new passage, relevant retrieved facts, original supporting passages, and any triggered rule. Ask it to assess whether there is a likely contradiction, possible contradiction, intentional or explainable event, or insufficient evidence.
+Issue review controls
+Resolved
+Mark intentional
+Dismiss
+Review later
+Never automatically rewrite the manuscript or overwrite established story facts. Any change to narrative memory should be explicitly approved by the author.
+9. Frontend screens and user experience
+Use a minimalist light workspace inspired by Google Docs and Notion: warm neutral surfaces, restrained accent colours, subtle borders, clear typography, and responsive layouts.
+Screen 1 — Landing page
+Product name and logo.
+Headline: “Your story remembers everything.”
+Short explanation of the continuity guardian.
+Sign in / Get started actions.
+Product preview.
+Screen 2 — Project dashboard
+Project cards with title, manuscript name, chapter count, character count, last-modified date, and outstanding issues.
+Create project, open project, delete project, and upload manuscript actions.
+Screen 3 — Writing workspace
+Chapter navigation on the left.
+Rich-text writing area in the centre.
+AI Guardian panel on the right.
+Save functionality and Analyze Chapter action.
+Inline issue indicators and links to evidence.
+Screen 4 — Knowledge graph
+Zoom and pan.
+Search and filter entities by type.
+Click a node to open its profile.
+Click an edge to inspect a relationship.
+Edit entities and relationships.
+View supporting chapter evidence.
+Screen 5 — Continuity report
+Provide filters for all issues, high severity, character conflicts, timeline conflicts, location conflicts, resolved, and dismissed.
+Screen 6 — Character profiles
+Show the character name, description, personality traits, relationships, important events, first appearance, known facts, and source passages. The profile and graph should use the same underlying entity records.
+10. Backend API design
+Method
+Endpoint
+Purpose
+POST
+/projects
+Create a project.
+GET
+/projects
+List the user's projects.
+GET
+/projects/{id}
+Get project details.
+DELETE
+/projects/{id}
+Delete a project.
+POST
+/projects/{id}/upload
+Upload a manuscript.
+GET
+/projects/{id}/chapters
+List chapters.
+GET
+/chapters/{id}
+Read a chapter.
+POST
+/chapters/{id}/analyze
+Analyze a chapter.
+GET
+/projects/{id}/entities
+Get story entities.
+GET
+/projects/{id}/graph
+Get graph nodes and edges.
+GET
+/projects/{id}/timeline
+Get story timeline.
+GET
+/projects/{id}/issues
+Get continuity issues.
+PATCH
+/issues/{id}
+Update issue status.
+GET
+/entities/{id}
+Get entity profile.
+PATCH
+/entities/{id}
+Edit entity details.
+Authentication recommendation: use Supabase Auth from the frontend and validate Supabase JWTs in FastAPI. Enforce authorization on the backend as well as through database Row Level Security. Never rely only on hidden frontend controls.
+11. Security and manuscript privacy
+Manuscripts may be unpublished and confidential. Privacy must be built into the storage and processing design, not added as a presentation claim.
+Infrastructure security
+Use private Supabase Storage buckets.
+Enable Row Level Security on every project-related table.
+Use HTTPS for application communication.
+Validate user access to every project and manuscript operation.
+Keep service-role keys and AI API keys on the backend only.
+Application-level encryption
+For stronger storage privacy, encrypt manuscript files before storing them using authenticated encryption such as AES-256-GCM. Keep encryption keys outside the database and source repository. A production system should use a dedicated key-management service.
+Upload -> Validate -> Encrypt -> Private Storage                         |Authorized retrieval -> Decrypt for processing                         |              AI analysis / indexing                         |          Persist only necessary derived data
+For the hackathon, implement private storage, RLS, HTTPS, and a tested encryption approach. If application-level encryption is included, test the full upload/decrypt/process flow. Do not claim end-to-end encryption unless the architecture genuinely provides it.
+Additional privacy safeguards
+Never expose Supabase service-role keys in the React application.
+Never commit secrets to GitHub.
+Do not log manuscript contents or encryption keys.
+Isolate all database and vector searches by project ID.
+Send only the relevant passages to the LLM rather than the entire manuscript where possible.
+Review the selected AI provider's current retention and data-use terms. Free API access does not automatically mean that submitted content is excluded from retention or training.
+12. Recommended repository structure
+living-story-bible/├── frontend/│   ├── public/│   └── src/│       ├── components/│       │   ├── Navbar.jsx│       │   ├── Sidebar.jsx│       │   ├── Editor.jsx│       │   ├── CharacterCard.jsx│       │   └── IssueCard.jsx│       ├── pages/│       │   ├── Landing.jsx│       │   ├── Dashboard.jsx│       │   ├── Workspace.jsx│       │   ├── KnowledgeGraph.jsx│       │   └── ContinuityReport.jsx│       ├── services/api.js│       ├── App.jsx│       └── main.jsx│├── backend/│   ├── app/│   │   ├── main.py│   │   ├── config.py│   │   ├── routes/│   │   │   ├── projects.py│   │   │   ├── manuscripts.py│   │   │   ├── chapters.py│   │   │   ├── entities.py│   │   │   └── continuity.py│   │   ├── agents/│   │   │   ├── orchestrator.py│   │   │   ├── extraction_agent.py│   │   │   ├── continuity_agent.py│   │   │   ├── character_agent.py│   │   │   └── timeline_agent.py│   │   ├── services/│   │   │   ├── document_parser.py│   │   │   ├── memory_service.py│   │   │   ├── vector_service.py│   │   │   ├── graph_service.py│   │   │   └── encryption_service.py│   │   ├── schemas/│   │   ├── database/│   │   └── utils/│   └── requirements.txt│├── database/schema.sql├── .env.example├── .gitignore└── README.md
+Keep the frontend and backend in one GitHub repository initially. Agree on API contracts and JSON schemas before parallel development begins.
+13. 48-hour development schedule
+Time
+Work
+Milestone
+Hours 0–3
+Create repository; initialize React and FastAPI; create Supabase project; configure environment; agree on schema and API contracts.
+Both applications run.
+Hours 3–10
+Build landing/dashboard/workspace shell; implement auth, projects, upload API, file parsing, and database tables/RLS.
+A manuscript can be uploaded.
+Hours 10–18
+Implement extraction prompts; save entities and facts; index passages; build NetworkX graph; display entities.
+Upload generates story memory.
+Hours 18–26
+Implement retrieval; deterministic checks; LLM evidence assessment; save issues; build continuity report.
+At least one real contradiction is detected.
+Hours 26–34
+Connect graph to live data; add character profiles and issue actions; connect editor; improve loading/error states.
+End-to-end demo works.
+Hours 34–40
+Deploy frontend and backend; configure environment variables, CORS, Supabase, and production API URL; test deployed workflow.
+Public demo URL works.
+Hours 40–48
+Run full tests; fix major bugs; prepare sample manuscript, screenshots, backup demo, architecture diagram, and presentation.
+Submission-ready project.
+Critical scheduling rule: aim to complete the working continuity detection flow by hour 26. If time runs short, reduce advanced editor formatting and voice analysis before compromising the core feature. Deploy early enough to expose hosting and configuration problems.
+14. Suggested team allocation
+Role
+Primary responsibilities
+Member 1 — Frontend
+React workspace, dashboard, editor, graph visualization, continuity report.
+Member 2 — Backend
+FastAPI routes, Supabase integration, authentication, upload, parsing, database.
+Member 3 — AI
+Extraction, orchestrator, continuity analysis, retrieval, graph data.
+Member 4 — Integration/product
+API integration, testing, sample manuscript, deployment, README, presentation.
+For a three-person team, combine integration/product tasks with backend and frontend work. Reassign roles after reviewing each member's actual skills. All members should agree on API request/response formats before implementation.
+15. Sample demonstration manuscript
+The Last Kingdom
+Prepare a short original fantasy manuscript specifically designed to test the system. Do not rely on an arbitrary novel during the presentation.
+Chapter
+Content to establish
+Chapter 1 — The Kingdom
+Introduce Arin, Mira, and the kingdom of Eldoria.
+Chapter 2 — The Battle
+Arin loses his left arm during the battle at Blackstone. Mira escapes to the northern forest.
+Chapter 3 — The Secret
+Establish a world rule: the ancient gate can only be opened by someone carrying the royal seal.
+Chapter 4 — The Return
+Introduce deliberate test errors: Arin uses his left hand normally despite the injury, and the gate is opened without the royal seal.
+This sample supports demonstrations of character, relationship, location, world-rule, physical continuity, and lore-rule extraction. Use original text created by the team.
+16. Five-minute hackathon demonstration
+Time
+Demo activity
+What judges should see
+0:00–0:40
+Introduce the problem.
+Long manuscripts contain more facts than writers can reliably remember.
+0:40–1:30
+Upload The Last Kingdom.
+The manuscript enters the analysis pipeline.
+1:30–2:20
+Show narrative memory.
+Characters, locations, relationships, and world rules are extracted.
+2:20–3:10
+Explore the knowledge graph.
+Click Arin and inspect his recorded injury and source chapter.
+3:10–4:20
+Trigger continuity detection.
+Show the new passage, earlier passage, explanation, and suggestions.
+4:20–5:00
+Show author control.
+Mark an issue intentional or resolve it; explain that AI never edits the manuscript automatically.
+Suggested presentation line
+“Most AI writing tools help you write the next sentence. Living Story Bible helps you remember every sentence you've written before.”
+17. Main risks and mitigations
+Risk
+Mitigation
+Free AI quota exhausted
+Cache analysis, use targeted requests, and keep deterministic checks as a fallback.
+LLM invents facts
+Require source quotes; validate structured output; verify passage references.
+False continuity warnings
+Combine deterministic candidate checks with contextual model review.
+ChromaDB loses data
+Use persistent storage or a fallback retrieval layer.
+Deployment takes too long
+Test deployment early rather than waiting until the end.
+Large manuscripts process slowly
+Limit demo manuscript size and process sequentially.
+Team integration conflicts
+Agree on API contracts and JSON schemas before parallel work.
+Cross-project data leakage
+Enforce RLS and project-level filters in every service.
+Encryption breaks analysis
+Test decrypt-process-re-encrypt flow before claiming encrypted processing.
+Check current AI provider free-tier quotas and terms before the event. The demo should still show basic continuity checks if the external AI API becomes unavailable.
+18. Implementation checklist
+Foundation
+☐  Create GitHub repository
+☐  Initialize React + Vite frontend
+☐  Initialize FastAPI backend
+☐  Create Supabase project and database
+☐  Configure environment variables
+Core functionality
+☐  Implement manuscript upload
+☐  Extract DOCX, TXT, Markdown, and PDF
+☐  Split manuscript into chapters and passages
+☐  Build narrative extraction agent
+☐  Save entities and facts to PostgreSQL
+☐  Index passages for retrieval
+☐  Build knowledge graph API
+☐  Render graph using React Flow
+Continuity intelligence
+☐  Implement fact retrieval
+☐  Build deterministic continuity checks
+☐  Build LLM continuity assessment
+☐  Attach chapter and passage evidence
+☐  Save issues to database
+☐  Create issue review actions
+Presentation and deployment
+☐  Build dashboard and writing workspace
+☐  Create character profile screen
+☐  Test complete manuscript workflow
+☐  Deploy frontend and backend
+☐  Prepare sample manuscript
+☐  Prepare demo and presentation
+19. Success criteria and immediate next steps
+Definition of success
+A judge should be able to complete this workflow:
+Create a project.
+Upload a manuscript.
+See the AI identify characters, locations, and important facts.
+Explore the generated knowledge graph.
+Submit new text containing a contradiction.
+See the AI identify the potential issue.
+Read the earlier and newer passages supporting the warning.
+Decide whether the warning is intentional or should be resolved.
+Immediate next steps
+Create the GitHub repository.
+Assign temporary roles based on team members' skills.
+Create the Supabase project and configure private storage and RLS.
+Agree on the database schema and API response formats.
+Build the manuscript upload-to-continuity-detection workflow before expanding into advanced features.
+First technical milestone
+Upload a manuscript → Extract story facts → Store memory → Detect one contradiction → Return evidence.
+If this workflow works reliably, the central intelligence of Living Story Bible is functioning. The editor, graph polish, timeline, and advanced agents can then build around it.
+Final implementation principle
+Do not let Living Story Bible become just another chatbot with a document-upload button. Its differentiator is persistent, evidence-backed narrative memory. The system should be able to explain what is known about a character, where a fact was established, what happened before an event, which story rules apply, and whether new writing conflicts with previously established information.
+Build the smallest reliable version of that capability first. A stable, evidence-backed continuity demonstration is more valuable than many incomplete features.

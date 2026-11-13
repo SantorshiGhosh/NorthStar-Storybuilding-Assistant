@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+:root {
+  --bg-main: #fbfbf9;
+  --surface-card: #ffffff;
+  --border-subtle: #eae9e4;
+  --border-focus: #2563eb;
+  --text-primary: #191918;
+  --text-secondary: #5a5955;
+  --text-muted: #8c8a82;
+  --accent-primary: #2563eb;
+  --accent-soft: #eff6ff;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #92400e;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+  --danger-text: #991b1b;
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
+  --success-text: #166534;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Notion / Google Docs light typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d6d4ce;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b5b3ab;
+}
+
+/* TipTap Editor Styles */
+.tiptap {
+  outline: none;
+  min-height: 500px;
+}
+.tiptap p {
+  margin-bottom: 1.15em;
+  line-height: 1.8;
+  font-size: 1.05rem;
+  color: #27272a;
+}
+.tiptap h1 {
+  font-size: 1.85rem;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.tiptap h2 {
+  font-size: 1.45rem;
+  margin-top: 1.3em;
+  margin-bottom: 0.4em;
+}
+.tiptap blockquote {
+  border-left: 3px solid #cbd5e1;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #64748b;
+  margin: 1.2em 0;
+}
