@@ -295,10 +295,11 @@ class CentralAIOrchestrator:
         project_id: str,
         chapter_id: str,
         skip_llm: bool = False
-    ) -> List[models.ContinuityIssue]:
+    ) -> List[Dict[str, Any]]:
         """
         Executes Continuity Guardian analysis for a specific chapter against established canon.
-        Uses memory_service and vector_service with automatic SQL fallback.
+        Fetches all chapters for project from database, auto-extracts if canon memory is empty,
+        and runs hybrid cross-chapter continuity analysis.
         """
         from app.services.memory_service import memory_service
 
@@ -306,26 +307,44 @@ class CentralAIOrchestrator:
         if not chapter:
             return []
 
-        # 1. Fetch established facts from earlier chapters
-        facts_query = db.query(models.StoryFact).filter(
-            models.StoryFact.project_id == project_id,
-            models.StoryFact.source_chapter_number < chapter.chapter_number,
-            models.StoryFact.is_active == True
-        ).all()
+        # 1. Fetch all chapters for this project directly from database
+        all_chs = memory_service.get_chapters(db, project_id)
+        all_chs_data = [
+            {
+                "id": str(c.id),
+                "chapter_number": c.chapter_number,
+                "title": c.title,
+                "content": c.content
+            }
+            for c in all_chs
+        ]
+
+        # 2. Check if project currently has 0 entities or 0 facts in DB; auto-extract if needed
+        existing_facts = memory_service.get_story_facts(db, project_id)
+        existing_ents = memory_service.get_entities(db, project_id)
+        if len(existing_facts) == 0 or len(existing_ents) == 0:
+            logger.info(f"Project {project_id} has no extracted memory. Running extraction across {len(all_chs)} chapters...")
+            for ch_item in all_chs:
+                try:
+                    self._extract_and_persist_chapter_memory(db, project_id, ch_item, fast_mode=True)
+                except Exception as e:
+                    logger.warning(f"Auto-extraction for chapter {ch_item.chapter_number} failed: {e}")
+            existing_facts = memory_service.get_story_facts(db, project_id)
+            existing_ents = memory_service.get_entities(db, project_id)
 
         established_facts = [
             {
-                "id": f.id,
-                "fact": f.fact,
-                "category": f.category,
-                "source_chapter_number": f.source_chapter_number,
-                "source_quote": f.source_quote,
-                "entity_name": f.entity.name if f.entity else ""
+                "id": str(getattr(f, "id", "") or f.get("id")),
+                "fact": getattr(f, "fact", "") or f.get("fact", ""),
+                "category": getattr(f, "category", "general") or f.get("category", "general"),
+                "source_chapter_number": getattr(f, "source_chapter_number", 1) or f.get("source_chapter_number", 1),
+                "source_quote": getattr(f, "source_quote", "") or f.get("source_quote", ""),
+                "entity_name": getattr(f, "entity", None).name if getattr(f, "entity", None) else ""
             }
-            for f in facts_query
+            for f in existing_facts
         ]
 
-        # 2. Retrieve relevant earlier passages from vector search (or SQL fallback)
+        # 3. Retrieve relevant earlier passages from vector search (or SQL fallback)
         retrieved_passages = vector_service.search_similar_passages(
             project_id=project_id,
             query=chapter.content[:500],
@@ -333,26 +352,28 @@ class CentralAIOrchestrator:
             exclude_chapter_number=chapter.chapter_number
         )
 
-        # 3. Continuity Guardian analysis
+        # 4. Continuity Guardian analysis with full cross-chapter text comparison
         detected_issues = continuity_agent.analyze_chapter_continuity(
             new_chapter_number=chapter.chapter_number,
             new_content=chapter.content,
             established_facts=established_facts,
             retrieved_passages=retrieved_passages,
+            all_chapters=all_chs_data,
+            entities=existing_ents,
             skip_llm=skip_llm
         )
 
-        # 4. Save detected issues using memory_service
+        # 5. Save detected issues using schema-safe memory_service
         saved_db_issues = []
         for issue_dict in detected_issues:
             db_issue = memory_service.save_continuity_issue(
                 db=db,
                 project_id=project_id,
                 chapter_id=chapter.id,
-                issue_type=issue_dict["issue_type"],
+                issue_type=issue_dict.get("issue_type", "continuity_issue"),
                 severity=issue_dict.get("severity", "high"),
                 confidence=issue_dict.get("confidence", 0.90),
-                explanation=issue_dict["explanation"],
+                explanation=issue_dict.get("explanation", ""),
                 earlier_passage=issue_dict.get("earlier_passage"),
                 new_passage=issue_dict.get("new_passage"),
                 earlier_chapter_number=issue_dict.get("earlier_chapter_number"),
@@ -362,7 +383,8 @@ class CentralAIOrchestrator:
                 evidence=issue_dict.get("evidence"),
                 status="unresolved"
             )
-            saved_db_issues.append(db_issue)
+            if db_issue:
+                saved_db_issues.append(db_issue)
 
         return saved_db_issues
 

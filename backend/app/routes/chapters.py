@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional, Dict, Any
 
 from app.database.connection import get_db
 from app.database import models
@@ -106,29 +106,52 @@ def update_chapter(chapter_id: str, data: s_models.ChapterUpdate, db: Session = 
     db.refresh(ch)
     return ch
 
-@router.post("/chapters/{chapter_id}/analyze", response_model=s_models.AnalyzeChapterResponse)
-def analyze_chapter(chapter_id: str, db: Session = Depends(get_db)):
+from app.services.memory_service import memory_service
+import logging
+
+logger = logging.getLogger("chapters_route")
+
+@router.post("/chapters/{chapter_id}/analyze")
+def analyze_chapter(
+    chapter_id: str,
+    body: Optional[s_models.AnalyzeChapterRequest] = None,
+    db: Session = Depends(get_db)
+):
     ch = db.query(models.Chapter).filter(models.Chapter.id == chapter_id).first()
     if not ch:
         raise HTTPException(status_code=404, detail="Chapter not found")
 
-    # 1. Extract and update canon facts for this chapter with AI
-    orchestrator._extract_and_persist_chapter_memory(db, ch.project_id, ch, fast_mode=False)
+    # If updated content was sent in request body, persist it
+    if body and body.content is not None and body.content.strip():
+        ch.content = body.content
+        ch.word_count = len(body.content.split())
+        db.commit()
+        db.refresh(ch)
+
+    # 1. Extract and update canon facts for this chapter
+    try:
+        orchestrator._extract_and_persist_chapter_memory(db, ch.project_id, ch, fast_mode=False)
+    except Exception as e:
+        logger.warning(f"Chapter memory extraction error (non-fatal): {e}")
 
     # 2. Run Continuity Guardian analysis for this chapter
-    issues = orchestrator.analyze_chapter_continuity(
+    new_detected = orchestrator.analyze_chapter_continuity(
         db=db,
         project_id=ch.project_id,
         chapter_id=ch.id,
         skip_llm=False
     )
 
-    entities_count = db.query(models.Entity).filter(models.Entity.project_id == ch.project_id).count()
+    # Fetch all project issues from memory_service to update the full Guardian panel
+    all_project_issues = memory_service.get_continuity_issues(db=db, project_id=ch.project_id)
+    entities = memory_service.get_entities(db=db, project_id=ch.project_id)
 
-    return s_models.AnalyzeChapterResponse(
-        chapter_id=ch.id,
-        chapter_number=ch.chapter_number,
-        issues_found=len(issues),
-        issues=issues,
-        entities_extracted=entities_count
-    )
+    return {
+        "status": "analyzed",
+        "chapter_id": str(ch.id),
+        "chapter_number": ch.chapter_number,
+        "issues_found": len(all_project_issues),
+        "new_issues_count": len(new_detected),
+        "issues": all_project_issues,
+        "entities_extracted": len(entities)
+    }

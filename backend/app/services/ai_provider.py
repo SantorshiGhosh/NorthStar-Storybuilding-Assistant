@@ -1,81 +1,133 @@
 import json
 import logging
 import re
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from app.config import settings
 
 logger = logging.getLogger("ai_provider")
 
 class AIProviderService:
+    """
+    Robust Gemini AI Provider service with multi-model automatic fallback.
+    Supported fallback priority:
+      1. User configured model (if set)
+      2. gemini-2.5-flash
+      3. gemini-2.0-flash
+      4. gemini-1.5-flash
+    Never raises unhandled exceptions on missing keys, 404, or 429 quota exhaustion.
+    Returns None to allow downstream agents to run their deterministic fallbacks seamlessly.
+    """
+
+    CANDIDATE_MODELS = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash"
+    ]
+
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
-        self.model_name = settings.GEMINI_MODEL or "gemini-1.5-flash"
-        self._client = None
+        self._genai_client = None
+        self._legacy_configured = False
         self._init_client()
 
     def _init_client(self):
         self.api_key = settings.GEMINI_API_KEY
-        self.model_name = settings.GEMINI_MODEL or "gemini-3.1-flash-lite"
         if not self.api_key:
             return
+
+        # Attempt to init new google.genai
         try:
-            # Try new google-genai
             from google import genai
-            self._client = genai.Client(api_key=self.api_key)
-            self._sdk_type = "genai"
+            self._genai_client = genai.Client(api_key=self.api_key)
         except Exception:
-            try:
-                # Fallback to google.generativeai
-                import google.generativeai as legacy_genai
-                legacy_genai.configure(api_key=self.api_key)
-                self._client = legacy_genai.GenerativeModel(self.model_name)
-                self._sdk_type = "legacy"
-            except Exception as e:
-                logger.warning(f"Could not initialize Gemini client: {e}")
-                self._client = None
-                self._sdk_type = None
+            self._genai_client = None
+
+        # Attempt to configure legacy google.generativeai as backup
+        try:
+            import google.generativeai as legacy_genai
+            legacy_genai.configure(api_key=self.api_key)
+            self._legacy_configured = True
+        except Exception:
+            self._legacy_configured = False
 
     def generate_json(self, prompt: str, system_instruction: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Sends structured prompt to LLM and parses JSON response.
-        Returns parsed dictionary or None on failure/missing key.
+        Sends structured prompt to Gemini with multi-model fallback and JSON fence stripping.
+        Returns parsed dict/list or None if unavailable/quota-limited.
         """
-        if (
-            not self._client or 
-            self.api_key != settings.GEMINI_API_KEY or 
-            self.model_name != settings.GEMINI_MODEL
-        ):
+        if not self.api_key or self.api_key != settings.GEMINI_API_KEY:
             self._init_client()
 
-        if not self._client:
+        if not self.api_key:
+            logger.debug("GEMINI_API_KEY is not configured; relying on deterministic agent logic.")
             return None
 
-        try:
-            combined_prompt = ""
-            if system_instruction:
-                combined_prompt += f"System Instruction: {system_instruction}\n\n"
-            combined_prompt += f"{prompt}\n\nIMPORTANT: Respond with valid, parseable JSON only. Do not include markdown ticks (```json ... ```) or conversational commentary."
+        # Build list of models to try in priority order
+        models_to_try = []
+        if settings.GEMINI_MODEL and settings.GEMINI_MODEL not in self.CANDIDATE_MODELS:
+            models_to_try.append(settings.GEMINI_MODEL)
+        models_to_try.extend(self.CANDIDATE_MODELS)
 
-            raw_text = ""
-            if self._sdk_type == "genai":
-                response = self._client.models.generate_content(
-                    model=self.model_name,
-                    contents=combined_prompt
+        combined_prompt = ""
+        if system_instruction:
+            combined_prompt += f"System Instruction:\n{system_instruction}\n\n"
+        combined_prompt += f"{prompt}\n\nIMPORTANT: Respond with valid, parseable JSON only. Do NOT include commentary, markdown explanations, or preamble."
+
+        for model_name in models_to_try:
+            try:
+                raw_text = self._call_gemini_model(model_name, combined_prompt)
+                if not raw_text or not raw_text.strip():
+                    continue
+
+                # Strip markdown code fences
+                clean_text = raw_text.strip()
+                clean_text = re.sub(r"^```(?:json)?\s*", "", clean_text, flags=re.MULTILINE)
+                clean_text = re.sub(r"\s*```$", "", clean_text, flags=re.MULTILINE)
+                clean_text = clean_text.strip()
+
+                # Extract JSON block if surrounded by extra conversational text
+                match = re.search(r"(\{.*\}|\[.*\])", clean_text, re.DOTALL)
+                if match:
+                    clean_text = match.group(1).strip()
+
+                parsed = json.loads(clean_text)
+                if isinstance(parsed, (dict, list)):
+                    return parsed
+            except Exception as e:
+                err_str = str(e).lower()
+                if "429" in err_str or "quota" in err_str or "rate limit" in err_str:
+                    logger.warning(f"Gemini model '{model_name}' quota limited (429). Attempting fallback...")
+                elif "404" in err_str or "not found" in err_str:
+                    logger.warning(f"Gemini model '{model_name}' not found (404). Attempting fallback...")
+                else:
+                    logger.warning(f"Gemini model '{model_name}' call failed: {e}")
+                continue
+
+        logger.warning("All Gemini candidate models failed or exhausted quota. Triggering deterministic fallback.")
+        return None
+
+    def _call_gemini_model(self, model_name: str, prompt: str) -> str:
+        # Try google.genai first
+        if self._genai_client:
+            try:
+                resp = self._genai_client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
                 )
-                raw_text = response.text or ""
-            elif self._sdk_type == "legacy":
-                response = self._client.generate_content(combined_prompt)
-                raw_text = response.text or ""
+                if resp and resp.text:
+                    return resp.text
+            except Exception as e:
+                # If new SDK fails, try legacy
+                pass
 
-            # Clean markdown code blocks if model included them
-            clean_text = raw_text.strip()
-            if clean_text.startswith("```"):
-                clean_text = re.sub(r"^```(?:json)?\s*", "", clean_text)
-                clean_text = re.sub(r"\s*```$", "", clean_text)
+        # Try legacy google.generativeai
+        if self._legacy_configured:
+            import google.generativeai as legacy_genai
+            model = legacy_genai.GenerativeModel(model_name)
+            resp = model.generate_content(prompt)
+            if resp and resp.text:
+                return resp.text
 
-            return json.loads(clean_text)
-        except Exception as e:
-            logger.warning(f"LLM generation call failed: {e}")
-            return None
+        return ""
 
 ai_provider = AIProviderService()

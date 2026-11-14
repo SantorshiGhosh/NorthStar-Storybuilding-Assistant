@@ -10,23 +10,23 @@ from app.services.memory_service import memory_service
 
 router = APIRouter(tags=["Entities & Relationships"])
 
-@router.get("/projects/{project_id}/entities", response_model=List[s_models.EntityOut])
+@router.get("/projects/{project_id}/entities")
 def list_entities(
     project_id: str,
     entity_type: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.Entity).filter(models.Entity.project_id == project_id)
-    if entity_type and entity_type != "all":
-        query = query.filter(models.Entity.entity_type.ilike(entity_type.strip()))
-    if search and search.strip():
-        q = f"%{search.strip()}%"
-        query = query.filter(or_(
-            models.Entity.name.ilike(q),
-            models.Entity.description.ilike(q)
-        ))
-    return query.order_by(models.Entity.name.asc()).all()
+    try:
+        return memory_service.get_entities(
+            db=db,
+            project_id=project_id,
+            entity_type=entity_type,
+            search_query=search
+        )
+    except Exception as e:
+        logger.error(f"Error in list_entities: {e}")
+        return []
 
 @router.post("/projects/{project_id}/entities", response_model=s_models.EntityOut)
 def create_entity(project_id: str, data: s_models.EntityCreate, db: Session = Depends(get_db)):
@@ -71,16 +71,19 @@ def update_entity(entity_id: str, data: s_models.EntityUpdate, db: Session = Dep
 
 # --- Relationships Endpoints (Roadmap Section 10) ---
 
-@router.get("/projects/{project_id}/relationships", response_model=List[s_models.RelationshipOut])
+@router.get("/projects/{project_id}/relationships")
 def list_relationships(project_id: str, db: Session = Depends(get_db)):
-    rels = db.query(models.Relationship).filter(models.Relationship.project_id == project_id).all()
-    # Enrich source_name and target_name for clean client presentation
-    for r in rels:
-        if r.source_entity:
-            r.source_name = r.source_entity.name
-        if r.target_entity:
-            r.target_name = r.target_entity.name
-    return rels
+    try:
+        rels = db.query(models.Relationship).filter(models.Relationship.project_id == project_id).all()
+        for r in rels:
+            if getattr(r, "source_entity", None):
+                r.source_name = r.source_entity.name
+            if getattr(r, "target_entity", None):
+                r.target_name = r.target_entity.name
+        return rels
+    except Exception as e:
+        logger.error(f"Error in list_relationships: {e}")
+        return []
 
 @router.post("/projects/{project_id}/relationships", response_model=s_models.RelationshipOut)
 def create_relationship(

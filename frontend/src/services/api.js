@@ -252,13 +252,18 @@ export const chapterService = {
     return res.data;
   },
 
-  analyzeChapter: async (chapterId) => {
-    const res = await api.post(`/chapters/${chapterId}/analyze`);
+  analyzeChapter: async (chapterId, content = null, projectId = null) => {
+    const payload = content ? { content } : {};
+    const res = await api.post(`/chapters/${chapterId}/analyze`, payload);
     invalidateCache('issues:');
     invalidateCache('project:bundle:');
     invalidateCache('projects:list');
     invalidateCache('graph:');
     invalidateCache('entities:');
+    if (projectId) {
+      invalidateCache(`issues:${projectId}`);
+      invalidateCache(`project:bundle:${projectId}`);
+    }
     return res.data;
   },
 };

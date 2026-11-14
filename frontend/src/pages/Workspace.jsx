@@ -132,13 +132,27 @@ export default function Workspace() {
     if (!currentChapter) return;
     try {
       setAnalyzing(true);
-      const res = await chapterService.analyzeChapter(currentChapter.id);
+      const res = await chapterService.analyzeChapter(currentChapter.id, currentChapter.content, projectId);
 
-      // Refresh issues list and project stats
-      const projIssues = await projectService.getIssues(projectId);
-      setIssues(projIssues);
-      const proj = await projectService.getProject(projectId);
-      setProject(proj);
+      // If backend returned the full issues list directly, set state immediately
+      if (res && Array.isArray(res.issues) && res.issues.length > 0) {
+        setIssues(res.issues);
+      }
+
+      // Switch active filter tab to 'all' so author sees all detected issues immediately
+      setIssueFilter('all');
+
+      // Also refresh project issues and stats with forceRefresh
+      try {
+        const projIssues = await projectService.getIssues(projectId, { forceRefresh: true });
+        if (Array.isArray(projIssues) && projIssues.length > 0) {
+          setIssues(projIssues);
+        }
+      } catch (silentErr) {
+        console.warn('Silent issues refresh skipped:', silentErr);
+      }
+
+      projectService.getProject(projectId, { forceRefresh: true }).then(setProject).catch(console.error);
     } catch (err) {
       console.error('Failed to analyze chapter:', err);
     } finally {
@@ -154,15 +168,25 @@ export default function Workspace() {
   };
 
   // Filter issues for current view
-  const currentChapterIssues = issues.filter(
-    (i) => i.chapter_id === selectedChapterId || i.new_chapter_number === currentChapter?.chapter_number
-  );
+  const currentChapterIssues = issues.filter((i) => {
+    const chNum = currentChapter?.chapter_number;
+    return (
+      i.chapter_id === selectedChapterId ||
+      i.new_chapter_number === chNum ||
+      (Array.isArray(i.evidence) && i.evidence.some((ev) => ev.chapter === chNum))
+    );
+  });
 
   const displayedIssues = issues.filter((i) => {
-    if (issueFilter === 'unresolved') return i.status === 'unresolved';
-    if (issueFilter === 'high') return i.severity === 'high';
+    if (issueFilter === 'unresolved') return i.status === 'unresolved' || i.status === 'open';
+    if (issueFilter === 'high') return (i.severity || '').toLowerCase() === 'high';
     if (issueFilter === 'current_chapter') {
-      return i.chapter_id === selectedChapterId || i.new_chapter_number === currentChapter?.chapter_number;
+      const chNum = currentChapter?.chapter_number;
+      return (
+        i.chapter_id === selectedChapterId ||
+        i.new_chapter_number === chNum ||
+        (Array.isArray(i.evidence) && i.evidence.some((ev) => ev.chapter === chNum))
+      );
     }
     return true;
   });
