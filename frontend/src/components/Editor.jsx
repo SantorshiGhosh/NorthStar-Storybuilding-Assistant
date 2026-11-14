@@ -10,7 +10,8 @@ import {
   Quote,
   Save,
   Sparkles,
-  Check
+  Check,
+  Minimize2
 } from 'lucide-react';
 
 export default function Editor({
@@ -18,7 +19,8 @@ export default function Editor({
   chapterTitle,
   onSave,
   onAnalyze,
-  analyzing
+  analyzing,
+  onCollapse
 }) {
   const [savedStatus, setSavedStatus] = useState(false);
 
@@ -160,6 +162,16 @@ export default function Editor({
             <Sparkles className={`w-3.5 h-3.5 ${analyzing ? 'animate-spin' : ''}`} />
             <span>{analyzing ? 'Guardian Analyzing...' : 'Analyze Chapter'}</span>
           </button>
+
+          {onCollapse && (
+            <button
+              onClick={onCollapse}
+              className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200/60 transition-colors ml-1"
+              title="Collapse Editor Panel"
+            >
+              <Minimize2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 

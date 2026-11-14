@@ -5,7 +5,8 @@ import {
   FileText,
   ChevronRight,
   Sparkles,
-  Layers
+  Layers,
+  PanelLeftClose
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -13,7 +14,8 @@ export default function Sidebar({
   selectedChapterId,
   onSelectChapter,
   onAddChapter,
-  projectName
+  projectName,
+  onClose
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -34,7 +36,7 @@ export default function Sidebar({
   const totalWords = (chapters || []).reduce((sum, c) => sum + (c.word_count || 0), 0);
 
   return (
-    <aside className="w-64 h-full bg-white border-r border-neutral-200/80 flex flex-col select-none">
+    <aside className="w-full h-full bg-white border-r border-neutral-200/80 flex flex-col select-none">
       {/* Sidebar Header */}
       <div className="p-3.5 border-b border-neutral-100 flex items-center justify-between">
         <div className="flex items-center space-x-2 text-neutral-800">
@@ -44,13 +46,24 @@ export default function Sidebar({
           </span>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="p-1 rounded-md text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
-          title="Add Chapter"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="p-1 rounded-md text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 transition-colors"
+            title="Add Chapter"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+              title="Collapse Manuscript Sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Chapters Navigation List */}
