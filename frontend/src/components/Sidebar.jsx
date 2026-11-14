@@ -31,7 +31,7 @@ export default function Sidebar({
     setShowAddModal(false);
   };
 
-  const totalWords = chapters.reduce((sum, c) => sum + (c.word_count || 0), 0);
+  const totalWords = (chapters || []).reduce((sum, c) => sum + (c.word_count || 0), 0);
 
   return (
     <aside className="w-64 h-full bg-white border-r border-neutral-200/80 flex flex-col select-none">
@@ -75,7 +75,7 @@ export default function Sidebar({
                 <div className="flex items-center space-x-2.5 truncate">
                   <FileText className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-blue-600' : 'text-neutral-400 group-hover:text-neutral-600'}`} />
                   <span className="text-xs truncate">
-                    Ch {ch.chapter_number}: {ch.title.replace(/^Chapter\s+\d+\s*[:—\-]\s*/i, '')}
+                    Ch {ch.chapter_number}: {ch.title ? ch.title.replace(/^Chapter\s+\d+\s*[:—\-]\s*/i, '') : `Chapter ${ch.chapter_number}`}
                   </span>
                 </div>
 

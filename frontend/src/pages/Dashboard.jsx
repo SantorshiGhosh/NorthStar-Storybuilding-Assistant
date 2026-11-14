@@ -39,7 +39,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const data = await projectService.getProjects();
-      setProjects(data);
+      setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load projects:', err);
     } finally {
@@ -138,7 +138,7 @@ export default function Dashboard() {
             <div className="py-20 text-center text-xs text-neutral-400">
               Loading projects...
             </div>
-          ) : projects.length === 0 ? (
+          ) : (!Array.isArray(projects) || projects.length === 0) ? (
             <div className="bg-white rounded-2xl border border-neutral-200/80 p-12 text-center max-w-md mx-auto shadow-xs">
               <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
                 <FolderOpen className="w-6 h-6" />

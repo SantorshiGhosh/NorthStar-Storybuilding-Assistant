@@ -37,11 +37,12 @@ export default function Workspace() {
       setProject(proj);
 
       const chaps = await chapterService.getChapters(projectId);
-      setChapters(chaps);
+      const safeChaps = Array.isArray(chaps) ? chaps : [];
+      setChapters(safeChaps);
 
-      if (chaps.length > 0) {
+      if (safeChaps.length > 0) {
         // Default to first chapter or keep currently selected
-        const targetId = selectedChapterId || chaps[0].id;
+        const targetId = selectedChapterId || safeChaps[0].id;
         setSelectedChapterId(targetId);
         const chData = await chapterService.getChapter(targetId);
         setCurrentChapter(chData);
@@ -49,7 +50,7 @@ export default function Workspace() {
 
       // Fetch issues for project
       const projIssues = await projectService.getIssues(projectId);
-      setIssues(projIssues);
+      setIssues(Array.isArray(projIssues) ? projIssues : []);
     } catch (err) {
       console.error('Failed to load workspace data:', err);
     } finally {
