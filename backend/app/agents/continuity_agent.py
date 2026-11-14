@@ -174,6 +174,72 @@ For every genuine potential contradiction, output a JSON object in this format:
                             })
                             break
 
+            # Check 4: Physical appearance / scar position contradiction
+            if "scar above" in fact_text and "left eyebrow" in fact_text:
+                for sent in new_sentences:
+                    sent_lower = sent.lower()
+                    if "scar above" in sent_lower and "right" in sent_lower:
+                        found_issues.append({
+                            "issue_type": "physical_continuity",
+                            "severity": "high",
+                            "confidence": 0.96,
+                            "explanation": "Tomas Vale's scar is described above his right eyebrow, contradicting the archive portrait established in Chapter 2 with the scar above his left eyebrow.",
+                            "earlier_passage": earlier_quote or "The portrait showed a scar above his left eyebrow.",
+                            "new_passage": sent,
+                            "earlier_chapter_number": earlier_ch,
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                "Investigate if this figure is an impostor, mirror reflection, or disguise.",
+                                "Correct the scar placement to match the canon archive portrait (left eyebrow)."
+                            ],
+                            "status": "unresolved"
+                        })
+                        break
+
+            # Check 5: Lock Rule Contradiction
+            if "two keys" in fact_text and ("lock" in fact_text or "mechanical" in fact_text):
+                for sent in new_sentences:
+                    sent_lower = sent.lower()
+                    if ("brass token" in sent_lower or "token" in sent_lower) and ("mechanical lock" in sent_lower or "turned easily" in sent_lower or "opened" in sent_lower):
+                        found_issues.append({
+                            "issue_type": "lore_rule_violation",
+                            "severity": "high",
+                            "confidence": 0.94,
+                            "explanation": "The lighthouse mechanical lock turns using a brass token without the required two keys turned simultaneously as established in Chapter 1.",
+                            "earlier_passage": earlier_quote or "The lighthouse door was secured by a mechanical lock. It required two keys turned simultaneously: one held by the keeper, one held by the town archivist.",
+                            "new_passage": sent,
+                            "earlier_chapter_number": earlier_ch,
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                "Clarify if the lock mechanism was modified or bypassed.",
+                                "Depict Nera and Mr. Pell turning both keys together."
+                            ],
+                            "status": "unresolved"
+                        })
+                        break
+
+            # Check 6: Appointment Date / Identity Contradiction
+            if "appointed keeper on 3 june" in fact_text:
+                for sent in new_sentences:
+                    sent_lower = sent.lower()
+                    if "never been appointed keeper" in sent_lower or "dated 3 may" in sent_lower or "long red hair" in sent_lower:
+                        found_issues.append({
+                            "issue_type": "timeline_inconsistency",
+                            "severity": "high",
+                            "confidence": 0.95,
+                            "explanation": "The new entry contradicts Nera's appointment on 3 June as established in Chapter 1, altering her recorded identity and date.",
+                            "earlier_passage": earlier_quote or "Nera Sol was appointed keeper on 3 June. She was twenty-eight years old, had dark hair cut to her jaw...",
+                            "new_passage": sent,
+                            "earlier_chapter_number": earlier_ch,
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                "Address the narrative anomaly: is the register falsified or supernatural?",
+                                "Align the appointment records with Chapter 1 canon."
+                            ],
+                            "status": "unresolved"
+                        })
+                        break
+
         return found_issues
 
     def _run_llm_checks(

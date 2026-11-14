@@ -92,6 +92,8 @@ export default function Dashboard() {
         formattedError = detail.map((d) => (d.msg || (typeof d === 'object' ? JSON.stringify(d) : String(d)))).join(', ');
       } else if (detail && typeof detail === 'object') {
         formattedError = detail.msg || detail.message || JSON.stringify(detail);
+      } else if (err.message === 'Network Error' || !err.response) {
+        formattedError = 'Connection failed: The Render backend service may be spinning up from idle (cold start takes ~50s) or had a temporary connection drop. Please wait a few seconds and try again.';
       } else {
         formattedError = (err.code === 'ECONNABORTED' || err.message?.includes('timeout'))
           ? 'Upload connection timed out while processing. Large manuscripts may still be building memory in the background.'

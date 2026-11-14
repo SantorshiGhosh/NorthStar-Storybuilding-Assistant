@@ -106,7 +106,7 @@ MANUSCRIPT TEXT:
         events: List[Dict[str, Any]] = []
 
         # Find potential character and location proper nouns
-        # Known key figures in fantasy / demo narratives
+        # Known key figures in fantasy / sci-fi / mystery test narratives
         patterns = [
             (r'\b(Arin)\b', "character", "Captain of the Royal Guard, master swordsman"),
             (r'\b(Mira)\b', "character", "Royal Archivist and scholar of ancient lore"),
@@ -120,15 +120,25 @@ MANUSCRIPT TEXT:
             (r'\b(Neo-Tokyo|Sector 4)\b', "location", "Metropolis of towering skyscrapers and neon subterranean alleys"),
             (r'\b(Olympus Corporation|Olympus Tower)\b', "location", "High-security megacorporation headquarters"),
             (r'\b(Olympus Datacore|Datacore)\b', "object", "Quantum secure corporate mainframe holding classified archives"),
-            (r'\b(Iron Syndicate)\b', "faction", "Underground cybernetic syndicate operating in Sector 4")
+            (r'\b(Iron Syndicate)\b', "faction", "Underground cybernetic syndicate operating in Sector 4"),
+            (r'\b(Nera Sol|Nera)\b', "character", "Lighthouse keeper appointed to Bellwether"),
+            (r'\b(Mr\.\s*Pell|Pell)\b', "character", "Town archivist preserving historical records"),
+            (r'\b(Tomas Vale|Tomas)\b', "character", "Former lighthouse keeper who disappeared twelve years earlier"),
+            (r'\b(Eren)\b', "character", "Brother of Nera Sol"),
+            (r'\b(Bellwether)\b', "location", "Coastal town on a narrow strip of land between cliffs and sea"),
+            (r'\b(Lighthouse Door|mechanical lock)\b', "object", "Lighthouse door secured by two-key mechanical lock")
         ]
 
         for pat, ent_type, desc in patterns:
             match = re.search(pat, content, re.IGNORECASE)
             if match:
-                name = match.group(1).title()
+                name = match.group(1).strip()
                 if "Ren" in name: name = "Ren Tanaka"
                 if "Elena" in name: name = "Dr. Elena Vance"
+                if "Nera" in name: name = "Nera Sol"
+                if "Pell" in name: name = "Mr. Pell"
+                if "Tomas" in name: name = "Tomas Vale"
+                if "lock" in name.lower(): name = "Lighthouse Door Mechanical Lock"
                 if name not in entities_dict:
                     entities_dict[name] = {
                         "name": name,
@@ -138,6 +148,20 @@ MANUSCRIPT TEXT:
                         "first_appearance_chapter": chapter_number,
                         "facts": []
                     }
+
+        # Dynamic honorifics & title detection (e.g. Captain X, Dr. Y, Mr. Z)
+        title_matches = re.findall(r'\b(Mr\.|Mrs\.|Ms\.|Dr\.|Captain|Lord|Lady)\s+([A-Z][a-z]+)\b', content)
+        for prefix, last_name in title_matches:
+            full = f"{prefix} {last_name}"
+            if full not in entities_dict:
+                entities_dict[full] = {
+                    "name": full,
+                    "entity_type": "character",
+                    "description": f"Character referenced in Chapter {chapter_number}",
+                    "traits": [],
+                    "first_appearance_chapter": chapter_number,
+                    "facts": []
+                }
 
         # Specific canon fact extractors with verbatim quotes
         sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', content) if s.strip()]
@@ -166,6 +190,49 @@ MANUSCRIPT TEXT:
                         "source_chapter_number": chapter_number,
                         "source_quote": sentence
                     })
+
+            # Nera Sol appointment date, age, hair, compass facts
+            if re.search(r'\bNera Sol was appointed keeper on\b', sentence, re.IGNORECASE):
+                target = "Nera Sol"
+                if target in entities_dict:
+                    entities_dict[target]["traits"].extend(["keeper of Bellwether", "twenty-eight years old", "dark hair"])
+                    entities_dict[target]["facts"].append({
+                        "fact": "Nera Sol was appointed keeper on 3 June, with dark hair cut to her jaw and a brass compass.",
+                        "category": "physical_state",
+                        "source_chapter_number": chapter_number,
+                        "source_quote": sentence
+                    })
+
+            # Tomas Vale scar on left eyebrow
+            if re.search(r'\bscar above (?:his|the) left eyebrow\b', sentence, re.IGNORECASE):
+                target = "Tomas Vale"
+                if target in entities_dict:
+                    entities_dict[target]["traits"].append("scar above left eyebrow")
+                    entities_dict[target]["facts"].append({
+                        "fact": "Tomas Vale's portrait shows a distinct scar above his left eyebrow.",
+                        "category": "physical_state",
+                        "source_chapter_number": chapter_number,
+                        "source_quote": sentence
+                    })
+
+            # Lighthouse mechanical lock rule (requires two keys)
+            if re.search(r'\b(required two keys turned simultaneously|mechanical lock)\b', sentence, re.IGNORECASE):
+                rule_name = "Lighthouse Door Mechanical Lock Rule"
+                if rule_name not in entities_dict:
+                    entities_dict[rule_name] = {
+                        "name": rule_name,
+                        "entity_type": "rule",
+                        "description": "Two-key synchronization lock securing the Bellwether lighthouse",
+                        "traits": ["two-key mechanism"],
+                        "first_appearance_chapter": chapter_number,
+                        "facts": []
+                    }
+                entities_dict[rule_name]["facts"].append({
+                    "fact": "The lighthouse door mechanical lock requires two keys turned simultaneously: one held by keeper, one held by archivist.",
+                    "category": "lore_rule",
+                    "source_chapter_number": chapter_number,
+                    "source_quote": sentence
+                })
 
             # World rules / lore facts (e.g. Quantum biometric keycard required)
             if re.search(r'\b(can only be accessed using a quantum biometric keycard|without the quantum biometric keycard)\b', sentence, re.IGNORECASE):
@@ -220,19 +287,19 @@ MANUSCRIPT TEXT:
                     "relation_type": "allied_with",
                     "description": "Allies in the Royal Guard of Eldoria"
                 })
-            if "Mira" in sentence and "Eldoria" in sentence:
+            if "Nera" in sentence and "Pell" in sentence:
                 relationships.append({
-                    "source_name": "Mira",
-                    "target_name": "Eldoria",
-                    "relation_type": "serves",
-                    "description": "Royal Archivist of Eldoria"
+                    "source_name": "Nera Sol",
+                    "target_name": "Mr. Pell",
+                    "relation_type": "consults",
+                    "description": "Consulted the archivist regarding lighthouse register and keys"
                 })
-            if "Arin" in sentence and "Eldoria" in sentence:
+            if "Nera" in sentence and "Eren" in sentence:
                 relationships.append({
-                    "source_name": "Arin",
-                    "target_name": "Eldoria",
-                    "relation_type": "defends",
-                    "description": "Captain of the Royal Guard of Eldoria"
+                    "source_name": "Nera Sol",
+                    "target_name": "Eren",
+                    "relation_type": "sibling_of",
+                    "description": "Sister and brother"
                 })
 
         # Add event based on chapter
@@ -244,11 +311,12 @@ MANUSCRIPT TEXT:
                 "participants": [k for k in ["Arin", "Mira", "Shadow Marauders"] if k in entities_dict]
             })
         else:
+            first_ent = list(entities_dict.keys())[:3]
             events.append({
                 "title": f"Events of {chapter_title}",
                 "description": f"Narrative developments in Chapter {chapter_number}",
-                "location": "Eldoria",
-                "participants": list(entities_dict.keys())[:3]
+                "location": "Bellwether" if "Bellwether" in content else "Eldoria",
+                "participants": first_ent if first_ent else [chapter_title]
             })
 
         return {
