@@ -1,13 +1,34 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
-import Workspace from './pages/Workspace';
-import KnowledgeGraph from './pages/KnowledgeGraph';
-import ContinuityReport from './pages/ContinuityReport';
-import CharacterProfiles from './pages/CharacterProfiles';
-import Timeline from './pages/Timeline';
+
+// Route-level code splitting for heavy interactive workspaces
+const Workspace = lazy(() => import('./pages/Workspace'));
+const KnowledgeGraph = lazy(() => import('./pages/KnowledgeGraph'));
+const ContinuityReport = lazy(() => import('./pages/ContinuityReport'));
+const CharacterProfiles = lazy(() => import('./pages/CharacterProfiles'));
+const Timeline = lazy(() => import('./pages/Timeline'));
+
+function PageSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#fbfbf9] flex flex-col animate-pulse">
+      <div className="h-14 bg-white border-b border-neutral-200/80 px-6 flex items-center justify-between">
+        <div className="w-36 h-4 bg-neutral-200 rounded-md" />
+        <div className="w-24 h-4 bg-neutral-100 rounded-md" />
+      </div>
+      <div className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+        <div className="w-48 h-6 bg-neutral-200 rounded-md" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="h-44 bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs" />
+          <div className="h-44 bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs" />
+          <div className="h-44 bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -58,20 +79,28 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
+  // Cold-start backend warmup on initial load
+  useEffect(() => {
+    const API_BASE = import.meta.env.VITE_API_URL || '/api';
+    fetch(`${API_BASE}/health`, { mode: 'cors' }).catch(() => {});
+  }, []);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/workspace/:projectId" element={<Workspace />} />
-          <Route path="/graph/:projectId" element={<KnowledgeGraph />} />
-          <Route path="/continuity/:projectId" element={<ContinuityReport />} />
-          <Route path="/characters/:projectId" element={<CharacterProfiles />} />
-          <Route path="/timeline/:projectId" element={<Timeline />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<PageSkeleton />}>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/workspace/:projectId" element={<Workspace />} />
+            <Route path="/graph/:projectId" element={<KnowledgeGraph />} />
+            <Route path="/continuity/:projectId" element={<ContinuityReport />} />
+            <Route path="/characters/:projectId" element={<CharacterProfiles />} />
+            <Route path="/timeline/:projectId" element={<Timeline />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ErrorBoundary>
   );

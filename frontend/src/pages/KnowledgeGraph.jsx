@@ -26,7 +26,7 @@ import {
   Plus
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import { projectService, entityService } from '../services/api';
+import { projectService, entityService, getCached } from '../services/api';
 
 // Custom React Flow Node Card
 function CustomEntityNode({ data, selected }) {
@@ -97,11 +97,16 @@ export default function KnowledgeGraph() {
   const { projectId } = useParams();
   const navigate = useNavigate();
 
-  const [project, setProject] = useState(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [allNodes, setAllNodes] = useState([]);
-  const [rawEntities, setRawEntities] = useState([]);
+  const cachedGraph = getCached(`graph:${projectId}`);
+  const cachedProj = getCached(`project:${projectId}`);
+  const cachedEnts = getCached(`entities:${projectId}:{}`);
+
+  const [project, setProject] = useState(() => cachedProj || null);
+  const [nodes, setNodes, onNodesChange] = useNodesState(() => cachedGraph?.nodes || []);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(() => cachedGraph?.edges || []);
+  const [allNodes, setAllNodes] = useState(() => cachedGraph?.nodes || []);
+  const [rawEntities, setRawEntities] = useState(() => cachedEnts || []);
+  const [loading, setLoading] = useState(() => !cachedGraph);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,21 +123,25 @@ export default function KnowledgeGraph() {
   const [editTraitsStr, setEditTraitsStr] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Load Graph Data
+  // Load Graph Data in parallel
   const loadGraph = async () => {
     try {
-      const proj = await projectService.getProject(projectId);
-      setProject(proj);
+      if (!cachedGraph) setLoading(true);
+      const [proj, graphData, ents] = await Promise.all([
+        projectService.getProject(projectId),
+        projectService.getGraph(projectId),
+        entityService.getEntities(projectId)
+      ]);
 
-      const graphData = await projectService.getGraph(projectId);
+      setProject(proj);
       setNodes(graphData.nodes || []);
       setAllNodes(graphData.nodes || []);
       setEdges(graphData.edges || []);
-
-      const ents = await entityService.getEntities(projectId);
       setRawEntities(ents);
     } catch (err) {
       console.error('Failed to load graph:', err);
+    } finally {
+      setLoading(false);
     }
   };
 

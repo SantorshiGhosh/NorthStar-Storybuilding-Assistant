@@ -238,3 +238,11 @@ class AnalyzeChapterResponse(BaseModel):
     @field_serializer('chapter_id', check_fields=False)
     def serialize_id(self, v: Any, _info):
         return str(v) if v is not None else None
+
+# --- Bundle ---
+class ProjectBundleOut(BaseModel):
+    project: ProjectOut
+    chapters: List[ChapterOut] = []
+    issues: List[ContinuityIssueOut] = []
+    entities_count: int = 0
+

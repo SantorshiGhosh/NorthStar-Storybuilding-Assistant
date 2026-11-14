@@ -18,6 +18,12 @@ export default function IssueCard({ issue, onStatusUpdate }) {
   const [authorNotes, setAuthorNotes] = useState(issue.author_notes || '');
 
   const handleUpdateStatus = async (newStatus) => {
+    const originalIssue = { ...issue };
+    // Optimistic UI update: instantly update status in UI
+    if (onStatusUpdate) {
+      onStatusUpdate({ ...issue, status: newStatus, author_notes: authorNotes });
+    }
+
     try {
       setLoading(true);
       const res = await continuityService.updateIssue(issue.id, {
@@ -27,6 +33,8 @@ export default function IssueCard({ issue, onStatusUpdate }) {
       if (onStatusUpdate) onStatusUpdate(res);
     } catch (err) {
       console.error('Failed to update issue status:', err);
+      // Rollback on failure
+      if (onStatusUpdate) onStatusUpdate(originalIssue);
     } finally {
       setLoading(false);
     }

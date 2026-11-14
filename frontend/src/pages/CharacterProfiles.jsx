@@ -12,15 +12,19 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CharacterCard from '../components/CharacterCard';
-import { projectService, entityService } from '../services/api';
+import { projectService, entityService, getCached } from '../services/api';
 
 export default function CharacterProfiles() {
   const { projectId } = useParams();
 
-  const [project, setProject] = useState(null);
-  const [characters, setCharacters] = useState([]);
-  const [selectedCharacter, setSelectedCharacter] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cachedProj = getCached(`project:${projectId}`);
+  const cachedEntities = getCached(`entities:${projectId}:{}`) || getCached(`entities:${projectId}`);
+  const initialChars = cachedEntities ? cachedEntities.filter((e) => e.entity_type === 'character') : [];
+
+  const [project, setProject] = useState(() => cachedProj || null);
+  const [characters, setCharacters] = useState(() => initialChars);
+  const [selectedCharacter, setSelectedCharacter] = useState(() => initialChars[0] || null);
+  const [loading, setLoading] = useState(() => !cachedEntities);
   const [search, setSearch] = useState('');
 
   // Edit Modal
@@ -30,19 +34,21 @@ export default function CharacterProfiles() {
   const [editTraits, setEditTraits] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (showLoading = !initialChars.length) => {
     try {
-      setLoading(true);
-      const proj = await projectService.getProject(projectId);
+      if (showLoading) setLoading(true);
+      const [proj, ents] = await Promise.all([
+        projectService.getProject(projectId),
+        entityService.getEntities(projectId)
+      ]);
       setProject(proj);
 
-      const ents = await entityService.getEntities(projectId);
       // Filter for characters
       const chars = ents.filter((e) => e.entity_type === 'character');
       setCharacters(chars);
 
       if (chars.length > 0 && !selectedCharacter) {
-        setSelectedCharacter(chars[0]);
+        setSelectedCharacter((prev) => prev || chars[0]);
       }
     } catch (err) {
       console.error('Failed to load characters:', err);
@@ -53,7 +59,7 @@ export default function CharacterProfiles() {
 
   useEffect(() => {
     if (projectId) {
-      loadData();
+      loadData(!cachedEntities);
     }
   }, [projectId]);
 
@@ -132,8 +138,20 @@ export default function CharacterProfiles() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6 flex-1 text-left">
           {/* Left: Characters Roster Grid */}
           <div className="lg:col-span-1 space-y-3 overflow-y-auto max-h-[750px] pr-1">
-            {loading ? (
-              <div className="py-20 text-center text-xs text-neutral-400">Loading characters...</div>
+            {loading && characters.length === 0 ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((n) => (
+                  <div key={n} className="p-4 rounded-xl border border-neutral-200/80 bg-white animate-pulse">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-lg bg-neutral-200 shrink-0" />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="h-4 w-28 bg-neutral-200 rounded" />
+                        <div className="h-3 w-40 bg-neutral-100 rounded" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : filtered.length === 0 ? (
               <div className="bg-white rounded-xl border border-neutral-200 p-8 text-center text-xs text-neutral-400">
                 No character profiles found.
@@ -167,7 +185,19 @@ export default function CharacterProfiles() {
 
           {/* Right: Selected Character Detailed Dossier */}
           <div className="lg:col-span-2">
-            {selectedCharacter ? (
+            {loading && characters.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-neutral-200/80 p-8 shadow-xs space-y-6 animate-pulse">
+                <div className="flex items-center space-x-4 pb-6 border-b border-neutral-100">
+                  <div className="w-14 h-14 rounded-2xl bg-neutral-200" />
+                  <div className="space-y-2">
+                    <div className="h-6 w-48 bg-neutral-200 rounded" />
+                    <div className="h-4 w-32 bg-neutral-100 rounded" />
+                  </div>
+                </div>
+                <div className="h-24 bg-neutral-100 rounded-xl" />
+                <div className="h-32 bg-neutral-100 rounded-xl" />
+              </div>
+            ) : selectedCharacter ? (
               <div className="bg-white rounded-2xl border border-neutral-200/80 p-6 sm:p-8 shadow-xs space-y-6">
                 {/* Dossier Top Bar */}
                 <div className="flex flex-wrap items-start justify-between gap-4 pb-6 border-b border-neutral-100">

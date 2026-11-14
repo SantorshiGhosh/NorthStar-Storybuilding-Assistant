@@ -16,5 +16,28 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@tiptap')) {
+              return 'vendor-editor';
+            }
+            if (id.includes('reactflow')) {
+              return 'vendor-graph';
+            }
+            if (id.includes('lucide-react') || id.includes('axios')) {
+              return 'vendor-ui';
+            }
+          }
+        }
+      }
+    }
   }
 })

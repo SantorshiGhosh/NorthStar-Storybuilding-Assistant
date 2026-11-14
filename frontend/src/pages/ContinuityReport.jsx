@@ -13,26 +13,30 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import IssueCard from '../components/IssueCard';
-import { projectService } from '../services/api';
+import { projectService, getCached } from '../services/api';
 
 export default function ContinuityReport() {
   const { projectId } = useParams();
 
-  const [project, setProject] = useState(null);
-  const [issues, setIssues] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cachedProj = getCached(`project:${projectId}`);
+  const cachedIssues = getCached(`issues:${projectId}:{}`) || getCached(`issues:${projectId}`);
+
+  const [project, setProject] = useState(() => cachedProj || null);
+  const [issues, setIssues] = useState(() => cachedIssues || []);
+  const [loading, setLoading] = useState(() => !cachedIssues);
 
   // Filters
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const loadIssues = async () => {
+  const loadIssues = async (showLoading = !issues.length) => {
     try {
-      setLoading(true);
-      const proj = await projectService.getProject(projectId);
+      if (showLoading) setLoading(true);
+      const [proj, allIssues] = await Promise.all([
+        projectService.getProject(projectId),
+        projectService.getIssues(projectId)
+      ]);
       setProject(proj);
-
-      const allIssues = await projectService.getIssues(projectId);
       setIssues(allIssues);
     } catch (err) {
       console.error('Failed to load continuity issues:', err);
@@ -43,7 +47,7 @@ export default function ContinuityReport() {
 
   useEffect(() => {
     if (projectId) {
-      loadIssues();
+      loadIssues(!cachedIssues);
     }
   }, [projectId]);
 
@@ -179,9 +183,31 @@ export default function ContinuityReport() {
         </div>
 
         {/* Issues List */}
-        {loading ? (
-          <div className="py-20 text-center text-xs text-neutral-400">
-            Scanning narrative memory...
+        {loading && issues.length === 0 ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs animate-pulse">
+                <div className="flex items-center justify-between pb-3 border-b border-neutral-100 mb-4">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="h-5 w-24 bg-neutral-200 rounded-full" />
+                    <div className="h-4 w-32 bg-neutral-200 rounded" />
+                  </div>
+                  <div className="h-5 w-16 bg-neutral-200 rounded" />
+                </div>
+                <div className="h-4 w-3/4 bg-neutral-200 rounded mb-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  <div className="h-20 bg-neutral-100 rounded-lg" />
+                  <div className="h-20 bg-neutral-100 rounded-lg" />
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
+                  <div className="h-7 w-40 bg-neutral-200 rounded-lg" />
+                  <div className="flex space-x-2">
+                    <div className="h-7 w-20 bg-neutral-200 rounded-lg" />
+                    <div className="h-7 w-20 bg-neutral-200 rounded-lg" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredIssues.length === 0 ? (
           <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center text-neutral-400 text-xs">

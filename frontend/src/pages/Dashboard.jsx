@@ -15,12 +15,12 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import { projectService } from '../services/api';
+import { projectService, getCached, prefetchProjectWorkspace } from '../services/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState(() => getCached('projects:list') || []);
+  const [loading, setLoading] = useState(() => !getCached('projects:list'));
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -37,7 +37,7 @@ export default function Dashboard() {
 
   const fetchProjects = async () => {
     try {
-      setLoading(true);
+      if (projects.length === 0) setLoading(true);
       const data = await projectService.getProjects();
       setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -127,11 +127,14 @@ export default function Dashboard() {
   const handleDeleteProject = async (id, e) => {
     e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this project and its story memory?')) return;
+    const prev = [...projects];
+    // Optimistic delete: remove from UI immediately
+    setProjects(projects.filter((p) => p.id !== id));
     try {
       await projectService.deleteProject(id);
-      fetchProjects();
     } catch (err) {
       console.error('Failed to delete project:', err);
+      setProjects(prev); // Rollback on error
     }
   };
 
@@ -174,9 +177,28 @@ export default function Dashboard() {
 
         {/* Projects Grid */}
         <div className="mt-8">
-          {loading ? (
-            <div className="py-20 text-center text-xs text-neutral-400">
-              Loading projects...
+          {loading && (!Array.isArray(projects) || projects.length === 0) ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs animate-pulse space-y-4 text-left">
+                  <div className="flex items-start justify-between">
+                    <div className="h-5 bg-neutral-200 rounded-md w-2/3" />
+                    <div className="h-4 bg-neutral-100 rounded-md w-6" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-neutral-100 rounded-md w-full" />
+                    <div className="h-3 bg-neutral-100 rounded-md w-4/5" />
+                  </div>
+                  <div className="pt-4 border-t border-neutral-100 flex items-center justify-between">
+                    <div className="h-3.5 bg-neutral-200 rounded-md w-24" />
+                    <div className="h-4 bg-neutral-100 rounded-full w-20" />
+                  </div>
+                  <div className="pt-3 border-t border-neutral-50 flex items-center justify-between">
+                    <div className="h-3 bg-neutral-100 rounded-md w-28" />
+                    <div className="h-3 bg-blue-100 rounded-md w-24" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (!Array.isArray(projects) || projects.length === 0) ? (
             <div className="bg-white rounded-2xl border border-neutral-200/80 p-12 text-center max-w-md mx-auto shadow-xs">
@@ -203,6 +225,7 @@ export default function Dashboard() {
               {projects.map((proj) => (
                 <div
                   key={proj.id}
+                  onMouseEnter={() => prefetchProjectWorkspace(proj.id)}
                   onClick={() => navigate(`/workspace/${proj.id}`)}
                   className="bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs hover:border-neutral-300 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between text-left group"
                 >

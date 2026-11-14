@@ -36,6 +36,9 @@ for default_origin in [
 if "*" not in origins:
     origins.append("*")
 
+from fastapi.middleware.gzip import GZipMiddleware
+
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -72,7 +75,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 def health_check():
     return {
-        "status": "online",
+        "status": "ok",
         "service": "Living Story Bible — AI Continuity Guardian",
         "environment": settings.ENVIRONMENT,
         "database": "connected"

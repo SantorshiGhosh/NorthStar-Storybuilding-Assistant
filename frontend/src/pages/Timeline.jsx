@@ -10,18 +10,23 @@ import {
   ChevronRight
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import { projectService } from '../services/api';
+import { projectService, getCached } from '../services/api';
 
 export default function Timeline() {
   const { projectId } = useParams();
 
-  const [project, setProject] = useState(null);
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cachedProj = getCached(`project:${projectId}`);
+  const cachedEvents = getCached(`timeline:${projectId}`);
+
+  const [project, setProject] = useState(() => cachedProj || null);
+  const [events, setEvents] = useState(() => cachedEvents || []);
+  const [loading, setLoading] = useState(() => !cachedEvents);
 
   useEffect(() => {
     if (projectId) {
-      projectService.getProject(projectId).then(setProject).catch(console.error);
+      if (!cachedProj) {
+        projectService.getProject(projectId).then(setProject).catch(console.error);
+      }
       projectService
         .getTimeline(projectId)
         .then(setEvents)
@@ -50,9 +55,19 @@ export default function Timeline() {
         </div>
 
         {/* Timeline Sequence */}
-        {loading ? (
-          <div className="py-20 text-center text-xs text-neutral-400">
-            Reconstructing chronology...
+        {loading && events.length === 0 ? (
+          <div className="relative border-l-2 border-neutral-200 ml-4 sm:ml-8 space-y-8 text-left pb-12 animate-pulse">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="relative pl-6 sm:pl-8">
+                <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-neutral-200" />
+                <div className="bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs space-y-3">
+                  <div className="h-5 w-20 bg-neutral-200 rounded" />
+                  <div className="h-5 w-48 bg-neutral-200 rounded" />
+                  <div className="h-4 w-full bg-neutral-100 rounded" />
+                  <div className="h-4 w-32 bg-neutral-100 rounded" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : events.length === 0 ? (
           <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center text-xs text-neutral-400">

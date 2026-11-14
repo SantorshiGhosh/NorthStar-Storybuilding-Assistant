@@ -43,29 +43,65 @@ def create_project(data: s_models.ProjectCreate, db: Session = Depends(get_db)):
 
 @router.get("/projects", response_model=List[s_models.ProjectOut])
 def list_projects(db: Session = Depends(get_db)):
+    from sqlalchemy import func
     projects = db.query(models.Project).order_by(models.Project.updated_at.desc()).all()
+    if not projects:
+        return []
+
+    proj_ids = [p.id for p in projects]
+
+    # Batch 1: chapter counts grouped by project_id
+    ch_rows = (
+        db.query(models.Chapter.project_id, func.count(models.Chapter.id))
+        .filter(models.Chapter.project_id.in_(proj_ids))
+        .group_by(models.Chapter.project_id)
+        .all()
+    )
+    ch_counts = {str(r[0]): r[1] for r in ch_rows}
+
+    # Batch 2: character counts grouped by project_id
+    char_rows = (
+        db.query(models.Entity.project_id, func.count(models.Entity.id))
+        .filter(models.Entity.project_id.in_(proj_ids), models.Entity.entity_type == "character")
+        .group_by(models.Entity.project_id)
+        .all()
+    )
+    char_counts = {str(r[0]): r[1] for r in char_rows}
+
+    # Batch 3: unresolved issues grouped by project_id
+    issue_rows = (
+        db.query(models.ContinuityIssue.project_id, func.count(models.ContinuityIssue.id))
+        .filter(models.ContinuityIssue.project_id.in_(proj_ids), models.ContinuityIssue.status.in_(["unresolved", "open"]))
+        .group_by(models.ContinuityIssue.project_id)
+        .all()
+    )
+    issue_counts = {str(r[0]): r[1] for r in issue_rows}
+
+    # Batch 4: latest manuscript per project
+    manuscripts = (
+        db.query(models.Manuscript)
+        .filter(models.Manuscript.project_id.in_(proj_ids))
+        .order_by(models.Manuscript.created_at.desc())
+        .all()
+    )
+    manu_by_proj = {}
+    for m in manuscripts:
+        pid_str = str(m.project_id)
+        if pid_str not in manu_by_proj:
+            manu_by_proj[pid_str] = m.filename
+
     out = []
     for p in projects:
-        ch_count = db.query(models.Chapter).filter(models.Chapter.project_id == p.id).count()
-        char_count = db.query(models.Entity).filter(
-            models.Entity.project_id == p.id,
-            models.Entity.entity_type == "character"
-        ).count()
-        issues_count = db.query(models.ContinuityIssue).filter(
-            models.ContinuityIssue.project_id == p.id,
-            models.ContinuityIssue.status.in_(["unresolved", "open"])
-        ).count()
-        manu = db.query(models.Manuscript).filter(models.Manuscript.project_id == p.id).first()
-
+        pid = str(p.id)
         out.append(s_models.ProjectOut(
             id=p.id,
             user_id=p.user_id,
             name=p.name,
             description=p.description,
-            chapter_count=ch_count,
-            character_count=char_count,
-            unresolved_issues_count=issues_count,
-            manuscript_title=manu.filename if manu else None,
+            chapter_count=ch_counts.get(pid, 0),
+            character_count=char_counts.get(pid, 0),
+            unresolved_issues_count=issue_counts.get(pid, 0),
+            manuscript_title=manu_by_proj.get(pid),
             created_at=p.created_at,
             updated_at=p.updated_at
         ))
@@ -99,6 +135,53 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
         manuscript_title=manu.filename if manu else None,
         created_at=p.created_at,
         updated_at=p.updated_at
+    )
+
+@router.get("/projects/{project_id}/bundle", response_model=s_models.ProjectBundleOut)
+def get_project_bundle(project_id: str, db: Session = Depends(get_db)):
+    """
+    Combined fast endpoint: Fetches project metadata, chapters, continuity issues,
+    and entity counts in a single network roundtrip.
+    """
+    p = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    chapters = db.query(models.Chapter).filter(
+        models.Chapter.project_id == project_id
+    ).order_by(models.Chapter.chapter_number.asc()).all()
+
+    issues = db.query(models.ContinuityIssue).filter(
+        models.ContinuityIssue.project_id == project_id
+    ).order_by(models.ContinuityIssue.created_at.desc()).all()
+
+    entities_count = db.query(models.Entity).filter(models.Entity.project_id == project_id).count()
+    char_count = db.query(models.Entity).filter(
+        models.Entity.project_id == project_id,
+        models.Entity.entity_type == "character"
+    ).count()
+
+    unresolved_issues_count = sum(1 for i in issues if i.status in ["unresolved", "open"])
+    manu = db.query(models.Manuscript).filter(models.Manuscript.project_id == project_id).first()
+
+    project_out = s_models.ProjectOut(
+        id=p.id,
+        user_id=p.user_id,
+        name=p.name,
+        description=p.description,
+        chapter_count=len(chapters),
+        character_count=char_count,
+        unresolved_issues_count=unresolved_issues_count,
+        manuscript_title=manu.filename if manu else None,
+        created_at=p.created_at,
+        updated_at=p.updated_at
+    )
+
+    return s_models.ProjectBundleOut(
+        project=project_out,
+        chapters=chapters,
+        issues=issues,
+        entities_count=entities_count
     )
 
 @router.delete("/projects/{project_id}")
