@@ -85,10 +85,19 @@ export default function Dashboard() {
     } catch (err) {
       console.error('Upload manuscript error:', err);
       const detail = err.response?.data?.detail;
-      const fallback = (err.code === 'ECONNABORTED' || err.message?.includes('timeout'))
-        ? 'Upload connection timed out while processing. Large manuscripts may still be building memory in the background.'
-        : (err.message || 'Failed to upload manuscript. Ensure it is DOCX, TXT, MD, or PDF.');
-      setUploadError(detail || fallback);
+      let formattedError = '';
+      if (typeof detail === 'string') {
+        formattedError = detail;
+      } else if (Array.isArray(detail)) {
+        formattedError = detail.map((d) => (d.msg || (typeof d === 'object' ? JSON.stringify(d) : String(d)))).join(', ');
+      } else if (detail && typeof detail === 'object') {
+        formattedError = detail.msg || detail.message || JSON.stringify(detail);
+      } else {
+        formattedError = (err.code === 'ECONNABORTED' || err.message?.includes('timeout'))
+          ? 'Upload connection timed out while processing. Large manuscripts may still be building memory in the background.'
+          : (err.message || 'Failed to upload manuscript. Ensure it is DOCX, TXT, MD, or PDF.');
+      }
+      setUploadError(formattedError);
     } finally {
       setUploading(false);
     }

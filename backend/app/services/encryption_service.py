@@ -40,7 +40,9 @@ class EncryptionService:
         """
         Encrypts content and saves it to private vault storage.
         """
-        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        dir_name = os.path.dirname(target_path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
         encrypted_payload = self.encrypt_bytes(content_bytes)
         with open(target_path, "wb") as f:
             f.write(encrypted_payload)

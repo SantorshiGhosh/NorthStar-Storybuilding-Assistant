@@ -6,9 +6,6 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 120000, // 2-minute safety window for manuscript indexing
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 export const projectService = {
@@ -31,7 +28,11 @@ export const projectService = {
   uploadManuscript: async (projectId, file) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await api.post(`/projects/${projectId}/upload`, formData);
+    const res = await api.post(`/projects/${projectId}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return res.data;
   },
   getGraph: async (projectId) => {
