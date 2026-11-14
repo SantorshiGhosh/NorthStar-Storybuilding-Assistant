@@ -13,6 +13,7 @@ import {
   Layers,
   Feather
 } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 import { projectService } from '../services/api';
 
 export default function Landing() {
@@ -51,6 +52,7 @@ export default function Landing() {
           </div>
 
           <div className="flex items-center space-x-3">
+            <ThemeToggle />
             <Link
               to="/auth"
               className="text-xs font-medium text-neutral-600 hover:text-neutral-900 px-3 py-1.5 transition-colors"

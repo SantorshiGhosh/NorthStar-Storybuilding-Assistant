@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   FolderOpen
 } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 import { projectService } from '../services/api';
 
 export default function Navbar({ currentProject, onProjectChange }) {
@@ -104,6 +105,8 @@ export default function Navbar({ currentProject, onProjectChange }) {
 
         {/* Right Action buttons */}
         <div className="flex items-center space-x-2.5">
+          <ThemeToggle />
+
           <button
             onClick={handleSeedDemo}
             disabled={seeding}

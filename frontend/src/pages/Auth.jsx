@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, ArrowRight, Lock, Mail, Key } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -21,7 +22,10 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbfbf9] flex flex-col items-center justify-center p-4 selection:bg-blue-100">
+    <div className="min-h-screen bg-[#fbfbf9] flex flex-col items-center justify-center p-4 selection:bg-blue-100 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm text-left">
         {/* Brand */}
         <div className="text-center mb-8">

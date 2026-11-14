@@ -1,5 +1,14 @@
+
 import React, { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+
+import React from 'react';
+
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+
+
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
@@ -37,7 +46,7 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return { hasError: true, error }
   }
 
   componentDidCatch(error, errorInfo) {
@@ -86,7 +95,11 @@ export default function App() {
   }, []);
 
   return (
-    <ErrorBoundary>
+
+<ThemeProvider>
+  <ErrorBoundary>
+   
+
       <BrowserRouter>
         <Suspense fallback={<PageSkeleton />}>
           <Routes>
@@ -102,6 +115,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </BrowserRouter>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 }
