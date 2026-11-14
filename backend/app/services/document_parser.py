@@ -1,6 +1,6 @@
 import re
 import io
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 import docx
 import pymupdf
 
@@ -102,6 +102,27 @@ class DocumentParser:
         return chapters
 
     @staticmethod
+    def validate_file(filename: str, file_bytes: bytes, max_size_mb: int = 25) -> Tuple[bool, Optional[str], str]:
+        """
+        Validates file extension, non-empty content, and max size.
+        """
+        if not filename:
+            return False, "Filename cannot be empty", ""
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        allowed = {"docx", "pdf", "txt", "md", "markdown"}
+        if ext not in allowed:
+            return False, f"Unsupported file extension '.{ext}'. Allowed types: .docx, .pdf, .txt, .md", ext
+        
+        max_bytes = max_size_mb * 1024 * 1024
+        if len(file_bytes) > max_bytes:
+            return False, f"File size exceeds {max_size_mb}MB limit ({len(file_bytes) / (1024*1024):.1f}MB)", ext
+        
+        if len(file_bytes) == 0:
+            return False, "File is empty", ext
+
+        return True, None, ext
+
+    @staticmethod
     def chunk_into_passages(chapter_content: str, max_chars: int = 500) -> List[Dict[str, Any]]:
         """
         Segments chapter content into discrete passages for fine-grained citation and vector search.
@@ -123,3 +144,4 @@ class DocumentParser:
         return passages
 
 document_parser = DocumentParser()
+

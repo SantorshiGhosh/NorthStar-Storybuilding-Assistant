@@ -19,13 +19,16 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"
 
-    # Supabase (Optional)
+    # Supabase (Optional for local mode, required for Supabase cloud sync)
     SUPABASE_URL: str = ""
     SUPABASE_ANON_KEY: str = ""
+    SUPABASE_KEY: str = ""  # alias for SUPABASE_ANON_KEY
     SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""
     SUPABASE_STORAGE_BUCKET: str = "manuscripts"
 
     # Encryption (AES-256-GCM 32-byte hex key)
+    ENCRYPTION_KEY: str = ""
     VAULT_ENCRYPTION_KEY: str = "5f1d7a8e9b0c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
 
     # Vector Storage
@@ -39,6 +42,12 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 settings = Settings()
+
+if settings.ENCRYPTION_KEY:
+    settings.VAULT_ENCRYPTION_KEY = settings.ENCRYPTION_KEY
+
+if settings.SUPABASE_KEY and not settings.SUPABASE_ANON_KEY:
+    settings.SUPABASE_ANON_KEY = settings.SUPABASE_KEY
 
 # Ensure directories exist
 os.makedirs(settings.CHROMA_PERSIST_DIRECTORY, exist_ok=True)

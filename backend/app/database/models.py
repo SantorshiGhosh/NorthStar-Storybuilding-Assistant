@@ -37,6 +37,7 @@ class Manuscript(Base):
     file_size = Column(Integer, default=0)
     storage_path = Column(Text, nullable=True)
     encrypted = Column(Boolean, default=True)
+    is_encrypted = Column(Boolean, default=True)
     status = Column(String(50), default="processed")  # uploaded, processing, processed, error
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -85,10 +86,11 @@ class Entity(Base):
     id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
     project_id = Column(Uuid(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
-    entity_type = Column(String(50), nullable=False)  # character, location, object, rule, faction
+    entity_type = Column(String(50), nullable=False)  # character, location, object, rule, event, faction
     description = Column(Text, nullable=True)
     traits = Column(JSON, default=list)  # list of strings
     first_appearance_chapter = Column(Integer, default=1)
+    first_appearance_chapter_id = Column(Uuid(as_uuid=False), ForeignKey("chapters.id", ondelete="SET NULL"), nullable=True)
     meta_info = Column("metadata", JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -107,6 +109,7 @@ class Relationship(Base):
     relation_type = Column(String(100), nullable=False)  # allied_with, visited, located_in, opposes
     description = Column(Text, nullable=True)
     source_chapter_id = Column(Uuid(as_uuid=False), nullable=True)
+    source_quote = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="relationships")
@@ -122,6 +125,7 @@ class StoryFact(Base):
     entity_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="CASCADE"), nullable=True)
     fact = Column(Text, nullable=False)
     category = Column(String(50), default="general")  # physical_state, lore_rule, location, status, event
+    fact_category = Column(String(50), default="general")  # status, physical, location, date, rule
     source_chapter_id = Column(Uuid(as_uuid=False), nullable=True)
     source_chapter_number = Column(Integer, nullable=True)
     source_quote = Column(Text, nullable=False)
@@ -158,15 +162,17 @@ class ContinuityIssue(Base):
     project_id = Column(Uuid(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     chapter_id = Column(Uuid(as_uuid=False), ForeignKey("chapters.id", ondelete="CASCADE"), nullable=True)
     issue_type = Column(String(100), nullable=False)  # physical_continuity, lore_rule_violation, location_conflict, death_continuity
+    classification = Column(String(50), default="likely_conflict")  # likely_conflict, possible_conflict, intentional_or_explainable, insufficient_evidence
     severity = Column(String(50), default="high")  # high, medium, low
     confidence = Column(Float, default=0.90)
     explanation = Column(Text, nullable=False)
+    evidence = Column(JSON, default=list)  # array of {chapter, chapter_id, quote}
     earlier_passage = Column(Text, nullable=True)
     new_passage = Column(Text, nullable=True)
     earlier_chapter_number = Column(Integer, nullable=True)
     new_chapter_number = Column(Integer, nullable=True)
     suggestions = Column(JSON, default=list)  # list of suggested author actions
-    status = Column(String(50), default="unresolved")  # unresolved, resolved, intentional, dismissed, review_later
+    status = Column(String(50), default="unresolved")  # open, unresolved, resolved, intentional, dismissed, review_later
     author_notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

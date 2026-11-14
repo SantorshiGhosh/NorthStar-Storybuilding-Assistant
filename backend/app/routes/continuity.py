@@ -17,7 +17,7 @@ def update_issue_status(
     if not issue:
         raise HTTPException(status_code=404, detail="Continuity issue not found")
 
-    allowed_statuses = {"unresolved", "resolved", "intentional", "dismissed", "review_later"}
+    allowed_statuses = {"open", "unresolved", "resolved", "intentional", "dismissed", "review_later"}
     if data.status.lower() not in allowed_statuses:
         raise HTTPException(
             status_code=400,

@@ -53,7 +53,7 @@ def list_projects(db: Session = Depends(get_db)):
         ).count()
         issues_count = db.query(models.ContinuityIssue).filter(
             models.ContinuityIssue.project_id == p.id,
-            models.ContinuityIssue.status == "unresolved"
+            models.ContinuityIssue.status.in_(["unresolved", "open"])
         ).count()
         manu = db.query(models.Manuscript).filter(models.Manuscript.project_id == p.id).first()
 
@@ -84,7 +84,7 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
     ).count()
     issues_count = db.query(models.ContinuityIssue).filter(
         models.ContinuityIssue.project_id == p.id,
-        models.ContinuityIssue.status == "unresolved"
+        models.ContinuityIssue.status.in_(["unresolved", "open"])
     ).count()
     manu = db.query(models.Manuscript).filter(models.Manuscript.project_id == p.id).first()
 
@@ -138,10 +138,14 @@ def get_project_issues(
 ):
     query = db.query(models.ContinuityIssue).filter(models.ContinuityIssue.project_id == project_id)
     if status and status != "all":
-        query = query.filter(models.ContinuityIssue.status == status)
+        s = status.lower().strip()
+        if s in ["open", "unresolved"]:
+            query = query.filter(models.ContinuityIssue.status.in_(["unresolved", "open"]))
+        else:
+            query = query.filter(models.ContinuityIssue.status == s)
     if severity and severity != "all":
-        query = query.filter(models.ContinuityIssue.severity == severity)
+        query = query.filter(models.ContinuityIssue.severity == severity.lower().strip())
     if issue_type and issue_type != "all":
-        query = query.filter(models.ContinuityIssue.issue_type == issue_type)
+        query = query.filter(models.ContinuityIssue.issue_type == issue_type.lower().strip())
 
     return query.order_by(models.ContinuityIssue.created_at.desc()).all()

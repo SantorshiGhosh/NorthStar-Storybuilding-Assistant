@@ -8,6 +8,15 @@ const api = axios.create({
   timeout: 120000, // 2-minute safety window for manuscript indexing
 });
 
+// Request interceptor to attach JWT if available
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('sb_auth_token') || localStorage.getItem('supabase_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => Promise.reject(error));
+
 export const projectService = {
   getProjects: async () => {
     const res = await api.get('/projects');
@@ -77,8 +86,8 @@ export const chapterService = {
 };
 
 export const entityService = {
-  getEntities: async (projectId) => {
-    const res = await api.get(`/projects/${projectId}/entities`);
+  getEntities: async (projectId, params = {}) => {
+    const res = await api.get(`/projects/${projectId}/entities`, { params });
     return res.data;
   },
   getEntity: async (entityId) => {
@@ -95,6 +104,21 @@ export const entityService = {
   },
 };
 
+export const relationshipService = {
+  getRelationships: async (projectId) => {
+    const res = await api.get(`/projects/${projectId}/relationships`);
+    return res.data;
+  },
+  createRelationship: async (projectId, data) => {
+    const res = await api.post(`/projects/${projectId}/relationships`, data);
+    return res.data;
+  },
+  updateRelationship: async (relationshipId, data) => {
+    const res = await api.patch(`/relationships/${relationshipId}`, data);
+    return res.data;
+  },
+};
+
 export const continuityService = {
   updateIssue: async (issueId, data) => {
     const res = await api.patch(`/issues/${issueId}`, data);
@@ -103,3 +127,4 @@ export const continuityService = {
 };
 
 export default api;
+

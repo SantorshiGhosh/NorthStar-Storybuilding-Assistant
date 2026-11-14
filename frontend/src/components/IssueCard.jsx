@@ -173,6 +173,16 @@ export default function IssueCard({ issue, onStatusUpdate }) {
           </button>
 
           <button
+            onClick={() => handleUpdateStatus('review_later')}
+            disabled={loading || issue.status === 'review_later'}
+            className="flex items-center space-x-1 px-2.5 py-1 text-xs font-medium rounded-md bg-neutral-100 text-neutral-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent transition-colors disabled:opacity-40"
+            title="Defer review for later editing session"
+          >
+            <Clock className="w-3 h-3" />
+            <span>Review Later</span>
+          </button>
+
+          <button
             onClick={() => setShowNotesInput(!showNotesInput)}
             className="px-2 py-1 text-xs font-medium text-neutral-500 hover:text-neutral-800 transition-colors"
           >

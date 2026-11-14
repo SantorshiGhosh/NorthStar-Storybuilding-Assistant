@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS manuscripts (
     file_size INTEGER DEFAULT 0,
     storage_path TEXT,
     encrypted BOOLEAN DEFAULT TRUE,
+    is_encrypted BOOLEAN DEFAULT TRUE,
     status VARCHAR(50) DEFAULT 'processed', -- 'uploaded', 'processing', 'processed', 'error'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -67,15 +68,16 @@ CREATE TABLE IF NOT EXISTS passages (
 CREATE INDEX IF NOT EXISTS idx_passages_project_id ON passages(project_id);
 CREATE INDEX IF NOT EXISTS idx_passages_chapter_id ON passages(chapter_id);
 
--- 5. ENTITIES TABLE (Characters, Locations, Objects, World Rules)
+-- 5. ENTITIES TABLE (Characters, Locations, Objects, World Rules, Events)
 CREATE TABLE IF NOT EXISTS entities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    entity_type VARCHAR(50) NOT NULL, -- 'character', 'location', 'object', 'rule', 'faction'
+    entity_type VARCHAR(50) NOT NULL, -- 'character', 'location', 'object', 'rule', 'event', 'faction'
     description TEXT,
     traits JSONB DEFAULT '[]'::jsonb, -- array of strings e.g. ["brave", "missing left arm"]
     first_appearance_chapter INTEGER DEFAULT 1,
+    first_appearance_chapter_id UUID REFERENCES chapters(id) ON DELETE SET NULL,
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -93,6 +95,7 @@ CREATE TABLE IF NOT EXISTS relationships (
     relation_type VARCHAR(100) NOT NULL, -- 'allied_with', 'visited', 'located_in', 'opposes', etc.
     description TEXT,
     source_chapter_id UUID REFERENCES chapters(id) ON DELETE SET NULL,
+    source_quote TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -106,7 +109,8 @@ CREATE TABLE IF NOT EXISTS story_facts (
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     entity_id UUID REFERENCES entities(id) ON DELETE CASCADE,
     fact TEXT NOT NULL,
-    category VARCHAR(50) DEFAULT 'general', -- 'physical_state', 'lore_rule', 'location', 'status', 'event'
+    category VARCHAR(50) DEFAULT 'general', -- 'status', 'physical', 'location', 'date', 'rule', 'physical_state', 'lore_rule'
+    fact_category VARCHAR(50) DEFAULT 'general',
     source_chapter_id UUID REFERENCES chapters(id) ON DELETE SET NULL,
     source_chapter_number INTEGER,
     source_quote TEXT NOT NULL,
@@ -141,15 +145,17 @@ CREATE TABLE IF NOT EXISTS continuity_issues (
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     chapter_id UUID REFERENCES chapters(id) ON DELETE CASCADE,
     issue_type VARCHAR(100) NOT NULL, -- 'physical_continuity', 'lore_rule_violation', 'location_conflict', 'death_continuity', 'timeline_inconsistency'
+    classification VARCHAR(50) DEFAULT 'likely_conflict', -- 'likely_conflict', 'possible_conflict', 'intentional_or_explainable', 'insufficient_evidence'
     severity VARCHAR(50) DEFAULT 'high', -- 'high', 'medium', 'low'
     confidence NUMERIC(4, 2) DEFAULT 0.90,
     explanation TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'unresolved', -- 'open', 'unresolved', 'resolved', 'intentional', 'dismissed', 'review_later'
+    evidence JSONB DEFAULT '[]'::jsonb, -- array of {chapter, chapter_id, quote}
     earlier_passage TEXT,
     new_passage TEXT,
     earlier_chapter_number INTEGER,
     new_chapter_number INTEGER,
     suggestions JSONB DEFAULT '[]'::jsonb,
-    status VARCHAR(50) DEFAULT 'unresolved', -- 'unresolved', 'resolved', 'intentional', 'dismissed', 'review_later'
     author_notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

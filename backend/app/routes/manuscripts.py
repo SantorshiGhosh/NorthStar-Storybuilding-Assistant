@@ -65,7 +65,7 @@ async def upload_manuscript(
     entities_count = db.query(models.Entity).filter(models.Entity.project_id == project_id).count()
     issues_count = db.query(models.ContinuityIssue).filter(
         models.ContinuityIssue.project_id == project_id,
-        models.ContinuityIssue.status == "unresolved"
+        models.ContinuityIssue.status.in_(["unresolved", "open"])
     ).count()
 
     return {

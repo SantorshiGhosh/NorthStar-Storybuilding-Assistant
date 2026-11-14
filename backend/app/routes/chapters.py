@@ -65,6 +65,7 @@ def get_chapter(chapter_id: str, db: Session = Depends(get_db)):
     return ch
 
 @router.put("/chapters/{chapter_id}", response_model=s_models.ChapterOut)
+@router.patch("/chapters/{chapter_id}", response_model=s_models.ChapterOut)
 def update_chapter(chapter_id: str, data: s_models.ChapterUpdate, db: Session = Depends(get_db)):
     ch = db.query(models.Chapter).filter(models.Chapter.id == chapter_id).first()
     if not ch:

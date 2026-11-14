@@ -59,6 +59,7 @@ export default function ContinuityReport() {
     { id: 'lore_rule_violation', label: 'World-Building Rules' },
     { id: 'location_conflict', label: 'Location Conflicts' },
     { id: 'timeline_inconsistency', label: 'Timeline Conflicts' },
+    { id: 'review_later', label: 'Review Later' },
     { id: 'resolved', label: 'Resolved' },
     { id: 'intentional', label: 'Intentional Twists' },
     { id: 'dismissed', label: 'Dismissed' },
@@ -71,6 +72,7 @@ export default function ContinuityReport() {
     if (activeTab === 'lore_rule_violation' && issue.issue_type !== 'lore_rule_violation') return false;
     if (activeTab === 'location_conflict' && issue.issue_type !== 'location_conflict') return false;
     if (activeTab === 'timeline_inconsistency' && issue.issue_type !== 'timeline_inconsistency') return false;
+    if (activeTab === 'review_later' && issue.status !== 'review_later') return false;
     if (activeTab === 'resolved' && issue.status !== 'resolved') return false;
     if (activeTab === 'intentional' && issue.status !== 'intentional') return false;
     if (activeTab === 'dismissed' && issue.status !== 'dismissed') return false;
@@ -90,7 +92,7 @@ export default function ContinuityReport() {
 
   // Summary Metrics
   const totalCount = issues.length;
-  const unresolvedCount = issues.filter((i) => i.status === 'unresolved').length;
+  const unresolvedCount = issues.filter((i) => i.status === 'unresolved' || i.status === 'open').length;
   const intentionalCount = issues.filter((i) => i.status === 'intentional').length;
   const resolvedCount = issues.filter((i) => i.status === 'resolved').length;
 

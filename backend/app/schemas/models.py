@@ -82,6 +82,7 @@ class StoryFactOut(BaseModel):
     id: IdType
     fact: str
     category: str
+    fact_category: Optional[str] = "general"
     source_chapter_id: Optional[IdType] = None
     source_chapter_number: Optional[int] = None
     source_quote: str
@@ -104,11 +105,12 @@ class EntityOut(BaseModel):
     description: Optional[str] = None
     traits: List[str] = []
     first_appearance_chapter: Optional[int] = 1
+    first_appearance_chapter_id: Optional[IdType] = None
     facts: List[StoryFactOut] = []
     created_at: datetime
     updated_at: datetime
 
-    @field_serializer('id', 'project_id', check_fields=False)
+    @field_serializer('id', 'project_id', 'first_appearance_chapter_id', check_fields=False)
     def serialize_id(self, v: Any, _info):
         return str(v) if v is not None else None
 
@@ -116,6 +118,19 @@ class EntityOut(BaseModel):
         from_attributes = True
 
 # --- Relationships ---
+class RelationshipCreate(BaseModel):
+    source_entity_id: IdType
+    target_entity_id: IdType
+    relation_type: str
+    description: Optional[str] = None
+    source_chapter_id: Optional[IdType] = None
+    source_quote: Optional[str] = None
+
+class RelationshipUpdate(BaseModel):
+    relation_type: Optional[str] = None
+    description: Optional[str] = None
+    source_quote: Optional[str] = None
+
 class RelationshipOut(BaseModel):
     id: IdType
     project_id: IdType
@@ -126,6 +141,7 @@ class RelationshipOut(BaseModel):
     relation_type: str
     description: Optional[str] = None
     source_chapter_id: Optional[IdType] = None
+    source_quote: Optional[str] = None
     created_at: datetime
 
     @field_serializer('id', 'project_id', 'source_entity_id', 'target_entity_id', 'source_chapter_id', check_fields=False)
@@ -156,7 +172,7 @@ class GraphDataOut(BaseModel):
 
 # --- Continuity Issues ---
 class ContinuityIssueUpdate(BaseModel):
-    status: str  # unresolved, resolved, intentional, dismissed, review_later
+    status: str  # open, unresolved, resolved, intentional, dismissed, review_later
     author_notes: Optional[str] = None
 
 class ContinuityIssueOut(BaseModel):
@@ -164,9 +180,11 @@ class ContinuityIssueOut(BaseModel):
     project_id: IdType
     chapter_id: Optional[IdType] = None
     issue_type: str
+    classification: Optional[str] = "likely_conflict"  # likely_conflict, possible_conflict, intentional_or_explainable, insufficient_evidence
     severity: str
     confidence: float
     explanation: str
+    evidence: List[Dict[str, Any]] = []
     earlier_passage: Optional[str] = None
     new_passage: Optional[str] = None
     earlier_chapter_number: Optional[int] = None

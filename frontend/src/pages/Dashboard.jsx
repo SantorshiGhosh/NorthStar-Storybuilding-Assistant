@@ -105,6 +105,25 @@ export default function Dashboard() {
     }
   };
 
+  const [seeding, setSeeding] = useState(false);
+
+  const handleSeedDemo = async () => {
+    try {
+      setSeeding(true);
+      const res = await projectService.seedDemo();
+      if (res.project_id) {
+        navigate(`/workspace/${res.project_id}`);
+      } else {
+        fetchProjects();
+      }
+    } catch (e) {
+      console.error(e);
+      fetchProjects();
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const handleDeleteProject = async (id, e) => {
     e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this project and its story memory?')) return;
@@ -133,6 +152,16 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center space-x-2.5">
+            <button
+              onClick={handleSeedDemo}
+              disabled={seeding}
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 text-xs font-semibold shadow-2xs transition-colors disabled:opacity-50"
+              title="Loads The Last Kingdom demo manuscript with pre-configured canon and continuity checks"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{seeding ? 'Loading Demo...' : 'Load Demo Manuscript ("The Last Kingdom")'}</span>
+            </button>
+
             <button
               onClick={() => setShowCreateModal(true)}
               className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold shadow-xs transition-colors"
@@ -328,47 +357,77 @@ export default function Dashboard() {
               </div>
             )}
 
-            <form onSubmit={handleUploadManuscript} className="space-y-4">
-              <div className="border-2 border-dashed border-neutral-300 rounded-xl p-6 text-center hover:border-neutral-400 transition-colors cursor-pointer bg-neutral-50/50">
-                <input
-                  type="file"
-                  id="manuscript-file-input"
-                  accept=".docx,.txt,.md,.pdf"
-                  required
-                  onChange={(e) => setUploadFile(e.target.files[0])}
-                  className="hidden"
-                />
-                <label htmlFor="manuscript-file-input" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-                  <span className="text-xs font-semibold text-neutral-800 block">
-                    {uploadFile ? uploadFile.name : 'Select or drag DOCX, TXT, MD, or PDF'}
-                  </span>
-                  <span className="text-[11px] text-neutral-400 block mt-1">
-                    Up to 25 MB &bull; AES-256-GCM Vault Encrypted
-                  </span>
-                </label>
+            {uploading ? (
+              <div className="py-6 space-y-4">
+                <div className="flex items-center justify-center space-x-2 text-blue-600 font-semibold text-xs">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span>Processing Manuscript with Multi-Agent Pipeline...</span>
+                </div>
+                <div className="space-y-2.5 bg-neutral-50 p-4 rounded-xl border border-neutral-200/80 text-left text-xs">
+                  <div className="flex items-center space-x-2 text-neutral-800">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-medium">1. Parsing manuscript & AES-256-GCM Vault Encryption</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-neutral-800">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="font-medium">2. Segmenting chapters & indexing passages</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-neutral-800">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                    <span className="font-medium">3. Extracting canonical entities, facts & relationships</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-neutral-800">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="font-medium">4. Running Continuity Guardian contradiction analysis</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-neutral-400 text-center">
+                  Verifying evidence against established canon memory...
+                </p>
               </div>
+            ) : (
+              <form onSubmit={handleUploadManuscript} className="space-y-4">
+                <div className="border-2 border-dashed border-neutral-300 rounded-xl p-6 text-center hover:border-neutral-400 transition-colors cursor-pointer bg-neutral-50/50">
+                  <input
+                    type="file"
+                    id="manuscript-file-input"
+                    accept=".docx,.txt,.md,.pdf"
+                    required
+                    onChange={(e) => setUploadFile(e.target.files[0])}
+                    className="hidden"
+                  />
+                  <label htmlFor="manuscript-file-input" className="cursor-pointer">
+                    <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
+                    <span className="text-xs font-semibold text-neutral-800 block">
+                      {uploadFile ? uploadFile.name : 'Select or drag DOCX, TXT, MD, or PDF'}
+                    </span>
+                    <span className="text-[11px] text-neutral-400 block mt-1">
+                      Up to 25 MB &bull; AES-256-GCM Vault Encrypted
+                    </span>
+                  </label>
+                </div>
 
-              <div className="flex justify-end space-x-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowUploadModal(false);
-                    setUploadFile(null);
-                  }}
-                  className="px-3.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading || !uploadFile}
-                  className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs disabled:opacity-50"
-                >
-                  {uploading ? 'Processing & Analyzing...' : 'Upload & Build Memory'}
-                </button>
-              </div>
-            </form>
+                <div className="flex justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUploadModal(false);
+                      setUploadFile(null);
+                    }}
+                    className="px-3.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={uploading || !uploadFile}
+                    className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs disabled:opacity-50"
+                  >
+                    Upload & Build Memory
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

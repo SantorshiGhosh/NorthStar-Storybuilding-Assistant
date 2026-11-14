@@ -84,7 +84,59 @@ For every genuine potential contradiction, output a JSON object in this format:
             if not is_dup:
                 issues.append(l_issue)
 
-        return issues
+        # 3. Verifiable Evidence Guarantee: Validate cited quotes against actual chapter text
+        verified_issues = []
+        for issue in issues:
+            new_pass = (issue.get("new_passage") or "").strip()
+            # If new_passage is provided, check if it occurs in new_content
+            if new_pass and new_pass.lower() not in new_content.lower():
+                # Attempt to find best matching sentence in new_content
+                sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', new_content) if s.strip()]
+                new_tokens = set(re.findall(r'\b\w+\b', new_pass.lower()))
+                best_sent = None
+                best_score = 0
+                for sent in sentences:
+                    sent_tokens = set(re.findall(r'\b\w+\b', sent.lower()))
+                    overlap = len(new_tokens.intersection(sent_tokens))
+                    if overlap > best_score:
+                        best_score = overlap
+                        best_sent = sent
+                if best_sent and best_score >= 3:
+                    issue["new_passage"] = best_sent
+                else:
+                    # Skip issue if the quote is completely hallucinated and not present in manuscript
+                    continue
+
+            # Ensure classification and structured evidence fields match Roadmap Section 8
+            if not issue.get("classification"):
+                conf = float(issue.get("confidence", 0.9))
+                if conf >= 0.85:
+                    issue["classification"] = "likely_conflict"
+                elif conf >= 0.65:
+                    issue["classification"] = "possible_conflict"
+                else:
+                    issue["classification"] = "insufficient_evidence"
+
+            if not issue.get("evidence"):
+                ev = []
+                if issue.get("earlier_passage"):
+                    ev.append({
+                        "chapter": issue.get("earlier_chapter_number") or 1,
+                        "quote": issue["earlier_passage"]
+                    })
+                if issue.get("new_passage"):
+                    ev.append({
+                        "chapter": new_chapter_number,
+                        "quote": issue["new_passage"]
+                    })
+                issue["evidence"] = ev
+
+            if not issue.get("status"):
+                issue["status"] = "unresolved"
+
+            verified_issues.append(issue)
+
+        return verified_issues
 
     def _run_deterministic_checks(
         self,

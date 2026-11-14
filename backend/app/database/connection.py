@@ -42,9 +42,32 @@ def get_db():
         db.close()
 
 def init_db():
+    from sqlalchemy import text
     from app.database import models
     try:
         Base.metadata.create_all(bind=engine)
         print("[DB] Database tables initialized successfully.")
     except Exception as e:
         print(f"[DB Warning] Could not auto-create database tables on startup: {e}")
+
+    # Safe schema migration for new roadmap columns
+    alter_statements = [
+        "ALTER TABLE manuscripts ADD COLUMN IF NOT EXISTS is_encrypted BOOLEAN DEFAULT TRUE;",
+        "ALTER TABLE manuscripts ADD COLUMN IF NOT EXISTS encrypted BOOLEAN DEFAULT TRUE;",
+        "ALTER TABLE entities ADD COLUMN IF NOT EXISTS first_appearance_chapter_id UUID;",
+        "ALTER TABLE relationships ADD COLUMN IF NOT EXISTS source_quote TEXT;",
+        "ALTER TABLE story_facts ADD COLUMN IF NOT EXISTS fact_category VARCHAR(50) DEFAULT 'general';",
+        "ALTER TABLE continuity_issues ADD COLUMN IF NOT EXISTS classification VARCHAR(50) DEFAULT 'likely_conflict';",
+        "ALTER TABLE continuity_issues ADD COLUMN IF NOT EXISTS evidence JSONB;",
+    ]
+    try:
+        with engine.connect() as conn:
+            for stmt in alter_statements:
+                try:
+                    conn.execute(text(stmt))
+                    conn.commit()
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"[DB Warning] Column migration skipped: {e}")
+

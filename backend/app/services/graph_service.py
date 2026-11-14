@@ -11,6 +11,7 @@ class GraphService:
         """
         Constructs a NetworkX graph from database records and computes
         layout coordinates formatted specifically for React Flow.
+        Includes entity facts and evidence, and edge relationship source quotes.
         """
         G = nx.DiGraph()
 
@@ -40,6 +41,12 @@ class GraphService:
                 "textColor": "#7F1D1D",
                 "badge": "World Rule"
             },
+            "event": {
+                "bgColor": "#FDF4FF",  # soft fuchsia
+                "borderColor": "#D946EF",
+                "textColor": "#701A75",
+                "badge": "Event"
+            },
             "faction": {
                 "bgColor": "#F5F3FF",  # soft purple
                 "borderColor": "#8B5CF6",
@@ -50,25 +57,42 @@ class GraphService:
 
         # Add nodes
         for ent in entities:
+            # Serialize facts with source quotes
+            facts_list = []
+            if hasattr(ent, "facts") and ent.facts:
+                for f in ent.facts:
+                    facts_list.append({
+                        "id": str(f.id),
+                        "fact": f.fact,
+                        "category": getattr(f, "category", "general"),
+                        "source_chapter_number": getattr(f, "source_chapter_number", None),
+                        "source_quote": getattr(f, "source_quote", "")
+                    })
+
             G.add_node(
-                ent.id,
+                str(ent.id),
                 name=ent.name,
                 entity_type=ent.entity_type,
                 description=ent.description or "",
                 traits=ent.traits or [],
-                first_appearance=ent.first_appearance_chapter or 1,
-                fact_count=len(ent.facts) if hasattr(ent, "facts") and ent.facts else 0
+                first_appearance=getattr(ent, "first_appearance_chapter", 1) or 1,
+                facts=facts_list,
+                fact_count=len(facts_list)
             )
 
         # Add edges
         for rel in relationships:
-            if rel.source_entity_id in G and rel.target_entity_id in G:
+            src_id = str(rel.source_entity_id)
+            tgt_id = str(rel.target_entity_id)
+            if src_id in G and tgt_id in G:
                 G.add_edge(
-                    rel.source_entity_id,
-                    rel.target_entity_id,
-                    id=rel.id,
+                    src_id,
+                    tgt_id,
+                    id=str(rel.id),
                     relation_type=rel.relation_type,
-                    description=rel.description or ""
+                    description=rel.description or "",
+                    source_chapter_id=str(rel.source_chapter_id or ""),
+                    source_quote=getattr(rel, "source_quote", "") or ""
                 )
 
         # Calculate coordinates using spring layout or circular
@@ -112,6 +136,7 @@ class GraphService:
                     "borderColor": theme["borderColor"],
                     "textColor": theme["textColor"],
                     "first_appearance": data.get("first_appearance", 1),
+                    "facts": data.get("facts", []),
                     "fact_count": data.get("fact_count", 0)
                 }
             })
@@ -126,7 +151,9 @@ class GraphService:
                 "animated": True,
                 "data": {
                     "relation_type": edata.get("relation_type", ""),
-                    "description": edata.get("description", "")
+                    "description": edata.get("description", ""),
+                    "source_chapter_id": edata.get("source_chapter_id", ""),
+                    "source_quote": edata.get("source_quote", "")
                 }
             })
 

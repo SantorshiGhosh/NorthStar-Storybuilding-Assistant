@@ -174,7 +174,89 @@ class VectorService:
                     "passage_index": meta.get("passage_index", 0)
                 })
 
+        if not passages:
+            # Ephemeral disk recovery fallback: query PostgreSQL directly
+            return self._fallback_sql_search(project_id, query, n_results, exclude_chapter_number)
+
         return passages
+
+    def _fallback_sql_search(
+        self,
+        project_id: str,
+        query: str,
+        n_results: int = 5,
+        exclude_chapter_number: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Database fallback: If ChromaDB storage is empty or cleared (e.g. Render ephemeral disk restart),
+        searches passages and chapters directly in PostgreSQL using keyword relevance scoring.
+        """
+        try:
+            from app.database.connection import SessionLocal
+            from app.database.models import Passage, Chapter
+
+            db = SessionLocal()
+            try:
+                query_tokens = [w.lower() for w in re.findall(r'\b[a-zA-Z0-9_-]{3,}\b', query) if len(w) > 2]
+                if not query_tokens:
+                    return []
+
+                q = db.query(Passage, Chapter.chapter_number).join(Chapter, Passage.chapter_id == Chapter.id).filter(
+                    Passage.project_id == project_id
+                )
+                if exclude_chapter_number is not None:
+                    q = q.filter(Chapter.chapter_number != exclude_chapter_number)
+
+                rows = q.all()
+                if not rows:
+                    ch_q = db.query(Chapter).filter(Chapter.project_id == project_id)
+                    if exclude_chapter_number is not None:
+                        ch_q = ch_q.filter(Chapter.chapter_number != exclude_chapter_number)
+                    chapters = ch_q.all()
+
+                    candidate_chunks = []
+                    for ch in chapters:
+                        paras = [p.strip() for p in (ch.content or "").split("\n\n") if p.strip()]
+                        for p_idx, para in enumerate(paras):
+                            candidate_chunks.append({
+                                "id": f"{ch.id}_{p_idx}",
+                                "content": para,
+                                "chapter_number": ch.chapter_number,
+                                "chapter_id": str(ch.id),
+                                "passage_index": p_idx + 1
+                            })
+                    scored = []
+                    for chunk in candidate_chunks:
+                        content_lower = chunk["content"].lower()
+                        score = sum(content_lower.count(token) for token in query_tokens)
+                        if score > 0:
+                            scored.append((score, chunk))
+                    scored.sort(key=lambda x: x[0], reverse=True)
+                    return [item[1] for item in scored[:n_results]]
+
+                scored_passages = []
+                for passage, ch_num in rows:
+                    content_lower = passage.content.lower()
+                    score = sum(content_lower.count(token) for token in query_tokens)
+                    if score > 0:
+                        scored_passages.append((
+                            score,
+                            {
+                                "id": str(passage.id),
+                                "content": passage.content,
+                                "chapter_number": ch_num,
+                                "chapter_id": str(passage.chapter_id),
+                                "passage_index": passage.passage_index
+                            }
+                        ))
+
+                scored_passages.sort(key=lambda x: x[0], reverse=True)
+                return [item[1] for item in scored_passages[:n_results]]
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"SQL passage search fallback error: {e}")
+            return []
 
     def clear_project(self, project_id: str) -> None:
         """

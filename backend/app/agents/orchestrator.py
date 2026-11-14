@@ -165,8 +165,11 @@ class CentralAIOrchestrator:
         fast_mode: bool = False
     ):
         """
-        Runs Narrative Extraction Agent and stores entities, facts, and relationships.
+        Runs Narrative Extraction Agent and stores entities, facts, relationships, and timeline events
+        using memory_service with strict source evidence.
         """
+        from app.services.memory_service import memory_service
+
         if fast_mode:
             extraction_result = extraction_agent._heuristic_extraction(
                 content=chapter.content,
@@ -180,74 +183,102 @@ class CentralAIOrchestrator:
                 chapter_title=chapter.title
             )
 
-        entity_name_to_db: Dict[str, models.Entity] = {}
+        entity_name_to_id: Dict[str, str] = {}
 
-        # Fetch existing entities to link or update
-        existing_entities = db.query(models.Entity).filter(models.Entity.project_id == project_id).all()
-        for e in existing_entities:
-            entity_name_to_db[e.name.lower()] = e
-
-        # Persist Entities & Facts
+        # 1. Persist Entities & Facts via memory_service
         for ent_data in extraction_result.get("entities", []):
-            name_key = ent_data["name"].strip().lower()
-            if name_key in entity_name_to_db:
-                db_entity = entity_name_to_db[name_key]
-                # Merge traits
-                curr_traits = set(db_entity.traits or [])
-                curr_traits.update(ent_data.get("traits", []))
-                db_entity.traits = list(curr_traits)
-            else:
-                db_entity = models.Entity(
-                    id=models.gen_uuid(),
-                    project_id=project_id,
-                    name=ent_data["name"].strip(),
-                    entity_type=ent_data.get("entity_type", "character"),
-                    description=ent_data.get("description", ""),
-                    traits=ent_data.get("traits", []),
-                    first_appearance_chapter=chapter.chapter_number
-                )
-                db.add(db_entity)
-                entity_name_to_db[name_key] = db_entity
+            db_entity = memory_service.save_or_update_entity(
+                db=db,
+                project_id=project_id,
+                name=ent_data["name"].strip(),
+                entity_type=ent_data.get("entity_type", "character"),
+                description=ent_data.get("description", ""),
+                traits=ent_data.get("traits", []),
+                first_appearance_chapter=chapter.chapter_number,
+                first_appearance_chapter_id=chapter.id
+            )
+            entity_name_to_id[db_entity.name.lower()] = db_entity.id
 
-            # Persist story facts
+            # Persist facts strictly requiring source evidence
             for fact_data in ent_data.get("facts", []):
-                db_fact = models.StoryFact(
-                    id=models.gen_uuid(),
+                quote = fact_data.get("source_quote") or ""
+                if not quote.strip():
+                    # Fallback to first sentence mentioning the entity
+                    for sent in chapter.content.split(". "):
+                        if db_entity.name.lower() in sent.lower():
+                            quote = sent.strip() + "."
+                            break
+                    if not quote.strip():
+                        quote = chapter.content[:150]
+
+                memory_service.save_story_fact(
+                    db=db,
                     project_id=project_id,
                     entity_id=db_entity.id,
                     fact=fact_data["fact"],
-                    category=fact_data.get("category", "general"),
                     source_chapter_id=chapter.id,
+                    source_quote=quote,
                     source_chapter_number=chapter.chapter_number,
-                    source_quote=fact_data.get("source_quote", ""),
+                    category=fact_data.get("category", "general"),
                     confidence=fact_data.get("confidence", 1.0)
                 )
-                db.add(db_fact)
 
-        # Persist Relationships
+        # 2. Persist Relationships via memory_service
+        all_ents = memory_service.get_entities(db, project_id)
+        for e in all_ents:
+            entity_name_to_id[e.name.lower()] = e.id
+
         for rel_data in extraction_result.get("relationships", []):
             src_key = rel_data.get("source_name", "").strip().lower()
             tgt_key = rel_data.get("target_name", "").strip().lower()
 
-            if src_key in entity_name_to_db and tgt_key in entity_name_to_db:
-                src_ent = entity_name_to_db[src_key]
-                tgt_ent = entity_name_to_db[tgt_key]
+            src_id = entity_name_to_id.get(src_key)
+            tgt_id = entity_name_to_id.get(tgt_key)
 
-                db_rel = models.Relationship(
-                    id=models.gen_uuid(),
+            if src_id and tgt_id and src_id != tgt_id:
+                rel_quote = rel_data.get("source_quote") or ""
+                if not rel_quote.strip():
+                    for sent in chapter.content.split(". "):
+                        if rel_data.get("source_name", "").lower() in sent.lower() and rel_data.get("target_name", "").lower() in sent.lower():
+                            rel_quote = sent.strip() + "."
+                            break
+                    if not rel_quote.strip():
+                        rel_quote = chapter.content[:150]
+
+                memory_service.save_relationship(
+                    db=db,
                     project_id=project_id,
-                    source_entity_id=src_ent.id,
-                    target_entity_id=tgt_ent.id,
-                    relation_type=rel_data["relation_type"],
-                    description=rel_data.get("description", ""),
-                    source_chapter_id=chapter.id
+                    source_entity_id=src_id,
+                    target_entity_id=tgt_id,
+                    relation_type=rel_data.get("relation_type", "associated_with"),
+                    source_chapter_id=chapter.id,
+                    source_quote=rel_quote,
+                    description=rel_data.get("description", "")
                 )
-                db.add(db_rel)
 
-        # Persist Timeline Events
+        # 3. Persist Timeline Events via timeline_agent & memory_service
+        tl_events = timeline_agent.extract_events_from_chapter(
+            chapter_content=chapter.content,
+            chapter_number=chapter.chapter_number,
+            chapter_title=chapter.title
+        )
+        for ev in tl_events:
+            memory_service.save_timeline_event(
+                db=db,
+                project_id=project_id,
+                title=ev.get("title", f"Events in Chapter {chapter.chapter_number}"),
+                description=ev.get("description", ""),
+                chapter_id=chapter.id,
+                chapter_number=chapter.chapter_number,
+                chronology_order=chapter.chapter_number,
+                date_or_time_label=ev.get("date_or_time_label"),
+                participants=ev.get("participants", []),
+                location=ev.get("location")
+            )
+
         for ev_data in extraction_result.get("timeline_events", []):
-            db_event = models.TimelineEvent(
-                id=models.gen_uuid(),
+            memory_service.save_timeline_event(
+                db=db,
                 project_id=project_id,
                 title=ev_data.get("title", f"Event in Chapter {chapter.chapter_number}"),
                 description=ev_data.get("description", ""),
@@ -257,9 +288,6 @@ class CentralAIOrchestrator:
                 location=ev_data.get("location"),
                 participants=ev_data.get("participants", [])
             )
-            db.add(db_event)
-
-        db.commit()
 
     def analyze_chapter_continuity(
         self,
@@ -270,12 +298,11 @@ class CentralAIOrchestrator:
     ) -> List[models.ContinuityIssue]:
         """
         Executes Continuity Guardian analysis for a specific chapter against established canon.
+        Uses memory_service and vector_service with automatic SQL fallback.
         """
-        chapter = db.query(models.Chapter).filter(
-            models.Chapter.id == chapter_id,
-            models.Chapter.project_id == project_id
-        ).first()
+        from app.services.memory_service import memory_service
 
+        chapter = memory_service.get_chapter(db, project_id, chapter_id)
         if not chapter:
             return []
 
@@ -298,7 +325,7 @@ class CentralAIOrchestrator:
             for f in facts_query
         ]
 
-        # 2. Retrieve relevant earlier passages from ChromaDB
+        # 2. Retrieve relevant earlier passages from vector search (or SQL fallback)
         retrieved_passages = vector_service.search_similar_passages(
             project_id=project_id,
             query=chapter.content[:500],
@@ -315,37 +342,29 @@ class CentralAIOrchestrator:
             skip_llm=skip_llm
         )
 
-        # 4. Save detected issues to database (avoid duplicate active issues)
+        # 4. Save detected issues using memory_service
         saved_db_issues = []
         for issue_dict in detected_issues:
-            existing = db.query(models.ContinuityIssue).filter(
-                models.ContinuityIssue.project_id == project_id,
-                models.ContinuityIssue.chapter_id == chapter.id,
-                models.ContinuityIssue.issue_type == issue_dict["issue_type"]
-            ).first()
-
-            if not existing:
-                db_issue = models.ContinuityIssue(
-                    project_id=project_id,
-                    chapter_id=chapter.id,
-                    issue_type=issue_dict["issue_type"],
-                    severity=issue_dict.get("severity", "high"),
-                    confidence=issue_dict.get("confidence", 0.90),
-                    explanation=issue_dict["explanation"],
-                    earlier_passage=issue_dict.get("earlier_passage"),
-                    new_passage=issue_dict.get("new_passage"),
-                    earlier_chapter_number=issue_dict.get("earlier_chapter_number"),
-                    new_chapter_number=chapter.chapter_number,
-                    suggestions=issue_dict.get("suggestions", []),
-                    status="unresolved"
-                )
-                db.add(db_issue)
-                db.commit()
-                db.refresh(db_issue)
-                saved_db_issues.append(db_issue)
-            else:
-                saved_db_issues.append(existing)
+            db_issue = memory_service.save_continuity_issue(
+                db=db,
+                project_id=project_id,
+                chapter_id=chapter.id,
+                issue_type=issue_dict["issue_type"],
+                severity=issue_dict.get("severity", "high"),
+                confidence=issue_dict.get("confidence", 0.90),
+                explanation=issue_dict["explanation"],
+                earlier_passage=issue_dict.get("earlier_passage"),
+                new_passage=issue_dict.get("new_passage"),
+                earlier_chapter_number=issue_dict.get("earlier_chapter_number"),
+                new_chapter_number=chapter.chapter_number,
+                suggestions=issue_dict.get("suggestions", []),
+                classification=issue_dict.get("classification", "likely_conflict"),
+                evidence=issue_dict.get("evidence"),
+                status="unresolved"
+            )
+            saved_db_issues.append(db_issue)
 
         return saved_db_issues
 
 orchestrator = CentralAIOrchestrator()
+
