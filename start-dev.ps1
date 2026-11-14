@@ -1,6 +1,6 @@
-# Living Story Bible - Development Launcher
+# NorthStar - Development Launcher
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host " LIVING STORY BIBLE - AI CONTINUITY GUARDIAN" -ForegroundColor White
+Write-Host " NORTHSTAR - AI CONTINUITY GUARDIAN" -ForegroundColor White
 Write-Host "========================================================" -ForegroundColor Cyan
 
 Write-Host "Launching FastAPI backend on http://localhost:8000..." -ForegroundColor Yellow

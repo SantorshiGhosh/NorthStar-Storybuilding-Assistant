@@ -47,7 +47,7 @@ export default function Landing() {
               <ShieldCheck className="w-4 h-4" />
             </div>
             <span className="font-semibold text-neutral-900 text-base tracking-tight">
-              Living Story Bible
+              NorthStar
             </span>
           </div>
 
@@ -86,7 +86,7 @@ export default function Landing() {
           </h1>
 
           <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed mb-10">
-            Most AI tools try to write the next sentence. Living Story Bible remembers every single sentence you have written before—protecting your manuscript from continuity contradictions with verifiable canon evidence.
+            Most AI tools try to write the next sentence. NorthStar remembers every single sentence you have written before—protecting your manuscript from continuity contradictions with verifiable canon evidence.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -218,7 +218,7 @@ export default function Landing() {
 
       {/* Minimal Footer */}
       <footer className="border-t border-neutral-200/80 py-8 bg-white text-xs text-neutral-500 text-center">
-        <p>Living Story Bible &mdash; AI Continuity Guardian &bull; Built for Novelists & Screenwriters</p>
+        <p>NorthStar &mdash; AI Continuity Guardian &bull; Built for Novelists & Screenwriters</p>
       </footer>
     </div>
   );

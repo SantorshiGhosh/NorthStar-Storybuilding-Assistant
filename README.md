@@ -1,4 +1,4 @@
-# Living Story Bible — AI Continuity Guardian
+# NorthStar — AI Continuity Guardian
 > **Persistent, evidence-backed narrative memory that protects stories from continuity errors.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -12,9 +12,9 @@
 
 ## 1. Executive Summary & Vision
 
-**Living Story Bible** is a browser-based intelligent writing workspace purpose-built for novelists, screenwriters, and creative narrative architects. While generic AI writing tools focus on generating the next sentence, Living Story Bible focuses on **remembering every sentence previously established as canon**.
+**NorthStar** is a browser-based intelligent writing workspace purpose-built for novelists, screenwriters, and creative narrative architects. While generic AI writing tools focus on generating the next sentence, NorthStar focuses on **remembering every sentence previously established as canon**.
 
-As manuscripts expand across dozens of chapters, sequels, or screenplays, writers struggle to track thousands of interlocking facts, character physical states, lore rules, timelines, and relationships. Living Story Bible maintains a tri-part narrative memory (structured SQL canon, semantic ChromaDB passage vectors, and NetworkX relational graphs) to protect authors from continuity contradictions.
+As manuscripts expand across dozens of chapters, sequels, or screenplays, writers struggle to track thousands of interlocking facts, character physical states, lore rules, timelines, and relationships. NorthStar maintains a tri-part narrative memory (structured SQL canon, semantic ChromaDB passage vectors, and NetworkX relational graphs) to protect authors from continuity contradictions.
 
 ### Core Guarantees
 1. **Author Sovereignty**: The system **never** modifies or rewrites the writer's manuscript automatically.
@@ -82,7 +82,7 @@ The architecture incorporates four specialized Python agents coordinated by the 
 
 ## 4. Coordinated Narrative Memory
 
-Living Story Bible coordinates three synchronized memory tiers:
+NorthStar coordinates three synchronized memory tiers:
 
 1. **Structured Memory (PostgreSQL / SQLite)**:
    - Primary source of truth for projects, manuscripts, chapters, entities, traits, relationships, timeline events, and canon facts.
@@ -130,7 +130,7 @@ Living Story Bible coordinates three synchronized memory tiers:
 ### Step 1: Clone & Configure Environment
 ```bash
 git clone <repository-url>
-cd "Story Bible"
+cd northstar
 
 # Copy environment file
 copy .env.example .env
@@ -217,7 +217,7 @@ The backend provides a complete RESTful API mounted at `/api` and documented via
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/health` | Service health status. |
-| `POST` | `/api/projects` | Create a new story bible project. |
+| `POST` | `/api/projects` | Create a new NorthStar project. |
 | `GET` | `/api/projects` | List all projects with chapter, character, and issue counts. |
 | `GET` | `/api/projects/{id}` | Get project details. |
 | `DELETE` | `/api/projects/{id}` | Delete project and clean up vectors. |

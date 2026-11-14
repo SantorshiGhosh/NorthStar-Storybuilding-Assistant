@@ -56,7 +56,7 @@ export default function Navbar({ currentProject, onProjectChange }) {
             </div>
             <div className="text-left">
               <span className="font-semibold text-neutral-900 text-sm tracking-tight block leading-tight">
-                Living Story Bible
+                NorthStar
               </span>
               <span className="text-[10px] text-neutral-400 font-medium tracking-wide uppercase block">
                 AI Continuity Guardian

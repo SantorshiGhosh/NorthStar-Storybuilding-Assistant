@@ -14,7 +14,7 @@ class NarrativeExtractionAgent:
     """
 
     SYSTEM_PROMPT = """
-You are the Narrative Extraction Agent of the Living Story Bible.
+You are the Narrative Extraction Agent of NorthStar.
 Your job is to read manuscript text and extract established story canon with verbatim source quotes.
 Never invent facts not present in the text.
 

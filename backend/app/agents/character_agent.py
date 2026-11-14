@@ -16,7 +16,7 @@ class CharacterIntelligenceAgent:
     """
 
     SYSTEM_PROMPT = """
-You are the Character Intelligence Agent in Living Story Bible.
+You are the Character Intelligence Agent in NorthStar.
 Analyze character dialogue, traits, actions, and tone across chapters.
 Treat voice drift as a nuanced stylistic signal rather than an outright error.
 """

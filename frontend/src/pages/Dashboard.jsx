@@ -147,7 +147,7 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-neutral-200/80 gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">
-              Projects & Story Bibles
+              Projects & NorthStar
             </h1>
             <p className="text-xs sm:text-sm text-neutral-500 mt-1">
               Select an active story workspace or upload a manuscript to build persistent canon memory.
@@ -307,7 +307,7 @@ export default function Dashboard() {
         <div className="fixed inset-0 z-50 bg-neutral-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 p-6 max-w-md w-full text-left">
             <h3 className="text-base font-bold text-neutral-900 mb-1">
-              Create Story Bible Project
+              Create NorthStar Project
             </h3>
             <p className="text-xs text-neutral-500 mb-5">
               Set up a dedicated narrative container for your novel, script, or series.

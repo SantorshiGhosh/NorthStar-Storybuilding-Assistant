@@ -7,7 +7,7 @@ logger = logging.getLogger("continuity_agent")
 
 class ContinuityGuardianAgent:
     """
-    Flagship AI Continuity Guardian Agent of Living Story Bible.
+    Flagship AI Continuity Guardian Agent of NorthStar.
     Detects continuity contradictions between new text and established canon memory,
     providing verifiable citations and non-destructive resolution suggestions.
     Features a dual-engine architecture:
@@ -17,7 +17,7 @@ class ContinuityGuardianAgent:
     """
 
     SYSTEM_PROMPT = """
-You are the Continuity Guardian Agent in the Living Story Bible.
+You are the Continuity Guardian Agent in NorthStar.
 Your role is to protect the author's narrative integrity by detecting contradictions between new chapter passages and established story canon.
 
 Carefully evaluate candidate contradictions.

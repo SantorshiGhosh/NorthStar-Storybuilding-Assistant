@@ -14,7 +14,7 @@ from app.routes import projects, manuscripts, chapters, entities, continuity
 init_db()
 
 app = FastAPI(
-    title="Living Story Bible — AI Continuity Guardian",
+    title="NorthStar — AI Continuity Guardian",
     description="Browser-based intelligent writing workspace with persistent, evidence-backed narrative memory.",
     version="1.0.0",
     docs_url="/docs",
@@ -76,7 +76,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 def health_check():
     return {
         "status": "ok",
-        "service": "Living Story Bible — AI Continuity Guardian",
+        "service": "NorthStar — AI Continuity Guardian",
         "environment": settings.ENVIRONMENT,
         "database": "connected"
     }

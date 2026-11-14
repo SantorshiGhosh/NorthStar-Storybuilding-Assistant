@@ -12,7 +12,7 @@ class TimelineAgent:
     """
 
     SYSTEM_PROMPT = """
-You are the Timeline Intelligence Agent in Living Story Bible.
+You are the Timeline Intelligence Agent in NorthStar.
 Analyze chapter text to extract ordered chronological events, explicit calendar dates or time elapsed, and character locations.
 Flag any chronological contradictions (e.g., character in two places at once, reversed cause-and-effect).
 """

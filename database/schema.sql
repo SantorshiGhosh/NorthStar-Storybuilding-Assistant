@@ -1,5 +1,5 @@
 -- ==============================================================================
--- LIVING STORY BIBLE — AI CONTINUITY GUARDIAN
+-- NORTHSTAR — AI CONTINUITY GUARDIAN
 -- PostgreSQL / Supabase Schema with Row Level Security (RLS)
 -- ==============================================================================
 

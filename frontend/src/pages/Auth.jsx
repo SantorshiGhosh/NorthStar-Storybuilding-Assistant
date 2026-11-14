@@ -33,7 +33,7 @@ export default function Auth() {
             <ShieldCheck className="w-5 h-5" />
           </div>
           <h1 className="text-xl font-bold text-neutral-900 tracking-tight">
-            {isSignUp ? 'Create your author workspace' : 'Welcome to Living Story Bible'}
+            {isSignUp ? 'Create your author workspace' : 'Welcome to NorthStar'}
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
             Persistent, evidence-backed narrative memory for storytellers.

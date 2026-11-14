@@ -1,4 +1,4 @@
-LIVING STORY BIBLE
+NORTHSTAR
 AI Continuity Guardian
 TOTAL HACKATHON DEVELOPMENT ROADMAP
 A practical product, architecture, implementation, and demonstration plan
@@ -46,10 +46,10 @@ Document contents
 18. Implementation checklist
 19. Success criteria and immediate next steps
 1. Product definition and vision
-Living Story Bible is a browser-based writing environment for novelists and screenwriters. A writer can upload an existing manuscript or write in a built-in editor. The system analyzes the story and builds persistent narrative memory: characters, locations, objects, relationships, world-building rules, events, and timeline details.
+NorthStar is a browser-based writing environment for novelists and screenwriters. A writer can upload an existing manuscript or write in a built-in editor. The system analyzes the story and builds persistent narrative memory: characters, locations, objects, relationships, world-building rules, events, and timeline details.
 As the manuscript grows, the AI compares new passages with previously established story information. It identifies possible continuity contradictions, explains why they may be conflicts, and cites the earlier and newer passages. The author remains in control: the application must never rewrite the manuscript automatically.
 Core value proposition
-Writers should focus on creating stories. Living Story Bible should remember the details and warn them when something does not add up.
+Writers should focus on creating stories. NorthStar should remember the details and warn them when something does not add up.
 Example continuity scenario
 Source
 Story passage
@@ -373,7 +373,7 @@ Isolate all database and vector searches by project ID.
 Send only the relevant passages to the LLM rather than the entire manuscript where possible.
 Review the selected AI provider's current retention and data-use terms. Free API access does not automatically mean that submitted content is excluded from retention or training.
 12. Recommended repository structure
-living-story-bible/├── frontend/│   ├── public/│   └── src/│       ├── components/│       │   ├── Navbar.jsx│       │   ├── Sidebar.jsx│       │   ├── Editor.jsx│       │   ├── CharacterCard.jsx│       │   └── IssueCard.jsx│       ├── pages/│       │   ├── Landing.jsx│       │   ├── Dashboard.jsx│       │   ├── Workspace.jsx│       │   ├── KnowledgeGraph.jsx│       │   └── ContinuityReport.jsx│       ├── services/api.js│       ├── App.jsx│       └── main.jsx│├── backend/│   ├── app/│   │   ├── main.py│   │   ├── config.py│   │   ├── routes/│   │   │   ├── projects.py│   │   │   ├── manuscripts.py│   │   │   ├── chapters.py│   │   │   ├── entities.py│   │   │   └── continuity.py│   │   ├── agents/│   │   │   ├── orchestrator.py│   │   │   ├── extraction_agent.py│   │   │   ├── continuity_agent.py│   │   │   ├── character_agent.py│   │   │   └── timeline_agent.py│   │   ├── services/│   │   │   ├── document_parser.py│   │   │   ├── memory_service.py│   │   │   ├── vector_service.py│   │   │   ├── graph_service.py│   │   │   └── encryption_service.py│   │   ├── schemas/│   │   ├── database/│   │   └── utils/│   └── requirements.txt│├── database/schema.sql├── .env.example├── .gitignore└── README.md
+northstar/├── frontend/│   ├── public/│   └── src/│       ├── components/│       │   ├── Navbar.jsx│       │   ├── Sidebar.jsx│       │   ├── Editor.jsx│       │   ├── CharacterCard.jsx│       │   └── IssueCard.jsx│       ├── pages/│       │   ├── Landing.jsx│       │   ├── Dashboard.jsx│       │   ├── Workspace.jsx│       │   ├── KnowledgeGraph.jsx│       │   └── ContinuityReport.jsx│       ├── services/api.js│       ├── App.jsx│       └── main.jsx│├── backend/│   ├── app/│   │   ├── main.py│   │   ├── config.py│   │   ├── routes/│   │   │   ├── projects.py│   │   │   ├── manuscripts.py│   │   │   ├── chapters.py│   │   │   ├── entities.py│   │   │   └── continuity.py│   │   ├── agents/│   │   │   ├── orchestrator.py│   │   │   ├── extraction_agent.py│   │   │   ├── continuity_agent.py│   │   │   ├── character_agent.py│   │   │   └── timeline_agent.py│   │   ├── services/│   │   │   ├── document_parser.py│   │   │   ├── memory_service.py│   │   │   ├── vector_service.py│   │   │   ├── graph_service.py│   │   │   └── encryption_service.py│   │   ├── schemas/│   │   ├── database/│   │   └── utils/│   └── requirements.txt│├── database/schema.sql├── .env.example├── .gitignore└── README.md
 Keep the frontend and backend in one GitHub repository initially. Agree on API contracts and JSON schemas before parallel development begins.
 13. 48-hour development schedule
 Time
@@ -450,7 +450,7 @@ Show the new passage, earlier passage, explanation, and suggestions.
 Show author control.
 Mark an issue intentional or resolve it; explain that AI never edits the manuscript automatically.
 Suggested presentation line
-“Most AI writing tools help you write the next sentence. Living Story Bible helps you remember every sentence you've written before.”
+“Most AI writing tools help you write the next sentence. NorthStar helps you remember every sentence you've written before.”
 17. Main risks and mitigations
 Risk
 Mitigation
@@ -522,7 +522,7 @@ Agree on the database schema and API response formats.
 Build the manuscript upload-to-continuity-detection workflow before expanding into advanced features.
 First technical milestone
 Upload a manuscript → Extract story facts → Store memory → Detect one contradiction → Return evidence.
-If this workflow works reliably, the central intelligence of Living Story Bible is functioning. The editor, graph polish, timeline, and advanced agents can then build around it.
+If this workflow works reliably, the central intelligence of NorthStar is functioning. The editor, graph polish, timeline, and advanced agents can then build around it.
 Final implementation principle
-Do not let Living Story Bible become just another chatbot with a document-upload button. Its differentiator is persistent, evidence-backed narrative memory. The system should be able to explain what is known about a character, where a fact was established, what happened before an event, which story rules apply, and whether new writing conflicts with previously established information.
+Do not let NorthStar become just another chatbot with a document-upload button. Its differentiator is persistent, evidence-backed narrative memory. The system should be able to explain what is known about a character, where a fact was established, what happened before an event, which story rules apply, and whether new writing conflicts with previously established information.
 Build the smallest reliable version of that capability first. A stable, evidence-backed continuity demonstration is more valuable than many incomplete features.

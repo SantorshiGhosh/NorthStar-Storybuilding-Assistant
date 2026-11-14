@@ -11,7 +11,7 @@ from app.database.connection import engine
 
 def verify_all():
     print("==================================================================")
-    print(" LIVING STORY BIBLE — SYSTEM INTEGRATION STATUS CHECK")
+    print(" NORTHSTAR — SYSTEM INTEGRATION STATUS CHECK")
     print("==================================================================")
 
     # 1. Check Supabase Database

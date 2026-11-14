@@ -9,7 +9,7 @@ from app.main import app
 
 async def test_full_system():
     print("==================================================================")
-    print("TESTING LIVING STORY BIBLE — REST API & CONTINUITY GUARDIAN")
+    print("TESTING NORTHSTAR — REST API & CONTINUITY GUARDIAN")
     print("==================================================================")
 
     transport = httpx.ASGITransport(app=app)
