@@ -300,6 +300,33 @@ export const entityService = {
     invalidateCache('graph:');
     return res.data;
   },
+
+  deleteEntity: async (entityId) => {
+    const res = await api.delete(`/entities/${entityId}`);
+    invalidateCache(`entity:${entityId}`);
+    invalidateCache('entities:');
+    invalidateCache('graph:');
+    invalidateCache('projects:list');
+    invalidateCache('project:bundle:');
+    return res.data;
+  },
+
+  // Relationship delegations for architectural compatibility
+  getRelationships: async (projectId, options = {}) => {
+    return relationshipService.getRelationships(projectId, options);
+  },
+
+  createRelationship: async (projectId, data) => {
+    return relationshipService.createRelationship(projectId, data);
+  },
+
+  updateRelationship: async (relationshipId, data) => {
+    return relationshipService.updateRelationship(relationshipId, data);
+  },
+
+  deleteRelationship: async (relationshipId) => {
+    return relationshipService.deleteRelationship(relationshipId);
+  },
 };
 
 export const relationshipService = {
@@ -314,6 +341,7 @@ export const relationshipService = {
     const res = await api.post(`/projects/${projectId}/relationships`, data);
     invalidateCache(`relationships:${projectId}`);
     invalidateCache(`graph:${projectId}`);
+    invalidateCache(`project:bundle:${projectId}`);
     return res.data;
   },
 
@@ -321,6 +349,15 @@ export const relationshipService = {
     const res = await api.patch(`/relationships/${relationshipId}`, data);
     invalidateCache('relationships:');
     invalidateCache('graph:');
+    invalidateCache('project:bundle:');
+    return res.data;
+  },
+
+  deleteRelationship: async (relationshipId) => {
+    const res = await api.delete(`/relationships/${relationshipId}`);
+    invalidateCache('relationships:');
+    invalidateCache('graph:');
+    invalidateCache('project:bundle:');
     return res.data;
   },
 };
@@ -332,6 +369,140 @@ export const continuityService = {
     invalidateCache('projects:list');
     invalidateCache('project:bundle:');
     invalidateCache('project:');
+    return res.data;
+  },
+};
+
+export const architectService = {
+  getCategories: async (projectId, options = {}) => {
+    return fetchWithCache(`categories:${projectId}`, async () => {
+      const res = await api.get(`/projects/${projectId}/categories`);
+      return res.data;
+    }, { ttl: 60000, ...options });
+  },
+
+  createCategory: async (projectId, data) => {
+    const res = await api.post(`/projects/${projectId}/categories`, data);
+    invalidateCache(`categories:${projectId}`);
+    return res.data;
+  },
+
+  getCanvases: async (projectId, options = {}) => {
+    return fetchWithCache(`canvases:${projectId}`, async () => {
+      const res = await api.get(`/projects/${projectId}/canvases`);
+      return res.data;
+    }, { ttl: 60000, ...options });
+  },
+
+  createCanvas: async (projectId, data) => {
+    const res = await api.post(`/projects/${projectId}/canvases`, data);
+    invalidateCache(`canvases:${projectId}`);
+    return res.data;
+  },
+
+  getCanvasDetails: async (canvasId) => {
+    const res = await api.get(`/canvases/${canvasId}`);
+    return res.data;
+  },
+
+  updateCanvas: async (canvasId, data) => {
+    const res = await api.patch(`/canvases/${canvasId}`, data);
+    invalidateCache('canvases:');
+    return res.data;
+  },
+
+  deleteCanvas: async (canvasId) => {
+    const res = await api.delete(`/canvases/${canvasId}`);
+    invalidateCache('canvases:');
+    return res.data;
+  },
+
+  saveCanvasNodes: async (canvasId, nodes) => {
+    const res = await api.post(`/canvases/${canvasId}/nodes`, nodes);
+    return res.data;
+  },
+
+  getGroups: async (projectId, options = {}) => {
+    return fetchWithCache(`groups:${projectId}`, async () => {
+      const res = await api.get(`/projects/${projectId}/groups`);
+      return res.data;
+    }, { ttl: 60000, ...options });
+  },
+
+  createGroup: async (projectId, data) => {
+    const res = await api.post(`/projects/${projectId}/groups`, data);
+    invalidateCache(`groups:${projectId}`);
+    return res.data;
+  },
+
+  deleteGroup: async (groupId) => {
+    const res = await api.delete(`/groups/${groupId}`);
+    invalidateCache('groups:');
+    return res.data;
+  },
+
+  getAttachments: async (projectId, options = {}) => {
+    return fetchWithCache(`attachments:${projectId}`, async () => {
+      const res = await api.get(`/projects/${projectId}/attachments`);
+      return res.data;
+    }, { ttl: 60000, ...options });
+  },
+
+  createAttachment: async (projectId, data) => {
+    const res = await api.post(`/projects/${projectId}/attachments`, data);
+    invalidateCache(`attachments:${projectId}`);
+    return res.data;
+  },
+
+  analyzeAttachment: async (attachmentId) => {
+    const res = await api.post(`/attachments/${attachmentId}/analyze`);
+    return res.data;
+  },
+
+  getSnapshots: async (projectId, options = {}) => {
+    return fetchWithCache(`snapshots:${projectId}`, async () => {
+      const res = await api.get(`/projects/${projectId}/snapshots`);
+      return res.data;
+    }, { ttl: 30000, ...options });
+  },
+
+  createSnapshot: async (projectId, data) => {
+    const res = await api.post(`/projects/${projectId}/snapshots`, data);
+    invalidateCache(`snapshots:${projectId}`);
+    return res.data;
+  },
+
+  restoreSnapshot: async (snapshotId) => {
+    const res = await api.post(`/snapshots/${snapshotId}/restore`);
+    invalidateCache(); // Clear full cache on snapshot restore
+    return res.data;
+  },
+
+  getAuditLogs: async (projectId, limit = 50) => {
+    const res = await api.get(`/projects/${projectId}/audit-logs`, { params: { limit } });
+    return res.data;
+  },
+
+  getMatchingCandidates: async (projectId) => {
+    const res = await api.get(`/projects/${projectId}/matching-candidates`);
+    return res.data;
+  },
+
+  resolveMatchingCandidate: async (candidateId, data) => {
+    const res = await api.post(`/matching-candidates/${candidateId}/resolve`, data);
+    invalidateCache('entities:');
+    invalidateCache('graph:');
+    return res.data;
+  },
+
+  exportProject: async (projectId) => {
+    const res = await api.get(`/projects/${projectId}/export`);
+    return res.data;
+  },
+
+  applyTemplate: async (projectId, templateType = 'fantasy') => {
+    const res = await api.post(`/projects/${projectId}/apply-template`, null, { params: { template_type: templateType } });
+    invalidateCache(`categories:${projectId}`);
     return res.data;
   },
 };

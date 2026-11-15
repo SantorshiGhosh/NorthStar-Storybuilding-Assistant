@@ -26,7 +26,9 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import Editor from '../components/Editor';
 import IssueCard from '../components/IssueCard';
-import { projectService, chapterService, getCached } from '../services/api';
+import EntityMatchingDrawer from '../components/EntityMatchingDrawer';
+import { projectService, chapterService, architectService, getCached } from '../services/api';
+import { GitMerge, Compass, GitFork, X, ExternalLink } from 'lucide-react';
 
 const PANELS_STORAGE_KEY = 'northstar_workspace_panels';
 
@@ -64,6 +66,10 @@ export default function Workspace() {
   const [loading, setLoading] = useState(() => !cachedProj && !cachedBundle);
   const [analyzing, setAnalyzing] = useState(false);
   const [issueFilter, setIssueFilter] = useState('all'); // all, unresolved, high
+  const [matchingCandidatesCount, setMatchingCandidatesCount] = useState(0);
+  const [showMatchingDrawer, setShowMatchingDrawer] = useState(false);
+  const [showWorldGraphDrawer, setShowWorldGraphDrawer] = useState(false);
+  const [graphData, setGraphData] = useState(null);
 
   // Panel Collapsible Visibility State & Persistence
   const initialPanels = getSavedPanelState();
@@ -125,6 +131,11 @@ export default function Workspace() {
         const chData = await chapterService.getChapter(targetId);
         setCurrentChapter(chData);
       }
+
+      // Check for pending matching candidates in background
+      architectService.getMatchingCandidates(projectId).then((m) => {
+        setMatchingCandidatesCount(m?.length || 0);
+      }).catch(() => {});
     } catch (err) {
       console.error('Failed to load workspace data:', err);
     } finally {
@@ -340,21 +351,58 @@ export default function Workspace() {
         {/* COLUMN 2: CENTRE TIPTAP WRITING CANVAS */}
         {/* ========================================================= */}
         <section
-          className={`h-full transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${
+          className={`h-full transition-all duration-300 ease-in-out flex flex-col overflow-hidden relative ${
             isCenterOpen
               ? 'flex-1 min-w-0 opacity-100 p-4'
               : 'w-0 flex-none min-w-0 opacity-0 pointer-events-none p-0 overflow-hidden'
           }`}
         >
+          {/* Entity Matching Queue Alert Banner */}
+          {matchingCandidatesCount > 0 && (
+            <div className="mb-3 px-4 py-2.5 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl flex items-center justify-between text-xs text-purple-900 dark:text-purple-200 shadow-2xs">
+              <div className="flex items-center space-x-2">
+                <GitMerge className="w-4 h-4 text-purple-600 shrink-0" />
+                <span>
+                  <strong>{matchingCandidatesCount} entity match candidate{matchingCandidatesCount > 1 ? 's' : ''}</strong> require author reconciliation.
+                </span>
+              </div>
+              <button
+                onClick={() => setShowMatchingDrawer(true)}
+                className="px-2.5 py-1 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors cursor-pointer"
+              >
+                Review & Reconcile
+              </button>
+            </div>
+          )}
+
           {currentChapter ? (
-            <Editor
-              initialContent={currentChapter.content}
-              chapterTitle={currentChapter.title}
-              onSave={handleSaveEditor}
-              onAnalyze={handleAnalyzeChapter}
-              analyzing={analyzing}
-              onCollapse={() => setIsCenterOpen(false)}
-            />
+            <div className="flex-1 flex flex-col relative overflow-hidden">
+              <Editor
+                initialContent={currentChapter.content}
+                chapterTitle={currentChapter.title}
+                onSave={handleSaveEditor}
+                onAnalyze={handleAnalyzeChapter}
+                analyzing={analyzing}
+                onCollapse={() => setIsCenterOpen(false)}
+              />
+
+              {/* Floating Quick World Graph Button */}
+              <div className="absolute bottom-4 right-4 z-20 flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    setShowWorldGraphDrawer(true);
+                    if (!graphData) {
+                      projectService.getGraph(projectId).then(setGraphData).catch(console.error);
+                    }
+                  }}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-white/95 dark:bg-neutral-850/95 backdrop-blur-xs border border-neutral-200 dark:border-neutral-700 rounded-full shadow-md text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:text-blue-600 hover:border-blue-300 transition-all cursor-pointer"
+                  title="Inspect World Graph without leaving editor"
+                >
+                  <GitFork className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Quick World Lore</span>
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center bg-white rounded-xl border border-neutral-200 text-xs text-neutral-400">
               No chapter selected. Pick a chapter from the sidebar.
@@ -569,6 +617,87 @@ export default function Workspace() {
           </button>
         )}
       </div>
+
+      {/* Floating World Graph / Lore Slide-over Drawer */}
+      {showWorldGraphDrawer && (
+        <div className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+          <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-850">
+            <div className="flex items-center space-x-2">
+              <GitFork className="w-4 h-4 text-blue-600" />
+              <h3 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
+                Quick World Lore
+              </h3>
+            </div>
+            <div className="flex items-center space-x-2">
+              <a
+                href={`/architect/${projectId}`}
+                className="flex items-center space-x-1 px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/50 rounded-lg hover:bg-blue-100 transition-colors"
+                title="Open in Story Architect"
+              >
+                <span>Architect</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <button
+                onClick={() => setShowWorldGraphDrawer(false)}
+                className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4 flex-1 overflow-y-auto space-y-3">
+            <p className="text-xs text-neutral-500">
+              Quick reference of active world entities, canon status, and lore connections while writing.
+            </p>
+
+            <div className="space-y-2 pt-2">
+              {(graphData?.nodes || []).length === 0 ? (
+                <div className="py-12 text-center text-xs text-neutral-400">Loading world entities...</div>
+              ) : (
+                graphData.nodes.map((node) => (
+                  <div
+                    key={node.id}
+                    className="p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-850 hover:border-neutral-300 transition-all flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center space-x-1.5 mb-1">
+                        <span className="text-xs font-bold text-neutral-900 dark:text-white">
+                          {node.data?.label || node.id}
+                        </span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full uppercase bg-neutral-100 dark:bg-neutral-800 text-neutral-600 font-semibold">
+                          {node.data?.entity_type || 'entity'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 line-clamp-1">
+                        {node.data?.description || 'No description available'}
+                      </p>
+                    </div>
+                    <a
+                      href={`/entity/${projectId}/${node.id}`}
+                      className="text-xs font-semibold text-blue-600 hover:underline shrink-0 ml-2"
+                    >
+                      Inspect &rarr;
+                    </a>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Entity Matching Review Queue Drawer */}
+      <EntityMatchingDrawer
+        projectId={projectId}
+        isOpen={showMatchingDrawer}
+        onClose={() => setShowMatchingDrawer(false)}
+        onCandidateResolved={() => {
+          architectService.getMatchingCandidates(projectId).then((m) => {
+            setMatchingCandidatesCount(m?.length || 0);
+          });
+        }}
+      />
     </div>
   );
 }

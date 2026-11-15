@@ -58,16 +58,61 @@ def update_entity(entity_id: str, data: s_models.EntityUpdate, db: Session = Dep
         entity.name = data.name.strip()
     if data.entity_type is not None and data.entity_type.strip():
         entity.entity_type = data.entity_type.strip()
+    if data.category_id is not None:
+        entity.category_id = str(data.category_id) if data.category_id else None
     if data.description is not None:
         entity.description = data.description
     if data.traits is not None:
         entity.traits = data.traits
     if data.first_appearance_chapter is not None:
         entity.first_appearance_chapter = data.first_appearance_chapter
+    if data.canon_status is not None:
+        entity.canon_status = data.canon_status
+    if data.protection_level is not None:
+        entity.protection_level = data.protection_level
+    if data.provenance is not None:
+        entity.provenance = data.provenance
+    if data.custom_properties is not None:
+        entity.custom_properties = data.custom_properties
+    if data.is_archived is not None:
+        entity.is_archived = data.is_archived
 
     db.commit()
     db.refresh(entity)
+
+    memory_service.log_audit_action(
+        db=db,
+        project_id=str(entity.project_id),
+        action="update_entity",
+        target_type="entity",
+        target_id=str(entity.id),
+        target_name=entity.name,
+        new_value={"canon_status": entity.canon_status, "protection_level": entity.protection_level}
+    )
     return entity
+
+@router.delete("/entities/{entity_id}")
+def delete_entity(entity_id: str, db: Session = Depends(get_db)):
+    entity = db.query(models.Entity).filter(models.Entity.id == entity_id).first()
+    if not entity:
+        raise HTTPException(status_code=404, detail="Entity not found")
+    if entity.protection_level >= 3:
+        raise HTTPException(status_code=403, detail="Entity is Locked or Immutable. Unlock before deletion.")
+
+    pid = str(entity.project_id)
+    name = entity.name
+    db.delete(entity)
+    db.commit()
+
+    memory_service.log_audit_action(
+        db=db,
+        project_id=pid,
+        action="delete_entity",
+        target_type="entity",
+        target_id=entity_id,
+        target_name=name
+    )
+    return {"status": "deleted", "entity_id": entity_id}
 
 # --- Relationships Endpoints (Roadmap Section 10) ---
 
@@ -106,12 +151,38 @@ def create_relationship(
         source_entity_id=str(data.source_entity_id),
         target_entity_id=str(data.target_entity_id),
         relation_type=data.relation_type,
-        source_chapter_id=str(source_ch_id) if source_ch_id else "",
+        source_chapter_id=str(source_ch_id) if source_ch_id else None,
         source_quote=source_quote,
-        description=data.description
+        description=data.description,
+        direction=data.direction or "directed",
+        custom_properties=data.custom_properties or {},
+        provenance=data.provenance or "manual",
+        protection_level=data.protection_level or 1
     )
     if not rel:
-        raise HTTPException(status_code=400, detail="Failed to save relationship with valid evidence")
+        raise HTTPException(status_code=400, detail="Failed to save relationship")
+
+    rel_id = getattr(rel, 'id', None) or (rel.get('id') if isinstance(rel, dict) else None)
+    memory_service.log_audit_action(
+        db=db,
+        project_id=project_id,
+        action="create_relationship",
+        target_type="relationship",
+        target_id=str(rel_id) if rel_id else None,
+        target_name=f"{src.name} -> {tgt.name}",
+        new_value={
+            "relation_type": data.relation_type,
+            "source": src.name,
+            "target": tgt.name,
+            "source_entity_id": str(data.source_entity_id),
+            "target_entity_id": str(data.target_entity_id),
+        }
+    )
+
+    if isinstance(rel, dict):
+        rel["source_name"] = src.name
+        rel["target_name"] = tgt.name
+        return rel
 
     rel.source_name = src.name
     rel.target_name = tgt.name
@@ -141,4 +212,21 @@ def update_relationship(
     if rel.target_entity:
         rel.target_name = rel.target_entity.name
     return rel
+
+@router.delete("/relationships/{relationship_id}")
+def delete_relationship(relationship_id: str, db: Session = Depends(get_db)):
+    rel = db.query(models.Relationship).filter(models.Relationship.id == relationship_id).first()
+    if not rel:
+        raise HTTPException(status_code=404, detail="Relationship not found")
+    pid = str(rel.project_id)
+    db.delete(rel)
+    db.commit()
+    memory_service.log_audit_action(
+        db=db,
+        project_id=pid,
+        action="delete_relationship",
+        target_type="relationship",
+        target_id=relationship_id
+    )
+    return {"status": "deleted", "relationship_id": relationship_id}
 

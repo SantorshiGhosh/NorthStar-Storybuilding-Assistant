@@ -59,6 +59,20 @@ def init_db():
         "ALTER TABLE story_facts ADD COLUMN IF NOT EXISTS fact_category VARCHAR(50) DEFAULT 'general';",
         "ALTER TABLE continuity_issues ADD COLUMN IF NOT EXISTS classification VARCHAR(50) DEFAULT 'likely_conflict';",
         "ALTER TABLE continuity_issues ADD COLUMN IF NOT EXISTS evidence JSONB;",
+        "ALTER TABLE entities ADD COLUMN IF NOT EXISTS category_id UUID;",
+        "ALTER TABLE entities ADD COLUMN IF NOT EXISTS canon_status VARCHAR(50) DEFAULT 'established';",
+        "ALTER TABLE entities ADD COLUMN IF NOT EXISTS protection_level INTEGER DEFAULT 1;",
+        "ALTER TABLE entities ADD COLUMN IF NOT EXISTS provenance VARCHAR(50) DEFAULT 'manual';",
+        "ALTER TABLE entities ADD COLUMN IF NOT EXISTS custom_properties JSONB DEFAULT '{}'::jsonb;",
+        "ALTER TABLE entities ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT FALSE;",
+        "ALTER TABLE relationships ADD COLUMN IF NOT EXISTS direction VARCHAR(50) DEFAULT 'directed';",
+        "ALTER TABLE relationships ADD COLUMN IF NOT EXISTS custom_properties JSONB DEFAULT '{}'::jsonb;",
+        "ALTER TABLE relationships ADD COLUMN IF NOT EXISTS provenance VARCHAR(50) DEFAULT 'manual';",
+        "ALTER TABLE relationships ADD COLUMN IF NOT EXISTS protection_level INTEGER DEFAULT 1;",
+        "ALTER TABLE story_facts ADD COLUMN IF NOT EXISTS canon_status VARCHAR(50) DEFAULT 'established';",
+        "ALTER TABLE story_facts ADD COLUMN IF NOT EXISTS protection_level INTEGER DEFAULT 1;",
+        "ALTER TABLE story_facts ADD COLUMN IF NOT EXISTS provenance VARCHAR(50) DEFAULT 'manuscript_extracted';",
+        "ALTER TABLE timeline_events ADD COLUMN IF NOT EXISTS canon_status VARCHAR(50) DEFAULT 'established';",
     ]
     try:
         with engine.connect() as conn:

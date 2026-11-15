@@ -21,6 +21,8 @@ const KnowledgeGraph = lazy(() => import('./pages/KnowledgeGraph'));
 const ContinuityReport = lazy(() => import('./pages/ContinuityReport'));
 const CharacterProfiles = lazy(() => import('./pages/CharacterProfiles'));
 const Timeline = lazy(() => import('./pages/Timeline'));
+const StoryArchitect = lazy(() => import('./pages/StoryArchitect'));
+const EntityProfile = lazy(() => import('./pages/EntityProfile'));
 
 function PageSkeleton() {
   return (
@@ -109,6 +111,8 @@ export default function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/workspace/:projectId" element={<Workspace />} />
+            <Route path="/architect/:projectId" element={<StoryArchitect />} />
+            <Route path="/entity/:projectId/:entityId" element={<EntityProfile />} />
             <Route path="/graph/:projectId" element={<KnowledgeGraph />} />
             <Route path="/continuity/:projectId" element={<ContinuityReport />} />
             <Route path="/characters/:projectId" element={<CharacterProfiles />} />

@@ -52,6 +52,24 @@ class GraphService:
                 "borderColor": "#8B5CF6",
                 "textColor": "#4C1D95",
                 "badge": "Faction"
+            },
+            "family": {
+                "bgColor": "#EEF2FF",  # soft indigo
+                "borderColor": "#6366F1",
+                "textColor": "#312E81",
+                "badge": "Family"
+            },
+            "plot": {
+                "bgColor": "#F3E8FF",  # soft purple
+                "borderColor": "#A855F7",
+                "textColor": "#581C87",
+                "badge": "Plot Arc"
+            },
+            "organization": {
+                "bgColor": "#FDF2F8",  # soft pink
+                "borderColor": "#EC4899",
+                "textColor": "#831843",
+                "badge": "Organization"
             }
         }
 
@@ -73,27 +91,24 @@ class GraphService:
                 str(ent.id),
                 name=ent.name,
                 entity_type=ent.entity_type,
+                category_id=str(getattr(ent, "category_id", "") or ""),
                 description=ent.description or "",
                 traits=ent.traits or [],
                 first_appearance=getattr(ent, "first_appearance_chapter", 1) or 1,
+                canon_status=getattr(ent, "canon_status", "established"),
+                protection_level=getattr(ent, "protection_level", 1),
+                custom_properties=getattr(ent, "custom_properties", {}),
+                is_archived=getattr(ent, "is_archived", False),
                 facts=facts_list,
                 fact_count=len(facts_list)
             )
 
-        # Add edges
+        # Add edges for spring layout
         for rel in relationships:
-            src_id = str(rel.source_entity_id)
-            tgt_id = str(rel.target_entity_id)
+            src_id = str(getattr(rel, "source_entity_id", None) or (rel.get("source_entity_id") if isinstance(rel, dict) else ""))
+            tgt_id = str(getattr(rel, "target_entity_id", None) or (rel.get("target_entity_id") if isinstance(rel, dict) else ""))
             if src_id in G and tgt_id in G:
-                G.add_edge(
-                    src_id,
-                    tgt_id,
-                    id=str(rel.id),
-                    relation_type=rel.relation_type,
-                    description=rel.description or "",
-                    source_chapter_id=str(rel.source_chapter_id or ""),
-                    source_quote=getattr(rel, "source_quote", "") or ""
-                )
+                G.add_edge(src_id, tgt_id)
 
         # Calculate coordinates using spring layout or circular
         if len(G.nodes) > 0:
@@ -129,6 +144,7 @@ class GraphService:
                     "label": data.get("name", "Unknown"),
                     "name": data.get("name", "Unknown"),
                     "entity_type": ent_type,
+                    "category_id": data.get("category_id", ""),
                     "description": data.get("description", ""),
                     "traits": data.get("traits", []),
                     "badge": theme["badge"],
@@ -136,26 +152,43 @@ class GraphService:
                     "borderColor": theme["borderColor"],
                     "textColor": theme["textColor"],
                     "first_appearance": data.get("first_appearance", 1),
+                    "canon_status": data.get("canon_status", "established"),
+                    "protection_level": data.get("protection_level", 1),
+                    "custom_properties": data.get("custom_properties", {}),
+                    "is_archived": data.get("is_archived", False),
                     "facts": data.get("facts", []),
                     "fact_count": data.get("fact_count", 0)
                 }
             })
 
         edges = []
-        for u, v, edata in G.edges(data=True):
-            edges.append({
-                "id": str(edata.get("id", f"{u}-{v}")),
-                "source": str(u),
-                "target": str(v),
-                "label": edata.get("relation_type", "connected to").replace("_", " "),
-                "animated": True,
-                "data": {
-                    "relation_type": edata.get("relation_type", ""),
-                    "description": edata.get("description", ""),
-                    "source_chapter_id": edata.get("source_chapter_id", ""),
-                    "source_quote": edata.get("source_quote", "")
-                }
-            })
+        for rel in relationships:
+            rel_id = str(getattr(rel, "id", None) or (rel.get("id") if isinstance(rel, dict) else ""))
+            src_id = str(getattr(rel, "source_entity_id", None) or (rel.get("source_entity_id") if isinstance(rel, dict) else ""))
+            tgt_id = str(getattr(rel, "target_entity_id", None) or (rel.get("target_entity_id") if isinstance(rel, dict) else ""))
+            rel_type = str(getattr(rel, "relation_type", None) or (rel.get("relation_type") if isinstance(rel, dict) else "connected"))
+            desc = getattr(rel, "description", None) or (rel.get("description") if isinstance(rel, dict) else "")
+            direction = getattr(rel, "direction", "directed") or (rel.get("direction", "directed") if isinstance(rel, dict) else "directed")
+            ch_id = getattr(rel, "source_chapter_id", None) or (rel.get("source_chapter_id") if isinstance(rel, dict) else "")
+            quote = getattr(rel, "source_quote", "") or (rel.get("source_quote", "") if isinstance(rel, dict) else "")
+
+            if src_id in G and tgt_id in G:
+                edges.append({
+                    "id": rel_id or f"{src_id}-{tgt_id}",
+                    "source": src_id,
+                    "target": tgt_id,
+                    "label": rel_type.replace("_", " "),
+                    "animated": True,
+                    "data": {
+                        "id": rel_id,
+                        "relation_type": rel_type,
+                        "label": rel_type.replace("_", " "),
+                        "description": desc or "",
+                        "direction": direction,
+                        "source_chapter_id": str(ch_id or ""),
+                        "source_quote": quote or ""
+                    }
+                })
 
         return {"nodes": nodes, "edges": edges}
 

@@ -10,7 +10,9 @@ import {
   Sparkles,
   ChevronRight,
   ShieldCheck,
-  FolderOpen
+  FolderOpen,
+  Feather,
+  Layers
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { projectService } from '../services/api';
@@ -38,6 +40,7 @@ export default function Navbar({ currentProject, onProjectChange }) {
 
   const navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: FolderOpen },
+    { label: 'Story Architect', path: projectId ? `/architect/${projectId}` : null, icon: Compass },
     { label: 'Workspace', path: projectId ? `/workspace/${projectId}` : null, icon: BookOpen },
     { label: 'Knowledge Graph', path: projectId ? `/graph/${projectId}` : null, icon: GitFork },
     { label: 'Continuity Report', path: projectId ? `/continuity/${projectId}` : null, icon: AlertTriangle, badge: currentProject?.unresolved_issues_count },
@@ -70,6 +73,36 @@ export default function Navbar({ currentProject, onProjectChange }) {
               <span className="text-xs font-medium text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded-md truncate max-w-[160px]">
                 {currentProject.name}
               </span>
+            </div>
+          )}
+
+          {/* Prominent Environment Switcher for Project */}
+          {projectId && (
+            <div className="hidden lg:flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/80 ml-3">
+              <Link
+                to={`/architect/${projectId}`}
+                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                  location.pathname.startsWith('/architect')
+                    ? 'bg-white text-neutral-900 shadow-2xs'
+                    : 'text-neutral-500 hover:text-neutral-900'
+                }`}
+                title="World-building, Universe Canon & Multi-View Knowledge Graph"
+              >
+                <Compass className="w-3.5 h-3.5 text-blue-600" />
+                <span>Story Architect</span>
+              </Link>
+              <Link
+                to={`/workspace/${projectId}`}
+                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                  location.pathname.startsWith('/workspace')
+                    ? 'bg-white text-neutral-900 shadow-2xs'
+                    : 'text-neutral-500 hover:text-neutral-900'
+                }`}
+                title="Manuscript Writing & AI Continuity Guardian"
+              >
+                <Feather className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Manuscript Workspace</span>
+              </Link>
             </div>
           )}
         </div>

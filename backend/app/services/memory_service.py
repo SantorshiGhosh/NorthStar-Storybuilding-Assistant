@@ -475,17 +475,22 @@ class NarrativeMemoryService:
         source_entity_id: str,
         target_entity_id: str,
         relation_type: str,
-        source_chapter_id: str,
-        source_quote: str,
-        description: Optional[str] = None
+        source_chapter_id: Optional[str] = None,
+        source_quote: Optional[str] = None,
+        description: Optional[str] = None,
+        direction: Optional[str] = "directed",
+        custom_properties: Optional[dict] = None,
+        provenance: Optional[str] = "manual",
+        protection_level: Optional[int] = 1
     ) -> Any:
-        if not source_chapter_id or not source_quote or not source_quote.strip():
-            logger.warning("Rejected relationship without source evidence")
+        if not relation_type or not relation_type.strip():
+            logger.warning("Rejected relationship without relation_type")
             return None
 
         rel_clean = relation_type.strip()
-        quote_clean = source_quote.strip()
+        quote_clean = (source_quote or "").strip() or f"Established relationship: {rel_clean}."
         desc_clean = description or ""
+        ch_id = str(source_chapter_id).strip() if source_chapter_id and str(source_chapter_id).strip() else None
 
         try:
             existing = db.query(models.Relationship).filter(
@@ -497,8 +502,16 @@ class NarrativeMemoryService:
 
             if existing:
                 existing.description = desc_clean or existing.description
-                existing.source_chapter_id = source_chapter_id
-                existing.source_quote = quote_clean
+                if ch_id:
+                    existing.source_chapter_id = ch_id
+                if quote_clean:
+                    existing.source_quote = quote_clean
+                if direction:
+                    existing.direction = direction
+                if custom_properties:
+                    existing.custom_properties = custom_properties
+                if protection_level:
+                    existing.protection_level = protection_level
                 db.commit()
                 db.refresh(existing)
                 return existing
@@ -510,8 +523,12 @@ class NarrativeMemoryService:
                 target_entity_id=target_entity_id,
                 relation_type=rel_clean,
                 description=desc_clean,
-                source_chapter_id=source_chapter_id,
-                source_quote=quote_clean
+                source_chapter_id=ch_id,
+                source_quote=quote_clean,
+                direction=direction or "directed",
+                custom_properties=custom_properties or {},
+                provenance=provenance or "manual",
+                protection_level=protection_level or 1
             )
             db.add(rel)
             db.commit()
@@ -990,6 +1007,284 @@ class NarrativeMemoryService:
             db.rollback()
             logger.error(f"Fallback update_issue_status failed: {e2}")
             return None
+
+    # --- Story Architect: Activity Audit Logging ---
+    def log_audit_action(
+        self,
+        db: Session,
+        project_id: str,
+        action: str,
+        target_type: str,
+        target_id: Optional[str] = None,
+        target_name: Optional[str] = None,
+        previous_value: Optional[Any] = None,
+        new_value: Optional[Any] = None,
+        actor_name: str = "Author",
+        source: str = "manual",
+        **kwargs
+    ) -> Optional[models.AuditLog]:
+        prev_val = previous_value if previous_value is not None else kwargs.get("prev_state")
+        new_val = new_value if new_value is not None else kwargs.get("new_state")
+        try:
+            log_entry = models.AuditLog(
+                id=models.gen_uuid(),
+                project_id=project_id,
+                actor_name=actor_name,
+                action=action,
+                target_type=target_type,
+                target_id=target_id,
+                target_name=target_name,
+                previous_value=prev_val,
+                new_value=new_val,
+                source=source
+            )
+            db.add(log_entry)
+            db.commit()
+            db.refresh(log_entry)
+            return log_entry
+        except Exception as e:
+            db.rollback()
+            logger.warning(f"Could not persist audit log: {e}")
+            return None
+
+    def get_audit_logs(self, db: Session, project_id: str, limit: int = 100) -> List[models.AuditLog]:
+        try:
+            return db.query(models.AuditLog).filter(
+                models.AuditLog.project_id == project_id
+            ).order_by(desc(models.AuditLog.created_at)).limit(limit).all()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error fetching audit logs: {e}")
+            return []
+
+    # --- Story Architect: Entity Categories ---
+    def get_or_create_default_categories(self, db: Session, project_id: str) -> List[models.EntityCategory]:
+        defaults = [
+            {"name": "Characters", "slug": "character", "icon": "Users", "color": "#3B82F6"},
+            {"name": "Families", "slug": "family", "icon": "Layers", "color": "#6366F1"},
+            {"name": "Locations", "slug": "location", "icon": "MapPin", "color": "#10B981"},
+            {"name": "Events", "slug": "event", "icon": "Calendar", "color": "#F59E0B"},
+            {"name": "Plots", "slug": "plot", "icon": "GitBranch", "color": "#8B5CF6"},
+            {"name": "Organisations", "slug": "organization", "icon": "Building2", "color": "#EC4899"},
+        ]
+        try:
+            existing = db.query(models.EntityCategory).filter(models.EntityCategory.project_id == project_id).all()
+            if not existing:
+                created = []
+                for cat in defaults:
+                    new_cat = models.EntityCategory(
+                        id=models.gen_uuid(),
+                        project_id=project_id,
+                        name=cat["name"],
+                        slug=cat["slug"],
+                        icon=cat["icon"],
+                        color=cat["color"],
+                        is_default=True,
+                        default_properties=[]
+                    )
+                    db.add(new_cat)
+                    created.append(new_cat)
+                db.commit()
+                return created
+            return existing
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error getting/creating default categories: {e}")
+            return []
+
+    # --- Story Architect: Multiple Canvases ---
+    def get_canvases(self, db: Session, project_id: str) -> List[models.Canvas]:
+        try:
+            canvases = db.query(models.Canvas).filter(models.Canvas.project_id == project_id).order_by(models.Canvas.created_at.asc()).all()
+            if not canvases:
+                # Auto-initialize default canvas
+                default_canvas = models.Canvas(
+                    id=models.gen_uuid(),
+                    project_id=project_id,
+                    name="Universe Canon",
+                    description="Primary master canvas of the fictional universe",
+                    view_type="relationship",
+                    layout_type="force_directed",
+                    is_default=True
+                )
+                db.add(default_canvas)
+                db.commit()
+                db.refresh(default_canvas)
+                return [default_canvas]
+            return canvases
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error fetching canvases: {e}")
+            return []
+
+    def save_canvas_node_positions(self, db: Session, canvas_id: str, nodes_data: List[Dict[str, Any]]) -> bool:
+        try:
+            for n in nodes_data:
+                ent_id = str(n.get("entity_id") or n.get("id"))
+                x = float(n.get("x", 0.0))
+                y = float(n.get("y", 0.0))
+                existing = db.query(models.CanvasNode).filter(
+                    models.CanvasNode.canvas_id == canvas_id,
+                    models.CanvasNode.entity_id == ent_id
+                ).first()
+                if existing:
+                    existing.x = x
+                    existing.y = y
+                else:
+                    new_node = models.CanvasNode(
+                        id=models.gen_uuid(),
+                        canvas_id=canvas_id,
+                        entity_id=ent_id,
+                        x=x,
+                        y=y
+                    )
+                    db.add(new_node)
+            db.commit()
+            return True
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error saving canvas node positions: {e}")
+            return False
+
+    # --- Story Architect: Nested Narrative Groups ---
+    def get_narrative_groups(self, db: Session, project_id: str) -> List[models.NarrativeGroup]:
+        try:
+            return db.query(models.NarrativeGroup).filter(models.NarrativeGroup.project_id == project_id).all()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error fetching narrative groups: {e}")
+            return []
+
+    def safe_delete_narrative_group(self, db: Session, group_id: str) -> bool:
+        """
+        Safely removes a group without ever cascade-deleting its child entities or subgroups.
+        Child groups are promoted to parent_group_id = NULL.
+        """
+        try:
+            grp = db.query(models.NarrativeGroup).filter(models.NarrativeGroup.id == group_id).first()
+            if not grp:
+                return False
+            # Reparent children
+            children = db.query(models.NarrativeGroup).filter(models.NarrativeGroup.parent_group_id == group_id).all()
+            for ch in children:
+                ch.parent_group_id = grp.parent_group_id
+            db.delete(grp)
+            db.commit()
+            return True
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Safe group deletion failed: {e}")
+            return False
+
+    # --- Story Architect: Attachments ---
+    def get_project_attachments(self, db: Session, project_id: str) -> List[models.EntityAttachment]:
+        try:
+            return db.query(models.EntityAttachment).filter(models.EntityAttachment.project_id == project_id).all()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error fetching attachments: {e}")
+            return []
+
+    # --- Story Architect: Snapshots & Version Restoration ---
+    def create_project_snapshot(
+        self,
+        db: Session,
+        project_id: str,
+        name: str,
+        description: Optional[str] = None,
+        is_milestone: bool = False
+    ) -> Optional[models.ProjectSnapshot]:
+        try:
+            # Serialize complete universe state
+            entities = self.get_entities(db, project_id)
+            relationships = db.query(models.Relationship).filter(models.Relationship.project_id == project_id).all()
+            facts = self.get_story_facts(db, project_id)
+            canvases = self.get_canvases(db, project_id)
+
+            snapshot_data = {
+                "project_id": project_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "entities": [
+                    {
+                        "id": str(e.id),
+                        "name": e.name,
+                        "entity_type": e.entity_type,
+                        "description": e.description,
+                        "traits": e.traits,
+                        "canon_status": getattr(e, "canon_status", "established"),
+                        "protection_level": getattr(e, "protection_level", 1),
+                        "custom_properties": getattr(e, "custom_properties", {})
+                    }
+                    for e in entities
+                ],
+                "relationships": [
+                    {
+                        "id": str(r.id),
+                        "source_entity_id": str(r.source_entity_id),
+                        "target_entity_id": str(r.target_entity_id),
+                        "relation_type": r.relation_type,
+                        "description": r.description
+                    }
+                    for r in relationships
+                ],
+                "facts": [
+                    {
+                        "id": str(f.id) if hasattr(f, 'id') else str(f.get('id')),
+                        "fact": f.fact if hasattr(f, 'fact') else f.get('fact'),
+                        "category": getattr(f, 'category', 'general') if hasattr(f, 'category') else f.get('category', 'general')
+                    }
+                    for f in facts
+                ]
+            }
+
+            snap = models.ProjectSnapshot(
+                id=models.gen_uuid(),
+                project_id=project_id,
+                name=name,
+                description=description,
+                is_milestone=is_milestone,
+                snapshot_data=snapshot_data
+            )
+            db.add(snap)
+            db.commit()
+            db.refresh(snap)
+
+            self.log_audit_action(
+                db=db,
+                project_id=project_id,
+                action="create_snapshot",
+                target_type="snapshot",
+                target_id=str(snap.id),
+                target_name=name,
+                new_value={"is_milestone": is_milestone}
+            )
+            return snap
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error creating snapshot: {e}")
+            return None
+
+    def get_snapshots(self, db: Session, project_id: str) -> List[models.ProjectSnapshot]:
+        try:
+            return db.query(models.ProjectSnapshot).filter(
+                models.ProjectSnapshot.project_id == project_id
+            ).order_by(desc(models.ProjectSnapshot.created_at)).all()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error fetching snapshots: {e}")
+            return []
+
+    # --- Story Architect: Entity Matching Queue ---
+    def get_matching_candidates(self, db: Session, project_id: str, status: str = "pending") -> List[models.EntityMatchingCandidate]:
+        try:
+            return db.query(models.EntityMatchingCandidate).filter(
+                models.EntityMatchingCandidate.project_id == project_id,
+                models.EntityMatchingCandidate.status == status
+            ).all()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error fetching matching candidates: {e}")
+            return []
 
     def clear_project_narrative_memory(self, db: Session, project_id: str) -> None:
         """

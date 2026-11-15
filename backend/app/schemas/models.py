@@ -63,20 +63,65 @@ class ChapterOut(BaseModel):
     class Config:
         from_attributes = True
 
+# --- Entity Categories ---
+class EntityCategoryCreate(BaseModel):
+    name: str
+    slug: Optional[str] = None
+    icon: Optional[str] = "Box"
+    color: Optional[str] = "#3B82F6"
+    is_default: Optional[bool] = False
+    default_properties: Optional[List[Dict[str, Any]]] = []
+
+class EntityCategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    default_properties: Optional[List[Dict[str, Any]]] = None
+
+class EntityCategoryOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    name: str
+    slug: str
+    icon: str = "Box"
+    color: str = "#3B82F6"
+    is_default: bool = False
+    default_properties: List[Dict[str, Any]] = []
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'project_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
 # --- Entities ---
 class EntityCreate(BaseModel):
     name: str
-    entity_type: str = "character"  # character, location, object, rule, faction
+    entity_type: str = "character"  # character, location, object, rule, faction, family, plot, organization, etc.
+    category_id: Optional[IdType] = None
     description: Optional[str] = None
     traits: List[str] = []
     first_appearance_chapter: Optional[int] = 1
+    canon_status: Optional[str] = "established"  # draft, planned, established, retired
+    protection_level: Optional[int] = 1  # 1: unlocked, 2: protected, 3: locked, 4: immutable
+    provenance: Optional[str] = "manual"
+    custom_properties: Optional[Dict[str, Any]] = {}
 
 class EntityUpdate(BaseModel):
     name: Optional[str] = None
     entity_type: Optional[str] = None
+    category_id: Optional[IdType] = None
     description: Optional[str] = None
     traits: Optional[List[str]] = None
     first_appearance_chapter: Optional[int] = None
+    canon_status: Optional[str] = None
+    protection_level: Optional[int] = None
+    provenance: Optional[str] = None
+    custom_properties: Optional[Dict[str, Any]] = None
+    is_archived: Optional[bool] = None
 
 class StoryFactOut(BaseModel):
     id: IdType
@@ -88,6 +133,9 @@ class StoryFactOut(BaseModel):
     source_quote: str = ""
     confidence: float = 1.0
     is_active: bool = True
+    canon_status: Optional[str] = "established"
+    protection_level: Optional[int] = 1
+    provenance: Optional[str] = "manuscript_extracted"
     created_at: Optional[Union[datetime, str]] = None
 
     @field_serializer('id', 'source_chapter_id', check_fields=False)
@@ -101,17 +149,23 @@ class StoryFactOut(BaseModel):
 class EntityOut(BaseModel):
     id: IdType
     project_id: IdType
+    category_id: Optional[IdType] = None
     name: str
     entity_type: str = "character"
     description: Optional[str] = None
     traits: List[str] = []
     first_appearance_chapter: Optional[int] = 1
     first_appearance_chapter_id: Optional[IdType] = None
+    canon_status: str = "established"
+    protection_level: int = 1
+    provenance: str = "manual"
+    custom_properties: Dict[str, Any] = {}
+    is_archived: bool = False
     facts: List[StoryFactOut] = []
     created_at: Optional[Union[datetime, str]] = None
     updated_at: Optional[Union[datetime, str]] = None
 
-    @field_serializer('id', 'project_id', 'first_appearance_chapter_id', check_fields=False)
+    @field_serializer('id', 'project_id', 'category_id', 'first_appearance_chapter_id', check_fields=False)
     def serialize_id(self, v: Any, _info):
         return str(v) if v is not None else None
 
@@ -127,11 +181,18 @@ class RelationshipCreate(BaseModel):
     description: Optional[str] = None
     source_chapter_id: Optional[IdType] = None
     source_quote: Optional[str] = None
+    direction: Optional[str] = "directed"
+    custom_properties: Optional[Dict[str, Any]] = {}
+    provenance: Optional[str] = "manual"
+    protection_level: Optional[int] = 1
 
 class RelationshipUpdate(BaseModel):
     relation_type: Optional[str] = None
     description: Optional[str] = None
     source_quote: Optional[str] = None
+    direction: Optional[str] = None
+    custom_properties: Optional[Dict[str, Any]] = None
+    protection_level: Optional[int] = None
 
 class RelationshipOut(BaseModel):
     id: IdType
@@ -144,7 +205,11 @@ class RelationshipOut(BaseModel):
     description: Optional[str] = None
     source_chapter_id: Optional[IdType] = None
     source_quote: Optional[str] = None
-    created_at: datetime
+    direction: str = "directed"
+    custom_properties: Dict[str, Any] = {}
+    provenance: str = "manual"
+    protection_level: int = 1
+    created_at: Optional[Union[datetime, str]] = None
 
     @field_serializer('id', 'project_id', 'source_entity_id', 'target_entity_id', 'source_chapter_id', check_fields=False)
     def serialize_id(self, v: Any, _info):
@@ -152,6 +217,191 @@ class RelationshipOut(BaseModel):
 
     class Config:
         from_attributes = True
+        extra = "ignore"
+
+# --- Canvases ---
+class CanvasCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    view_type: Optional[str] = "relationship"  # relationship, family_tree, plot, timeline
+    layout_type: Optional[str] = "manual"
+    settings: Optional[Dict[str, Any]] = {}
+    is_default: Optional[bool] = False
+
+class CanvasUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    view_type: Optional[str] = None
+    layout_type: Optional[str] = None
+    viewport: Optional[Dict[str, Any]] = None
+    settings: Optional[Dict[str, Any]] = None
+    is_default: Optional[bool] = None
+
+class CanvasNodeUpdate(BaseModel):
+    entity_id: IdType
+    x: float
+    y: float
+    width: Optional[float] = 220.0
+    height: Optional[float] = 120.0
+    visual_override: Optional[Dict[str, Any]] = None
+
+class CanvasOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    name: str
+    description: Optional[str] = None
+    view_type: str = "relationship"
+    layout_type: str = "manual"
+    viewport: Dict[str, Any] = {"x": 0, "y": 0, "zoom": 1}
+    settings: Dict[str, Any] = {}
+    is_default: bool = False
+    nodes_count: Optional[int] = 0
+    created_at: Optional[Union[datetime, str]] = None
+    updated_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'project_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
+# --- Narrative Groups ---
+class NarrativeGroupCreate(BaseModel):
+    name: str
+    parent_group_id: Optional[IdType] = None
+    group_type: Optional[str] = "general"
+    description: Optional[str] = None
+    color: Optional[str] = "#6B7280"
+
+class NarrativeGroupUpdate(BaseModel):
+    name: Optional[str] = None
+    parent_group_id: Optional[IdType] = None
+    group_type: Optional[str] = None
+    description: Optional[str] = None
+    color: Optional[str] = None
+
+class NarrativeGroupOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    parent_group_id: Optional[IdType] = None
+    name: str
+    group_type: str = "general"
+    description: Optional[str] = None
+    color: str = "#6B7280"
+    members_count: Optional[int] = 0
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'project_id', 'parent_group_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
+# --- Attachments ---
+class EntityAttachmentCreate(BaseModel):
+    filename: str
+    file_type: str = "image"
+    url: Optional[str] = None
+    description: Optional[str] = None
+    entity_ids: Optional[List[IdType]] = []
+
+class EntityAttachmentOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    filename: str
+    file_type: str = "image"
+    file_size: int = 0
+    url: Optional[str] = None
+    description: Optional[str] = None
+    linked_entities: Optional[List[Dict[str, Any]]] = []
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'project_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
+# --- Audit Logs ---
+class AuditLogOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    actor_id: Optional[IdType] = None
+    actor_name: str = "Author"
+    action: str
+    target_type: str
+    target_id: Optional[IdType] = None
+    target_name: Optional[str] = None
+    previous_value: Optional[Any] = None
+    new_value: Optional[Any] = None
+    source: str = "manual"
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'project_id', 'actor_id', 'target_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
+# --- Project Snapshots ---
+class ProjectSnapshotCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    is_milestone: Optional[bool] = False
+
+class ProjectSnapshotOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    name: str
+    description: Optional[str] = None
+    is_milestone: bool = False
+    entities_count: Optional[int] = 0
+    relationships_count: Optional[int] = 0
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'project_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
+# --- Entity Matching ---
+class EntityMatchingCandidateOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    chapter_id: Optional[IdType] = None
+    chapter_number: Optional[int] = None
+    extracted_name: str
+    extracted_type: str
+    candidate_entity_id: Optional[IdType] = None
+    candidate_entity_name: Optional[str] = None
+    similarity_score: float = 0.85
+    context_quote: Optional[str] = None
+    status: str = "pending"  # pending, merged, kept_separate, linked, dismissed
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'project_id', 'chapter_id', 'candidate_entity_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
+class EntityMatchingDecision(BaseModel):
+    decision: str  # merge, keep_separate, link, dismiss
+    target_entity_id: Optional[IdType] = None
+    notes: Optional[str] = None
 
 # --- Graph ---
 class GraphNode(BaseModel):
@@ -182,7 +432,7 @@ class ContinuityIssueOut(BaseModel):
     project_id: IdType
     chapter_id: Optional[IdType] = None
     issue_type: str = "continuity_issue"
-    classification: Optional[str] = "likely_conflict"  # likely_conflict, possible_conflict, intentional_or_explainable, insufficient_evidence
+    classification: Optional[str] = "likely_conflict"
     severity: str = "high"
     confidence: float = 0.88
     explanation: str = ""
@@ -216,6 +466,7 @@ class TimelineEventOut(BaseModel):
     date_or_time_label: Optional[str] = None
     participants: List[str] = []
     location: Optional[str] = None
+    canon_status: Optional[str] = "established"
     created_at: Optional[Union[datetime, str]] = None
 
     @field_serializer('id', 'project_id', check_fields=False)
@@ -262,4 +513,3 @@ class ProjectBundleOut(BaseModel):
     class Config:
         from_attributes = True
         extra = "ignore"
-
