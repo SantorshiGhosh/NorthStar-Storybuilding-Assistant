@@ -20,9 +20,11 @@ class AIProviderService:
     """
 
     CANDIDATE_MODELS = [
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash"
+        "gemini-3.8-flash",
+        "gemini-3.5-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash"
     ]
 
     def __init__(self):
@@ -34,7 +36,7 @@ class AIProviderService:
     def _init_client(self):
         raw_key = settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
         self.api_key = raw_key.strip().strip('"').strip("'") if raw_key else ""
-        if not self.api_key or not self.api_key.startswith("AIza"):
+        if not self.api_key or len(self.api_key) < 10:
             self._genai_client = None
             self._legacy_configured = False
             return
@@ -63,13 +65,13 @@ class AIProviderService:
         if not self.api_key or self.api_key != current_env_key:
             self._init_client()
 
-        if not self.api_key or not self.api_key.startswith("AIza"):
+        if not self.api_key or len(self.api_key) < 10:
             logger.debug("Valid GEMINI_API_KEY is not configured; relying on deterministic agent logic.")
             return None
 
         # Build list of models to try in priority order
         models_to_try = []
-        known_valid_prefixes = ("gemini-2.5", "gemini-2.0", "gemini-1.5")
+        known_valid_prefixes = ("gemini-3", "gemini-2", "gemini-1")
         if settings.GEMINI_MODEL and any(settings.GEMINI_MODEL.startswith(p) for p in known_valid_prefixes):
             if settings.GEMINI_MODEL not in self.CANDIDATE_MODELS:
                 models_to_try.append(settings.GEMINI_MODEL)
@@ -114,6 +116,7 @@ class AIProviderService:
         return None
 
     def _call_gemini_model(self, model_name: str, prompt: str) -> str:
+        last_err = None
         # Try google.genai first
         if self._genai_client:
             try:
@@ -124,17 +127,21 @@ class AIProviderService:
                 if resp and resp.text:
                     return resp.text
             except Exception as e:
-                # If new SDK fails, try legacy
-                pass
+                last_err = e
 
         # Try legacy google.generativeai
         if self._legacy_configured:
-            import google.generativeai as legacy_genai
-            model = legacy_genai.GenerativeModel(model_name)
-            resp = model.generate_content(prompt)
-            if resp and resp.text:
-                return resp.text
+            try:
+                import google.generativeai as legacy_genai
+                model = legacy_genai.GenerativeModel(model_name)
+                resp = model.generate_content(prompt)
+                if resp and resp.text:
+                    return resp.text
+            except Exception as e:
+                last_err = e
 
+        if last_err:
+            raise last_err
         return ""
 
 ai_provider = AIProviderService()
