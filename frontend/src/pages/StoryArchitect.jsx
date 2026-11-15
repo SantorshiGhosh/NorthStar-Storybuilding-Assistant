@@ -35,8 +35,6 @@ import {
   Crown,
   ChevronRight,
   ChevronDown,
-  Camera,
-  History,
   Archive,
   Search,
   Filter,
@@ -47,19 +45,14 @@ import {
   Sliders,
   X,
   ExternalLink,
-  RotateCcw,
   Copy,
   Edit2,
   CheckCircle2,
-  AlertCircle,
-  LayoutGrid
+  AlertCircle
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import AuditCentreModal from '../components/AuditCentreModal';
-import SnapshotManagerModal from '../components/SnapshotManagerModal';
 import ImportExportModal from '../components/ImportExportModal';
 import EntityMatchingDrawer from '../components/EntityMatchingDrawer';
-import { computeLayout } from '../services/graphLayouts';
 import {
   projectService,
   entityService,
@@ -169,8 +162,6 @@ export default function StoryArchitect() {
   const [isPropertiesDrawerOpen, setIsPropertiesDrawerOpen] = useState(false);
 
   // Modals state
-  const [showAuditModal, setShowAuditModal] = useState(false);
-  const [showSnapshotModal, setShowSnapshotModal] = useState(false);
   const [showImportExportModal, setShowImportExportModal] = useState(false);
   const [showMatchingDrawer, setShowMatchingDrawer] = useState(false);
   const [matchingCandidatesCount, setMatchingCandidatesCount] = useState(0);
@@ -196,8 +187,6 @@ export default function StoryArchitect() {
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Layout history & state
-  const [previousLayout, setPreviousLayout] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'failed'
 
   // Context Menu
@@ -353,29 +342,6 @@ export default function StoryArchitect() {
     }
   };
 
-  // Auto-Layout Handlers
-  const handleApplyLayout = (type) => {
-    if (!nodes || nodes.length === 0) return;
-    setPreviousLayout(nodes.map((n) => ({ id: n.id, position: { ...n.position } })));
-    const arranged = computeLayout(nodes, edges, type);
-    setNodes(arranged);
-    if (activeCanvas) {
-      architectService.updateCanvas(activeCanvas.id, { layout_type: type }).catch(() => {});
-    }
-  };
-
-  const handleRestoreLayout = () => {
-    if (!previousLayout) return;
-    const posMap = new Map(previousLayout.map((p) => [p.id, p.position]));
-    setNodes((prev) =>
-      prev.map((n) => ({
-        ...n,
-        position: posMap.get(n.id) || n.position,
-      }))
-    );
-    setPreviousLayout(null);
-  };
-
   // Canvas Management Handlers
   const handleDuplicateCanvas = async () => {
     if (!activeCanvas) return;
@@ -436,24 +402,6 @@ export default function StoryArchitect() {
     } catch (err) {
       console.error('Failed to create canvas:', err);
       alert('Error: ' + (err.response?.data?.detail || err.message));
-    }
-  };
-
-  // Apply World Template
-  const handleApplyTemplate = async (templateType) => {
-    const confirm = window.confirm(
-      `Apply "${templateType.toUpperCase()}" starter template? This will add structured world categories and archetypes without overwriting existing entities.`
-    );
-    if (!confirm) return;
-    try {
-      setLoading(true);
-      await architectService.applyTemplate(projectId, templateType);
-      await loadInitialData();
-    } catch (err) {
-      console.error('Failed to apply template:', err);
-      alert('Error applying template: ' + (err.response?.data?.detail || err.message));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -742,59 +690,9 @@ export default function StoryArchitect() {
               <span>Timeline</span>
             </button>
           </div>
-
-          {/* Six Auto-Layouts */}
-          <div className="flex items-center space-x-1 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200 dark:border-neutral-700">
-            <LayoutGrid className="w-3.5 h-3.5 text-neutral-400 ml-1.5" />
-            <select
-              defaultValue=""
-              onChange={(e) => {
-                if (e.target.value) {
-                  handleApplyLayout(e.target.value);
-                  e.target.value = '';
-                }
-              }}
-              className="px-1.5 py-1 text-xs bg-transparent text-neutral-700 dark:text-neutral-300 focus:outline-none"
-              title="Apply auto-layout algorithms"
-            >
-              <option value="" disabled>Auto-Layout...</option>
-              <option value="force_directed">Force-Directed</option>
-              <option value="hierarchical">Hierarchical</option>
-              <option value="circular">Circular</option>
-              <option value="grid">Grid Matrix</option>
-              <option value="family_tree">Family Tree</option>
-            </select>
-            {previousLayout && (
-              <button
-                onClick={handleRestoreLayout}
-                className="flex items-center space-x-1 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors"
-                title="Restore layout prior to auto-arrangement"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Restore</span>
-              </button>
-            )}
-          </div>
-
-          {/* World Template Selector */}
-          <select
-            defaultValue=""
-            onChange={(e) => {
-              if (e.target.value) {
-                handleApplyTemplate(e.target.value);
-                e.target.value = '';
-              }
-            }}
-            className="px-2 py-1 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-600 dark:text-neutral-300 focus:outline-none"
-          >
-            <option value="" disabled>Templates...</option>
-            <option value="fantasy">High Fantasy Realm</option>
-            <option value="scifi">Sci-Fi Galaxy</option>
-            <option value="mystery">Gothic Mystery Town</option>
-          </select>
         </div>
 
-        {/* Right Action Tools: Search, Save Status, Snapshots, Audit, Matching Queue, Import/Export, + Node */}
+        {/* Right Action Tools: Search, Save Status, Matching Queue, Import/Export, + Node */}
         <div className="flex items-center space-x-2">
           {/* Search Bar */}
           <div className="relative">
@@ -832,24 +730,6 @@ export default function StoryArchitect() {
               <span>Review Matches ({matchingCandidatesCount})</span>
             </button>
           )}
-
-          <button
-            onClick={() => setShowSnapshotModal(true)}
-            className="flex items-center space-x-1 px-2.5 py-1 text-xs font-medium bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100"
-            title="Point-in-time snapshots and rollbacks"
-          >
-            <Camera className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Snapshots</span>
-          </button>
-
-          <button
-            onClick={() => setShowAuditModal(true)}
-            className="flex items-center space-x-1 px-2.5 py-1 text-xs font-medium bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100"
-            title="Activity audit and provenance trail"
-          >
-            <History className="w-3.5 h-3.5 text-blue-600" />
-            <span>Audit Trail</span>
-          </button>
 
           <button
             onClick={() => setShowImportExportModal(true)}
@@ -1459,19 +1339,6 @@ export default function StoryArchitect() {
       )}
 
       {/* Global Feature Modals */}
-      <AuditCentreModal
-        projectId={projectId}
-        isOpen={showAuditModal}
-        onClose={() => setShowAuditModal(false)}
-      />
-
-      <SnapshotManagerModal
-        projectId={projectId}
-        isOpen={showSnapshotModal}
-        onClose={() => setShowSnapshotModal(false)}
-        onSnapshotRestored={() => loadInitialData()}
-      />
-
       <ImportExportModal
         projectId={projectId}
         projectName={project?.name}

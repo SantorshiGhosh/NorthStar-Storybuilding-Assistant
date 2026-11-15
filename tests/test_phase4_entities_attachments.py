@@ -41,13 +41,17 @@ class TestPhase4EntitiesAndAttachments(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         # Clean up test project attachments and entities
-        cls.db.query(models.EntityAttachmentLink).filter().delete()
-        cls.db.query(models.EntityAttachment).filter(models.EntityAttachment.project_id == cls.project.id).delete()
-        cls.db.query(models.Relationship).filter(models.Relationship.project_id == cls.project.id).delete()
-        cls.db.query(models.Entity).filter(models.Entity.project_id == cls.project.id).delete()
-        cls.db.query(models.Project).filter(models.Project.id == cls.project.id).delete()
-        cls.db.commit()
-        cls.db.close()
+        try:
+            cls.db.query(models.EntityAttachmentLink).delete()
+            cls.db.query(models.EntityAttachment).filter(models.EntityAttachment.project_id == cls.project.id).delete()
+            cls.db.query(models.Relationship).filter(models.Relationship.project_id == cls.project.id).delete()
+            cls.db.query(models.Entity).filter(models.Entity.project_id == cls.project.id).delete()
+            cls.db.query(models.Project).filter(models.Project.id == cls.project.id).delete()
+            cls.db.commit()
+        except Exception:
+            cls.db.rollback()
+        finally:
+            cls.db.close()
 
     def test_01_attachment_upload_and_aes_encryption(self):
         """Test file upload, AES-256-GCM encryption, integrity check, preview, and download"""

@@ -366,7 +366,13 @@ async def upload_attachment_files(
     created_attachments = []
 
     for f in files:
-        content_bytes = await f.read()
+        if hasattr(f, "file") and hasattr(f.file, "read"):
+            content_bytes = f.file.read()
+        elif hasattr(f, "read"):
+            import inspect
+            content_bytes = await f.read() if inspect.iscoroutinefunction(f.read) else f.read()
+        else:
+            content_bytes = b""
         file_size = len(content_bytes)
         checksum = hashlib.sha256(content_bytes).hexdigest()
 
