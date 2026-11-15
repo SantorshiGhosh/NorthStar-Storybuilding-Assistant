@@ -559,16 +559,30 @@ class CentralAIOrchestrator:
             for c in all_chs
         ]
 
-        # 2. Check if project currently has 0 entities or 0 facts in DB; auto-extract if needed
+        # 2. Check which chapter numbers already have facts in existing_facts;
+        # For any chapter in all_chs (ch_item.chapter_number <= chapter.chapter_number) that has no extracted facts yet,
+        # call self._extract_and_persist_chapter_memory and reload existing_facts & existing_ents.
         existing_facts = memory_service.get_story_facts(db, project_id)
         existing_ents = memory_service.get_entities(db, project_id)
-        if len(existing_facts) == 0 or len(existing_ents) == 0:
-            logger.info(f"Project {project_id} has no extracted memory. Running extraction across {len(all_chs)} chapters...")
-            for ch_item in all_chs:
-                try:
-                    self._extract_and_persist_chapter_memory(db, project_id, ch_item, fast_mode=True)
-                except Exception as e:
-                    logger.warning(f"Auto-extraction for chapter {ch_item.chapter_number} failed: {e}")
+
+        chapters_with_facts = set()
+        for f in existing_facts:
+            ch_num = getattr(f, "source_chapter_number", None) or (f.get("source_chapter_number") if isinstance(f, dict) else None)
+            if ch_num:
+                chapters_with_facts.add(ch_num)
+
+        needs_reload = False
+        for ch_item in all_chs:
+            if ch_item.chapter_number <= chapter.chapter_number:
+                if ch_item.chapter_number not in chapters_with_facts or len(existing_facts) == 0 or len(existing_ents) == 0:
+                    try:
+                        self._extract_and_persist_chapter_memory(db, project_id, ch_item, fast_mode=False)
+                        chapters_with_facts.add(ch_item.chapter_number)
+                        needs_reload = True
+                    except Exception as e:
+                        logger.warning(f"Auto-extraction for chapter {ch_item.chapter_number} failed: {e}")
+
+        if needs_reload:
             existing_facts = memory_service.get_story_facts(db, project_id)
             existing_ents = memory_service.get_entities(db, project_id)
 
@@ -587,8 +601,8 @@ class CentralAIOrchestrator:
         # 3. Retrieve relevant earlier passages from vector search (or SQL fallback)
         retrieved_passages = vector_service.search_similar_passages(
             project_id=project_id,
-            query=chapter.content[:500],
-            n_results=5,
+            query=chapter.content[:2000],
+            n_results=10,
             exclude_chapter_number=chapter.chapter_number
         )
 

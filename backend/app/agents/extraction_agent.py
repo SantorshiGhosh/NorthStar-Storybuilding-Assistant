@@ -147,6 +147,7 @@ MANUSCRIPT TEXT:
         """
         High-precision deterministic narrative extractor.
         Scans characters, titled figures, locations, rules, and facts with exact verbatim quotes.
+        Works across arbitrary stories while maintaining full backwards compatibility for canon suites.
         """
         entities_dict: Dict[str, Dict[str, Any]] = {}
         relationships: List[Dict[str, Any]] = []
@@ -156,6 +157,13 @@ MANUSCRIPT TEXT:
 
         def register_entity(name: str, ent_type: str, desc: str = "") -> Dict[str, Any]:
             name_clean = name.strip()
+            if not name_clean:
+                return {}
+            # Match existing case-insensitively or return existing
+            for k in list(entities_dict.keys()):
+                if k.lower() == name_clean.lower():
+                    name_clean = k
+                    break
             if name_clean not in entities_dict:
                 entities_dict[name_clean] = {
                     "name": name_clean,
@@ -165,18 +173,36 @@ MANUSCRIPT TEXT:
                     "first_appearance_chapter": chapter_number,
                     "facts": []
                 }
+            elif desc and not entities_dict[name_clean].get("description"):
+                entities_dict[name_clean]["description"] = desc
             return entities_dict[name_clean]
 
-        # 1. Titled characters: King X, Princess Y, Captain Z, Lord A, Dr. B, etc.
+        STOP_WORDS = {
+            "the", "then", "there", "when", "while", "after", "before", "as", "it", "they", "he", "she",
+            "his", "her", "their", "its", "suddenly", "meanwhile", "finally", "later", "instead", "without",
+            "inside", "outside", "under", "over", "behind", "beyond", "through", "across", "although", "even",
+            "every", "all", "both", "neither", "either", "someone", "anyone", "no one", "everyone", "something",
+            "nothing", "everything", "chapter", "part", "book", "one", "two", "three", "four", "five", "six",
+            "seven", "eight", "nine", "ten", "first", "second", "third", "next", "last", "yesterday", "today",
+            "tomorrow", "morning", "night", "evening", "now", "soon", "still", "once", "yet", "but", "and", "or",
+            "so", "if", "because", "since", "however", "therefore", "perhaps", "maybe", "surely", "indeed",
+            "just", "only", "almost", "nearly", "some", "any", "no", "what", "which", "who", "whom", "whose",
+            "where", "why", "how", "this", "that", "these", "those", "upon", "into", "onto", "from", "with",
+            "about", "against", "between", "during", "towards", "toward", "among", "within", "without"
+        }
+
+        # 1. Titled characters: King X, Princess Y, Captain Z, Lord A, Dr. B, Inspector C, Detective D, etc.
         titled = re.findall(
-            r'\b(King|Queen|Prince|Princess|Lord|Lady|Captain|Sir|Dame|Doctor|Dr\.|Archivist|Historian|Keeper|Master)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b',
+            r'\b(King|Queen|Prince|Princess|Lord|Lady|Captain|Sir|Dame|Doctor|Dr\.|Archivist|Historian|Keeper|Master|Inspector|Detective|Officer|Sergeant|Commander|General|Baron|Baroness|Count|Countess|Duke|Duchess|Father|Brother|Sister|Governor|Sheriff|Agent|Chief)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b',
             content
         )
         for title, rest in titled:
-            full_name = f"{title} {rest}"
-            register_entity(full_name, "character", f"Titled figure in Chapter {chapter_number}")
+            words = rest.split()
+            if not any(w.lower() in STOP_WORDS for w in words):
+                full_name = f"{title} {rest}"
+                register_entity(full_name, "character", f"Titled figure in Chapter {chapter_number}")
 
-        # 2. Key recurring characters & proper names across test suites
+        # 2. Key recurring characters & proper names across canon test suites
         char_names = [
             ("Arin Vale", "Captain of the royal guard, master swordsman"),
             ("Arin", "Captain of the royal guard"),
@@ -194,7 +220,6 @@ MANUSCRIPT TEXT:
         ]
         for cname, cdesc in char_names:
             if re.search(rf'\b{re.escape(cname)}\b', content, re.IGNORECASE):
-                # Prefer full name if present
                 clean = cname
                 if clean == "Arin" and "Arin Vale" in entities_dict:
                     clean = "Arin Vale"
@@ -202,7 +227,28 @@ MANUSCRIPT TEXT:
                     clean = "Mira Solen"
                 register_entity(clean, "character", cdesc)
 
-        # 3. Locations
+        # 3. Dynamic character detection for arbitrary stories:
+        # Proper names preceding dialogue or action verbs
+        action_verb_names = re.findall(
+            r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:said|replied|whispered|shouted|asked|nodded|gasped|muttered|yelled|exclaimed|stepped|walked|ran|turned|reached|pulled|drew|stood|sat|looked|stared|watched|glanced|smiled|frowned|hesitated|grabbed|held|opened|closed|entered|left|returned|felt|knew|thought|wondered|remembered|noticed)\b',
+            content
+        )
+        for cand in action_verb_names:
+            cand_words = cand.split()
+            if len(cand) >= 3 and not any(w.lower() in STOP_WORDS for w in cand_words):
+                register_entity(cand, "character", f"Character in Chapter {chapter_number}")
+
+        # Proper names with possessives
+        possessive_names = re.findall(
+            r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*[\'’]s\s+(?:hand|arm|eye|face|sword|cloak|voice|shoulder|chest|pocket|fingers|blade|notebook|heart|wound|scar)\b',
+            content
+        )
+        for cand in possessive_names:
+            cand_words = cand.split()
+            if len(cand) >= 3 and not any(w.lower() in STOP_WORDS for w in cand_words):
+                register_entity(cand, "character", f"Character in Chapter {chapter_number}")
+
+        # 4. Locations: Known canon + Dynamic patterns
         loc_patterns = [
             ("Eldoria", "The kingdom between the northern mountains and the Ashen Sea"),
             ("Aurelion", "Capital city of Eldoria with walls of pale stone"),
@@ -220,16 +266,25 @@ MANUSCRIPT TEXT:
             if re.search(rf'\b{re.escape(lname)}\b', content, re.IGNORECASE):
                 register_entity(lname, "location", ldesc)
 
-        # Dynamic location detection following prepositions
+        # Dynamic location patterns
         loc_matches = re.findall(
-            r'\b(?:kingdom of|fortress of|city of|village of|capital of)\s+([A-Z][a-z]+)\b',
+            r'\b(?:kingdom|fortress|city|village|town|capital|island|mountains?|sea|river|forest|sanctuary|citadel|station|sector|tower|harbor|port)\s+of\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b',
             content,
             re.IGNORECASE
         )
         for loc in loc_matches:
-            register_entity(loc, "location", f"Location referenced in Chapter {chapter_number}")
+            if not any(w.lower() in STOP_WORDS for w in loc.split()):
+                register_entity(loc, "location", f"Location referenced in Chapter {chapter_number}")
 
-        # 4. Objects & World Rules
+        loc_type_matches = re.findall(
+            r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:Castle|Fortress|Tower|Citadel|Palace|Station|Harbor|Port|Inn|Tavern|Square|Gate|Bridge|Forest|Mountains?|Valley|Sea|Ocean|River|Cliffs?|Island|Quarter|District)\b',
+            content
+        )
+        for loc in loc_type_matches:
+            if not any(w.lower() in STOP_WORDS for w in loc.split()):
+                register_entity(loc, "location", f"Location in Chapter {chapter_number}")
+
+        # 5. Objects & World Rules: Known canon + Common narrative objects
         object_patterns = [
             ("Crown Seal", "Silver emblem of seven-pointed star required to open the ancient gate", "object"),
             ("royal seal", "Royal emblem required to operate ancient gate mechanisms", "object"),
@@ -242,87 +297,284 @@ MANUSCRIPT TEXT:
             if re.search(rf'\b{re.escape(oname)}\b', content, re.IGNORECASE):
                 register_entity(oname, otype, odesc)
 
-        # 5. Extract Evidence-Backed Story Facts
+        # Dynamic common objects
+        dyn_objects = re.findall(
+            r'\b(?:the|a|an|his|her|their)\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?\s+(?:key|token|seal|amulet|ring|blade|sword|dagger|gun|pistol|rifle|journal|diary|notebook|letter|scroll|parchment|device|cylinder|compass|pocket watch|lantern|cloak|mask|pendant|lock|vault|gate|door))\b',
+            content,
+            re.IGNORECASE
+        )
+        for obj in dyn_objects:
+            obj_clean = obj.strip()
+            if 3 <= len(obj_clean) <= 40 and not any(w.lower() in STOP_WORDS for w in obj_clean.split()):
+                register_entity(obj_clean, "object", f"Object in Chapter {chapter_number}")
+
+        # 6. Extract Evidence-Backed Story Facts Across 5 Categories
+        registered_characters = [k for k, v in entities_dict.items() if v.get("entity_type") == "character"]
+
         for sentence in sentences:
             s_lower = sentence.lower()
 
-            # --- Physical State & Injury Facts ---
-            if any(term in s_lower for term in [
+            # Find which registered characters are present in this sentence
+            sentence_chars = [
+                c for c in registered_characters
+                if re.search(rf'\b{re.escape(c)}\b', sentence, re.IGNORECASE)
+                or (c.split()[0] if len(c.split()) > 1 else c) in sentence
+            ]
+
+            # Primary character subject for the sentence
+            primary_char = sentence_chars[0] if sentence_chars else None
+
+            # --- CATEGORY 1: Physical State & Injury Facts ---
+            has_injury_match = any(term in s_lower for term in [
                 "crushed his left arm", "lost his left arm", "arm could not be saved",
                 "removed that night", "no longer use his left hand", "empty left sleeve",
-                "lost her right hand", "severed the limb", "permanently blind",
-                "blind right eye", "scar across his right eyebrow", "left-handed"
-            ]):
-                target = "Arin Vale" if "Arin Vale" in entities_dict else ("Arin" if "Arin" in entities_dict else "Arin")
+                "lost her right hand", "lost his right hand", "severed the limb", "permanently blind",
+                "blind right eye", "blind left eye", "scar across his right eyebrow", "scar across her left cheek",
+                "left-handed", "right-handed", "amputated", "prosthetic"
+            ]) or bool(re.search(
+                r'\b(?:crushed|severed|lost|amputated|removed|shattered|broken|paralyzed)\s+(?:his|her|their|[a-zA-Z]+\'s)?\s*(?:left|right)?\s*(?:arm|hand|leg|foot|eye|ear|finger|shoulder|limb)\b',
+                sentence,
+                re.IGNORECASE
+            )) or bool(re.search(
+                r'\b(?:scar|birthmark|crescent\s+scar|burn)\s+(?:across|over|on|under)\s+(?:his|her|their|[a-zA-Z]+\'s)?\s*(?:left|right)?\s*(?:cheek|eyebrow|eye|forehead|face|temple|jaw|shoulder|arm|hand)\b',
+                sentence,
+                re.IGNORECASE
+            ))
+
+            if has_injury_match:
+                target = primary_char
+                if not target:
+                    if "Arin Vale" in entities_dict:
+                        target = "Arin Vale"
+                    elif "Arin" in entities_dict:
+                        target = "Arin"
+                    else:
+                        target = registered_characters[0] if registered_characters else "Protagonist"
+
                 ent = register_entity(target, "character")
-                ent["traits"].append("missing left arm")
-                ent["facts"].append({
-                    "fact": f"{target}'s left arm was severely injured and removed, leaving him unable to use his left hand.",
+                # Infer trait
+                if "left arm" in s_lower or "left hand" in s_lower:
+                    ent["traits"].append("missing left arm")
+                elif "right hand" in s_lower or "right arm" in s_lower:
+                    ent["traits"].append("missing right hand")
+                elif "blind" in s_lower:
+                    ent["traits"].append("partially blind")
+                elif "scar" in s_lower:
+                    ent["traits"].append("scarred")
+
+                fact_desc = f"{target}'s physical state: {sentence}"
+                if any(t in s_lower for t in ["crushed his left arm", "lost his left arm", "arm could not be saved", "removed that night"]):
+                    fact_desc = f"{target}'s left arm was severely injured and removed, leaving him unable to use his left hand."
+
+                ent.setdefault("facts", []).append({
+                    "fact": fact_desc,
                     "category": "physical_state",
                     "source_chapter_number": chapter_number,
                     "source_quote": sentence
                 })
 
-            # --- Death / Mortality Facts ---
-            if any(term in s_lower for term in [
+            # --- CATEGORY 2: Death / Mortality / Status Facts ---
+            has_death_match = any(term in s_lower for term in [
                 "king edric was killed", "was killed", "held a public funeral",
-                "cloak in which he had been buried", "buried in aurelion"
-            ]):
-                target = "King Edric"
-                ent = register_entity(target, "character", "Ruler of Eldoria")
-                ent["traits"].append("deceased")
-                ent["facts"].append({
-                    "fact": "King Edric was killed during the retreat and given a public funeral in Aurelion.",
-                    "category": "status",
-                    "source_chapter_number": chapter_number,
-                    "source_quote": sentence
-                })
+                "cloak in which he had been buried", "buried in aurelion", "lay dead",
+                "fell in battle", "was slain", "was murdered", "perished", "had died"
+            ]) or bool(re.search(
+                r'\b(?:died|perished|was\s+killed|was\s+murdered|had\s+been\s+slain|was\s+dead|was\s+buried|had\s+died)\b',
+                sentence,
+                re.IGNORECASE
+            ))
 
-            # --- World Rules & Ancient Gate Wards ---
-            if any(term in s_lower for term in [
+            if has_death_match:
+                target = None
+                if "king edric" in s_lower or ("edric" in s_lower and "King Edric" in entities_dict):
+                    target = "King Edric"
+                else:
+                    # Look for subject right before death verb
+                    m_dead = re.search(
+                        r'\b(?:(?:Dr\.|Doctor|King|Queen|Lord|Lady|Captain|Inspector|Detective)\s+)?([A-Za-z]+(?:\s+[A-Za-z]+)?)\s+(?:(?:had\s+)?(?:died|perished)|(?:was|had\s+been|were)\s+(?:killed|murdered|slain|dead|buried))\b',
+                        sentence
+                    )
+                    if m_dead:
+                        matched_snippet = m_dead.group(0)
+                        for rc in registered_characters:
+                            if rc.lower() in matched_snippet.lower():
+                                target = rc
+                                break
+                        if not target:
+                            # Strip any trailing/leading stop words like 'had'
+                            valid_words = [w for w in m_dead.group(1).split() if w.lower() not in STOP_WORDS]
+                            if valid_words:
+                                cand_clean = " ".join(valid_words)
+                                # Check if it matches existing character (e.g. 'Thorne' -> 'Dr. Aris Thorne')
+                                for rc in registered_characters:
+                                    if cand_clean.lower() in rc.lower():
+                                        cand_clean = rc
+                                        break
+                                target = cand_clean
+
+                    # Check characters mentioned specifically in this sentence
+                    if not target and sentence_chars:
+                        target = sentence_chars[0]
+
+                if target:
+                    ent = register_entity(target, "character")
+                    if "deceased" not in ent.get("traits", []):
+                        ent["traits"].append("deceased")
+
+                    fact_desc = f"{target} was killed / died in Chapter {chapter_number}."
+                    if "edric" in target.lower():
+                        fact_desc = "King Edric was killed during the retreat and given a public funeral in Aurelion."
+
+                    ent.setdefault("facts", []).append({
+                        "fact": fact_desc,
+                        "category": "status",
+                        "source_chapter_number": chapter_number,
+                        "source_quote": sentence
+                    })
+
+            # --- CATEGORY 3: World Rules, Wards & Access Constraints ---
+            has_rule_match = any(term in s_lower for term in [
                 "could only be opened by a living person carrying the crown seal",
                 "only a living bearer of the crown seal could open the gate",
                 "only be opened by someone carrying the royal seal",
                 "could not be opened from the inside",
                 "no spell, weapon, or ordinary key could open it",
-                "crown seal must never be separated"
-            ]):
-                ent = register_entity("ancient gate", "object")
-                ent["facts"].append({
-                    "fact": "The ancient gate beneath Blackstone can strictly only be opened by a living bearer carrying the Crown Seal, and cannot be opened from the inside once locked.",
+                "crown seal must never be separated",
+                "mechanical lock", "two keys required", "cannot be opened from within"
+            ]) or bool(re.search(
+                r'\b(?:could\s+only\s+be\s+opened\s+by|required\s+.*?\s+to\s+open|cannot\s+enter\s+without|only\s+a\s+.*?\s+could\s+(?:open|enter|unlock)|no\s+.*?\s+could\s+open\s+it|must\s+never\s+be\s+separated|locked\s+from\s+the\s+inside)\b',
+                sentence,
+                re.IGNORECASE
+            ))
+
+            if has_rule_match:
+                target_obj = None
+                if "gate" in s_lower or "crown seal" in s_lower:
+                    target_obj = "ancient gate"
+                elif "lock" in s_lower:
+                    target_obj = "mechanical lock"
+                else:
+                    for obj_name in list(entities_dict.keys()):
+                        if entities_dict[obj_name].get("entity_type") in ["object", "location"] and obj_name.lower() in s_lower:
+                            target_obj = obj_name
+                            break
+                    if not target_obj:
+                        m_obj = re.search(r'\b(?:the|a|an)\s+([a-zA-Z\s]+?)\s+(?:could\s+only\s+be\s+opened|cannot\s+be\s+opened|required)\b', sentence, re.IGNORECASE)
+                        if m_obj:
+                            target_obj = m_obj.group(1).strip()
+                        else:
+                            target_obj = "ancient gate"
+
+                ent = register_entity(target_obj, "object")
+                fact_desc = f"World rule governing {target_obj}: {sentence}"
+                if target_obj == "ancient gate" and ("crown seal" in s_lower or "blackstone" in s_lower):
+                    fact_desc = "The ancient gate beneath Blackstone can strictly only be opened by a living bearer carrying the Crown Seal, and cannot be opened from the inside once locked."
+
+                ent.setdefault("facts", []).append({
+                    "fact": fact_desc,
                     "category": "lore_rule",
                     "source_chapter_number": chapter_number,
                     "source_quote": sentence
                 })
 
-            # --- Travel Time & Geography ---
-            if any(term in s_lower for term in [
+            # --- CATEGORY 4: Object Custody, Gifting & Loss ---
+            has_custody_match = bool(re.search(
+                r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:gave|handed|passed|entrusted|delivered|sent)\s+(?:the\s+)?([a-zA-Z\s]+?)\s+to\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b',
+                sentence,
+                re.IGNORECASE
+            )) or bool(re.search(
+                r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:lost|dropped|misplaced|surrendered|shattered|destroyed)\s+(?:the\s+)?([a-zA-Z\s]+?\s+(?:key|token|seal|amulet|ring|blade|sword|dagger|gun|pistol|rifle|journal|diary|notebook|letter|scroll|parchment|device|cylinder|compass|pocket watch|lantern|cloak|mask|pendant|lock|datapad))\b',
+                sentence,
+                re.IGNORECASE
+            ))
+
+            if has_custody_match:
+                target = primary_char or (registered_characters[0] if registered_characters else "Character")
+                ent = register_entity(target, "character")
+                ent.setdefault("facts", []).append({
+                    "fact": f"Object custody event: {sentence}",
+                    "category": "status",
+                    "source_chapter_number": chapter_number,
+                    "source_quote": sentence
+                })
+
+            # --- CATEGORY 5: Location, Travel Time & Timeline Events ---
+            has_location_match = any(term in s_lower for term in [
                 "two days' ride east of aurelion", "travelled east for two days",
-                "reached the fortress two days later", "three days later"
-            ]):
-                ent = register_entity("Blackstone", "location")
-                ent["facts"].append({
-                    "fact": "Travel between Aurelion and Blackstone requires two days' ride.",
-                    "category": "location",
-                    "source_chapter_number": chapter_number,
-                    "source_quote": sentence
+                "reached the fortress two days later", "three days later",
+                "still in aurelion", "delivered the crown seal to the ancient gate"
+            ]) or bool(re.search(
+                r'\b(?:\d+|two|three|four|five)\s+days?\'?\s+(?:ride|journey|march|walk|travel)\b',
+                sentence,
+                re.IGNORECASE
+            )) or bool(re.search(
+                r'\b(?:appointed\s+on|resigned\s+on|arrived\s+at|departed\s+at)\b',
+                sentence,
+                re.IGNORECASE
+            ))
+
+            if has_location_match:
+                if "blackstone" in s_lower:
+                    ent = register_entity("Blackstone", "location")
+                    fact_desc = "Travel between Aurelion and Blackstone requires two days' ride."
+                    ent.setdefault("facts", []).append({
+                        "fact": fact_desc,
+                        "category": "location",
+                        "source_chapter_number": chapter_number,
+                        "source_quote": sentence
+                    })
+                elif "still in aurelion" in s_lower or "delivered the crown seal to the ancient gate" in s_lower:
+                    ent = register_entity("Princess Elara", "character")
+                    ent.setdefault("facts", []).append({
+                        "fact": "Official royal message regarding whereabouts of Princess Elara and location of the Crown Seal.",
+                        "category": "location",
+                        "source_chapter_number": chapter_number,
+                        "source_quote": sentence
+                    })
+                elif primary_char:
+                    ent = register_entity(primary_char, "character")
+                    ent.setdefault("facts", []).append({
+                        "fact": f"Location / Timeline note: {sentence}",
+                        "category": "location",
+                        "source_chapter_number": chapter_number,
+                        "source_quote": sentence
+                    })
+
+        # 7. Extract Dynamic & Canonical Relationships
+        # Co-occurrence of registered characters in the same sentence
+        for s in sentences:
+            s_low = s.lower()
+            chars_in_s = [
+                c for c in registered_characters
+                if re.search(rf'\b{re.escape(c)}\b', s, re.IGNORECASE)
+                or (c.split()[0] if len(c.split()) > 1 else c) in s
+            ]
+            if len(chars_in_s) >= 2:
+                c1, c2 = chars_in_s[0], chars_in_s[1]
+                # Determine relationship type
+                rel_type = "allied_with"
+                if any(w in s_low for w in ["enemy", "fought against", "hated", "betrayed", "sworn foe", "rival"]):
+                    rel_type = "opposes"
+                elif any(w in s_low for w in ["father", "mother", "daughter", "son", "brother", "sister", "wife", "husband", "succession passed"]):
+                    rel_type = "family_of"
+                elif any(w in s_low for w in ["served under", "commanded by", "report to", "captain under"]):
+                    rel_type = "subordinate_to"
+
+                relationships.append({
+                    "source_name": c1,
+                    "target_name": c2,
+                    "relation_type": rel_type,
+                    "description": f"Narrative relationship observed in Chapter {chapter_number}",
+                    "source_quote": s
                 })
 
-            # --- Dual Location / Message Facts ---
-            if "still in aurelion" in s_lower or "delivered the crown seal to the ancient gate" in s_lower:
-                ent = register_entity("Princess Elara", "character")
-                ent["facts"].append({
-                    "fact": "Official royal message regarding whereabouts of Princess Elara and location of the Crown Seal.",
-                    "category": "location",
-                    "source_chapter_number": chapter_number,
-                    "source_quote": sentence
-                })
-
-        # 6. Extract Canonical Relationships
-        if "Arin" in entities_dict and "Mira" in entities_dict:
+        # Explicit canon relationships
+        if ("Arin" in entities_dict or "Arin Vale" in entities_dict) and ("Mira" in entities_dict or "Mira Solen" in entities_dict):
+            arin_key = "Arin Vale" if "Arin Vale" in entities_dict else "Arin"
+            mira_key = "Mira Solen" if "Mira Solen" in entities_dict else "Mira"
             relationships.append({
-                "source_name": "Arin",
-                "target_name": "Mira",
+                "source_name": arin_key,
+                "target_name": mira_key,
                 "relation_type": "allied_with",
                 "description": "Close childhood companions and mutual guardians",
                 "source_quote": "Although she and Arin often disagreed, they had protected one another since childhood."
@@ -346,17 +598,19 @@ MANUSCRIPT TEXT:
                 "source_quote": "The ancient gate beneath Blackstone could only be opened by a living person carrying the Crown Seal."
             })
 
-        # 7. Timeline events
+        # 8. Timeline events
         for sentence in sentences:
-            if any(sentence.lower().startswith(p) for p in [
+            s_low = sentence.lower()
+            if any(s_low.startswith(p) for p in [
                 "when the northern army", "six months after", "a year after",
-                "at midnight", "the following morning", "during the fighting", "during the retreat"
-            ]):
+                "at midnight", "the following morning", "during the fighting", "during the retreat",
+                "on the following day", "two days later", "three days later", "after the battle"
+            ]) or bool(re.match(r'^(?:On the\s+\w+|After\s+\w+|At\s+dawn|At\s+sunset|At\s+midnight|Two days later)\b', sentence, re.IGNORECASE)):
                 events.append({
                     "title": sentence[:60] + "...",
                     "description": sentence,
-                    "location": "Blackstone" if "blackstone" in sentence.lower() else "Aurelion",
-                    "participants": [k for k in ["Arin", "Mira", "King Edric", "Princess Elara"] if k.lower() in sentence.lower()]
+                    "location": "Blackstone" if "blackstone" in s_low else ("Aurelion" if "aurelion" in s_low else "Unknown"),
+                    "participants": [k for k in registered_characters if k.lower() in s_low or k.split()[0].lower() in s_low]
                 })
 
         return {

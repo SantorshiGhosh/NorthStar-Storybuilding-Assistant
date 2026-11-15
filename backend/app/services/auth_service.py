@@ -154,7 +154,7 @@ class AuthService:
             id=models.gen_uuid(),
             email=email_clean,
             hashed_password=hashed,
-            full_name=full_name.strip() if full_name else None,
+            full_name=full_name.strip() if full_name else (email_clean.split("@")[0] or "User"),
             is_active=True,
             is_superuser=False
         )

@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     VAULT_STORAGE_DIRECTORY: str = str(BASE_DIR / "storage" / "private_vault")
 
     class Config:
-        env_file = str(ENV_FILE)
+        env_file = (str(BASE_DIR / ".env"), str(BASE_DIR / "backend" / ".env"))
         extra = "ignore"
 
 settings = Settings()
