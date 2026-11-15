@@ -21,12 +21,13 @@ import ThemeToggle from './ThemeToggle';
 import { projectService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-export default function Navbar({ currentProject, onProjectChange }) {
+export default function Navbar({ currentProject, onProjectChange, isDashboard: isDashboardProp }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [seeding, setSeeding] = useState(false);
 
+  const isDashboard = isDashboardProp ?? (location.pathname === '/dashboard');
   const projectId = currentProject?.id;
 
   const handleSignOut = async () => {
@@ -47,6 +48,97 @@ export default function Navbar({ currentProject, onProjectChange }) {
       setSeeding(false);
     }
   };
+
+  if (isDashboard) {
+    const authorName = user?.full_name || (user?.email ? user.email.split('@')[0] : 'Guest Author');
+
+    return (
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[#eae9e4] px-4 sm:px-6 lg:px-8 py-2.5 transition-all">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Left section: Logo, Icon & Brand Name (Far left) + Dashboard Navigation Item */}
+          <div className="flex items-center space-x-4 sm:space-x-6 shrink-0">
+            {/* Far left: NorthStar logo, icon, and brand name */}
+            <Link to="/" className="flex items-center space-x-2.5 group shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-neutral-900 text-white flex items-center justify-center shadow-xs group-hover:bg-blue-600 transition-colors">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div className="text-left">
+                <span className="font-semibold text-neutral-900 text-sm tracking-tight block leading-tight">
+                  NorthStar
+                </span>
+                <span className="text-[10px] text-neutral-400 font-medium tracking-wide uppercase block">
+                  AI Continuity Guardian
+                </span>
+              </div>
+            </Link>
+
+            {/* Left section: Dashboard navigation item */}
+            <nav className="flex items-center">
+              <Link
+                to="/dashboard"
+                className="h-8 inline-flex items-center space-x-1.5 px-3 rounded-md text-xs font-medium bg-neutral-100 text-neutral-900 shadow-2xs transition-colors shrink-0"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
+              </Link>
+            </nav>
+          </div>
+
+          {/* Far right: Group all remaining navigation buttons and account controls in one horizontal row */}
+          <div className="flex items-center space-x-2.5 sm:space-x-3 shrink-0">
+            <ThemeToggle className="h-8 w-8" />
+
+            <button
+              onClick={handleSeedDemo}
+              disabled={seeding}
+              title="Load the official 'The Last Kingdom' demonstration manuscript with intentional continuity conflicts"
+              className="h-8 inline-flex items-center space-x-1.5 px-3 rounded-md text-xs font-medium bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:border-neutral-300 transition-all shadow-2xs disabled:opacity-50 shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span>{seeding ? 'Loading Demo...' : 'Load Demo Story'}</span>
+            </button>
+
+            <Link
+              to="/dashboard"
+              className="h-8 inline-flex items-center px-3 rounded-md text-xs font-medium bg-neutral-900 text-white hover:bg-neutral-800 transition-colors shadow-2xs shrink-0"
+            >
+              Projects
+            </Link>
+
+            {user ? (
+              <div className="flex items-center space-x-2.5 sm:space-x-3 pl-2.5 sm:pl-3 border-l border-neutral-200 dark:border-neutral-700 shrink-0">
+                <span
+                  className="inline-block text-xs font-medium text-neutral-600 dark:text-neutral-300 max-w-[130px] truncate"
+                  title={user.email || authorName}
+                >
+                  {authorName}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  title="Sign out"
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-md text-neutral-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2.5 sm:space-x-3 pl-2.5 sm:pl-3 border-l border-neutral-200 dark:border-neutral-700 shrink-0">
+                <span className="inline-block text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                  Guest Author
+                </span>
+                <Link
+                  to="/auth"
+                  className="h-8 inline-flex items-center text-xs font-semibold text-blue-600 hover:underline shrink-0"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   const navItems = [
     { label: 'Story Architect', path: projectId ? `/architect/${projectId}` : null, icon: Compass },
