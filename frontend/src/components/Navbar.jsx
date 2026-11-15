@@ -127,7 +127,7 @@ export default function Navbar({ currentProject, onProjectChange }) {
                 <Icon className="w-3.5 h-3.5" />
                 <span>{item.label}</span>
                 {item.badge > 0 && (
-                  <span className="ml-1 px-1.5 py-0.2 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded-full border border-amber-200">
+                  <span className="ml-1 px-1.5 py-0.2 text-[10px] font-semibold bg-amber-100 text-amber-800 dark:text-[#92400e] rounded-full border border-amber-200">
                     {item.badge}
                   </span>
                 )}

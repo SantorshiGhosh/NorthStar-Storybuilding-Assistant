@@ -263,9 +263,11 @@ h1, h2, h3, h4, h5, h6 {
   background-color: rgba(210, 153, 34, 0.15) !important;
   color: #fcd34d !important;
 }
-.dark .text-amber-700,
-.dark .text-amber-800 {
+.dark .text-amber-700 {
   color: #fde047 !important;
+}
+.dark .text-amber-800 {
+  color: #92400e !important;
 }
 .dark .border-amber-200,
 .dark .border-amber-200\/60 {
