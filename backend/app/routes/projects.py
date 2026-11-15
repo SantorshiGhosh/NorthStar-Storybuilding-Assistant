@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_, func
 from typing import List, Optional, Dict, Any
 import logging
 
@@ -9,20 +10,40 @@ from app.schemas import models as s_models
 from app.services.graph_service import graph_service
 from app.services.vector_service import vector_service
 from app.services.memory_service import memory_service
+from app.routes.auth import get_current_user, get_optional_user, require_project_access
 
 logger = logging.getLogger("projects_route")
 
 router = APIRouter(tags=["Projects"])
 
 @router.post("/projects", response_model=s_models.ProjectOut)
-def create_project(data: s_models.ProjectCreate, db: Session = Depends(get_db)):
+def create_project(
+    data: s_models.ProjectCreate,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     try:
+        user_id = current_user.id if current_user else (data.user_id if data.user_id else None)
         project = models.Project(
+            id=models.gen_uuid(),
             name=data.name.strip(),
             description=data.description.strip() if data.description else None,
-            user_id=data.user_id if data.user_id else None
+            user_id=user_id,
+            is_demo=bool(data.is_demo)
         )
         db.add(project)
+        db.flush()
+
+        # Add creator as owner in ProjectMember
+        if user_id:
+            member = models.ProjectMember(
+                id=models.gen_uuid(),
+                project_id=project.id,
+                user_id=user_id,
+                role="owner"
+            )
+            db.add(member)
+
         db.commit()
         db.refresh(project)
 
@@ -31,6 +52,8 @@ def create_project(data: s_models.ProjectCreate, db: Session = Depends(get_db)):
             user_id=str(project.user_id) if project.user_id else None,
             name=project.name,
             description=project.description,
+            is_demo=bool(project.is_demo),
+            role="owner",
             chapter_count=0,
             character_count=0,
             unresolved_issues_count=0,
@@ -40,15 +63,47 @@ def create_project(data: s_models.ProjectCreate, db: Session = Depends(get_db)):
         )
     except Exception as e:
         db.rollback()
-        import traceback
-        print(f"[ERROR in create_project]: {e}")
-        traceback.print_exc()
+        logger.error(f"[ERROR in create_project]: {e}")
         raise HTTPException(status_code=500, detail=f"Database error creating project: {str(e)}")
 
 @router.get("/projects", response_model=List[s_models.ProjectOut])
-def list_projects(db: Session = Depends(get_db)):
-    from sqlalchemy import func
-    projects = db.query(models.Project).order_by(models.Project.updated_at.desc()).all()
+def list_projects(
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lists projects strictly isolated by authenticated user.
+    - An authenticated user sees:
+      1. Projects they own
+      2. Projects they are explicitly granted membership in
+      3. Global demo projects
+    - An unauthenticated visitor only sees demo projects or legacy unowned projects.
+    """
+    query = db.query(models.Project)
+
+    if current_user:
+        if not current_user.is_superuser:
+            member_project_subquery = db.query(models.ProjectMember.project_id).filter(
+                models.ProjectMember.user_id == current_user.id
+            )
+            query = query.filter(
+                or_(
+                    models.Project.user_id == current_user.id,
+                    models.Project.id.in_(member_project_subquery),
+                    models.Project.is_demo == True,
+                    models.Project.user_id == None  # Allow legacy demo projects
+                )
+            )
+    else:
+        # Unauthenticated: only demo or unassigned projects
+        query = query.filter(
+            or_(
+                models.Project.is_demo == True,
+                models.Project.user_id == None
+            )
+        )
+
+    projects = query.order_by(models.Project.updated_at.desc()).all()
     if not projects:
         return []
 
@@ -94,14 +149,37 @@ def list_projects(db: Session = Depends(get_db)):
         if pid_str not in manu_by_proj:
             manu_by_proj[pid_str] = m.filename
 
+    # Determine user role per project
+    member_roles = {}
+    if current_user:
+        memberships = db.query(models.ProjectMember).filter(
+            models.ProjectMember.user_id == current_user.id,
+            models.ProjectMember.project_id.in_(proj_ids)
+        ).all()
+        for m in memberships:
+            member_roles[str(m.project_id)] = m.role
+
     out = []
     for p in projects:
         pid = str(p.id)
+        user_role = "owner"
+        if current_user:
+            if str(p.user_id) == str(current_user.id):
+                user_role = "owner"
+            elif pid in member_roles:
+                user_role = member_roles[pid]
+            elif p.is_demo:
+                user_role = "viewer"
+        elif p.is_demo:
+            user_role = "viewer"
+
         out.append(s_models.ProjectOut(
             id=p.id,
             user_id=p.user_id,
             name=p.name,
             description=p.description,
+            is_demo=bool(p.is_demo),
+            role=user_role,
             chapter_count=ch_counts.get(pid, 0),
             character_count=char_counts.get(pid, 0),
             unresolved_issues_count=issue_counts.get(pid, 0),
@@ -112,10 +190,19 @@ def list_projects(db: Session = Depends(get_db)):
     return out
 
 @router.get("/projects/{project_id}", response_model=s_models.ProjectOut)
-def get_project(project_id: str, db: Session = Depends(get_db)):
+def get_project(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     p = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    if current_user:
+        require_project_access(project_id, current_user, db)
+    elif not p.is_demo and p.user_id is not None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required to access private project.")
 
     ch_count = db.query(models.Chapter).filter(models.Chapter.project_id == p.id).count()
     char_count = db.query(models.Entity).filter(
@@ -133,6 +220,8 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
         user_id=p.user_id,
         name=p.name,
         description=p.description,
+        is_demo=bool(p.is_demo),
+        role="owner" if current_user and str(p.user_id) == str(current_user.id) else "viewer",
         chapter_count=ch_count,
         character_count=char_count,
         unresolved_issues_count=issues_count,
@@ -142,40 +231,35 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
     )
 
 @router.get("/projects/{project_id}/bundle")
-def get_project_bundle(project_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
-    """
-    Combined fast endpoint: Fetches project metadata, chapters, continuity issues,
-    and entity counts in a single network roundtrip.
-    Every sub-query is wrapped in an independent try/except block to ensure HTTP 200 OK.
-    """
-    # 1. Project metadata
+def get_project_bundle(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    p = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if current_user:
+        require_project_access(project_id, current_user, db)
+    elif not p.is_demo and p.user_id is not None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
+
     project_dict = {
-        "id": project_id,
-        "name": "Story Project",
-        "description": "",
+        "id": str(p.id),
+        "user_id": str(p.user_id) if p.user_id else None,
+        "name": p.name,
+        "description": p.description or "",
+        "is_demo": bool(p.is_demo),
         "chapter_count": 0,
         "character_count": 0,
         "unresolved_issues_count": 0,
         "manuscript_title": None,
-        "created_at": None,
-        "updated_at": None
+        "created_at": p.created_at,
+        "updated_at": p.updated_at
     }
-    try:
-        p = db.query(models.Project).filter(models.Project.id == project_id).first()
-        if p:
-            project_dict.update({
-                "id": str(p.id),
-                "user_id": str(p.user_id) if p.user_id else None,
-                "name": p.name,
-                "description": p.description,
-                "created_at": p.created_at,
-                "updated_at": p.updated_at
-            })
-    except Exception as e:
-        logger.error(f"[bundle] Project metadata query failed for {project_id}: {e}")
-        db.rollback()
 
-    # 2. Chapters list
+    # Chapters list
     chapters_out = []
     try:
         chs = db.query(models.Chapter).filter(
@@ -194,18 +278,18 @@ def get_project_bundle(project_id: str, db: Session = Depends(get_db)) -> Dict[s
                 "updated_at": ch.updated_at
             })
     except Exception as e:
-        logger.error(f"[bundle] Chapters query failed for {project_id}: {e}")
+        logger.error(f"[bundle] Chapters query failed: {e}")
         db.rollback()
 
-    # 3. Continuity issues (fully normalized via memory_service)
+    # Continuity issues
     issues_out = []
     try:
         issues_out = memory_service.get_continuity_issues(db=db, project_id=project_id)
     except Exception as e:
-        logger.error(f"[bundle] Continuity issues query failed for {project_id}: {e}")
+        logger.error(f"[bundle] Issues query failed: {e}")
         db.rollback()
 
-    # 4. Entity count and character count
+    # Entities count
     entities_count = 0
     char_count = 0
     try:
@@ -216,23 +300,21 @@ def get_project_bundle(project_id: str, db: Session = Depends(get_db)) -> Dict[s
             if str(ent_type).lower() == "character":
                 char_count += 1
     except Exception as e:
-        logger.error(f"[bundle] Entities query failed for {project_id}: {e}")
+        logger.error(f"[bundle] Entities query failed: {e}")
         db.rollback()
 
-    # 5. Manuscript title
+    # Manuscript title
     try:
         manu = db.query(models.Manuscript).filter(models.Manuscript.project_id == project_id).first()
         if manu:
             project_dict["manuscript_title"] = manu.filename
     except Exception as e:
-        logger.error(f"[bundle] Manuscript query failed for {project_id}: {e}")
+        logger.error(f"[bundle] Manuscript query failed: {e}")
         db.rollback()
 
-    # Update summary counts on project_dict
-    unresolved_count = sum(1 for i in issues_out if i.get("status") in ["unresolved", "open"])
     project_dict["chapter_count"] = len(chapters_out)
     project_dict["character_count"] = char_count
-    project_dict["unresolved_issues_count"] = unresolved_count
+    project_dict["unresolved_issues_count"] = sum(1 for i in issues_out if i.get("status") in ["unresolved", "open"])
 
     return {
         "project": project_dict,
@@ -242,12 +324,21 @@ def get_project_bundle(project_id: str, db: Session = Depends(get_db)) -> Dict[s
     }
 
 @router.delete("/projects/{project_id}")
-def delete_project(project_id: str, db: Session = Depends(get_db)):
+def delete_project(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     p = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Clear vectors
+    if current_user:
+        require_project_access(project_id, current_user, db, require_write=True)
+        # Only owner or superuser can delete
+        if p.user_id is not None and str(p.user_id) != str(current_user.id) and not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="Only project owner can delete this project.")
+
     try:
         vector_service.clear_project(project_id)
     except Exception as e:
@@ -258,7 +349,13 @@ def delete_project(project_id: str, db: Session = Depends(get_db)):
     return {"status": "deleted", "project_id": project_id}
 
 @router.get("/projects/{project_id}/graph")
-def get_project_graph(project_id: str, db: Session = Depends(get_db)):
+def get_project_graph(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    if current_user:
+        require_project_access(project_id, current_user, db)
     try:
         entities = memory_service.get_entities(db=db, project_id=project_id)
         relationships = memory_service.get_relationships(db=db, project_id=project_id)
@@ -268,7 +365,13 @@ def get_project_graph(project_id: str, db: Session = Depends(get_db)):
         return {"nodes": [], "edges": []}
 
 @router.get("/projects/{project_id}/timeline")
-def get_project_timeline(project_id: str, db: Session = Depends(get_db)):
+def get_project_timeline(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    if current_user:
+        require_project_access(project_id, current_user, db)
     try:
         return memory_service.get_timeline_events(db=db, project_id=project_id)
     except Exception as e:
@@ -281,8 +384,11 @@ def get_project_issues(
     status: Optional[str] = Query(None),
     severity: Optional[str] = Query(None),
     issue_type: Optional[str] = Query(None),
+    current_user: Optional[models.User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
+    if current_user:
+        require_project_access(project_id, current_user, db)
     try:
         return memory_service.get_continuity_issues(
             db=db,

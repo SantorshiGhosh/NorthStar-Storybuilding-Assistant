@@ -1,4 +1,5 @@
 import os
+import hashlib
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
@@ -15,6 +16,12 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./story_bible.db"
 
+    # Authentication & Security
+    SECRET_KEY: str = ""
+    JWT_SECRET_KEY: str = ""
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+
     # AI Provider
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"
@@ -29,7 +36,7 @@ class Settings(BaseSettings):
 
     # Encryption (AES-256-GCM 32-byte hex key)
     ENCRYPTION_KEY: str = ""
-    VAULT_ENCRYPTION_KEY: str = "5f1d7a8e9b0c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+    VAULT_ENCRYPTION_KEY: str = ""
 
     # Vector Storage
     CHROMA_PERSIST_DIRECTORY: str = str(BASE_DIR / "storage" / "chroma_db")
@@ -43,8 +50,32 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+# Resolve relative SQLite URL to absolute path relative to BASE_DIR
+if settings.DATABASE_URL.startswith("sqlite:///./") or settings.DATABASE_URL == "sqlite:///story_bible.db":
+    db_rel = settings.DATABASE_URL.replace("sqlite:///./", "").replace("sqlite:///", "")
+    resolved_db_path = (BASE_DIR / db_rel).as_posix()
+    settings.DATABASE_URL = f"sqlite:///{resolved_db_path}"
+
+# Validate or dynamically generate development fallback secrets
+is_prod = settings.ENVIRONMENT.lower() in ("production", "prod")
+
+if not settings.JWT_SECRET_KEY:
+    if settings.SECRET_KEY:
+        settings.JWT_SECRET_KEY = settings.SECRET_KEY
+    elif is_prod:
+        raise RuntimeError("CRITICAL SECURITY ERROR: JWT_SECRET_KEY must be set in production.")
+    else:
+        # Stable local development secret derived from project path
+        settings.JWT_SECRET_KEY = hashlib.sha256(f"northstar_dev_jwt_{BASE_DIR}".encode()).hexdigest()
+
 if settings.ENCRYPTION_KEY:
     settings.VAULT_ENCRYPTION_KEY = settings.ENCRYPTION_KEY
+elif not settings.VAULT_ENCRYPTION_KEY:
+    if is_prod:
+        raise RuntimeError("CRITICAL SECURITY ERROR: ENCRYPTION_KEY must be configured in production.")
+    else:
+        # Stable local development AES-256 key derived from project path
+        settings.VAULT_ENCRYPTION_KEY = hashlib.sha256(f"northstar_dev_vault_{BASE_DIR}".encode()).hexdigest()
 
 if settings.SUPABASE_KEY and not settings.SUPABASE_ANON_KEY:
     settings.SUPABASE_ANON_KEY = settings.SUPABASE_KEY

@@ -114,6 +114,51 @@ def delete_entity(entity_id: str, db: Session = Depends(get_db)):
     )
     return {"status": "deleted", "entity_id": entity_id}
 
+@router.get("/entities/{entity_id}/resolved-properties")
+def get_resolved_entity_properties(entity_id: str, db: Session = Depends(get_db)):
+    ent = db.query(models.Entity).filter(models.Entity.id == entity_id).first()
+    if not ent:
+        raise HTTPException(status_code=404, detail="Entity not found")
+
+    own_props = dict(ent.custom_properties) if isinstance(ent.custom_properties, dict) else {}
+
+    # Check parent via custom_properties._parent_id or hierarchical relationship
+    parent_id = own_props.get("_parent_id")
+    if not parent_id:
+        parent_rel = db.query(models.Relationship).filter(
+            models.Relationship.target_entity_id == entity_id,
+            models.Relationship.relation_type.in_([
+                "Parent", "Part of", "Located in", "Sub-location of",
+                "Sub-faction of", "Branch of", "Member of", "Child of"
+            ])
+        ).first()
+        if parent_rel:
+            parent_id = str(parent_rel.source_entity_id)
+
+    inherited_props = {}
+    parent_name = None
+    if parent_id:
+        parent_ent = db.query(models.Entity).filter(models.Entity.id == parent_id).first()
+        if parent_ent and isinstance(parent_ent.custom_properties, dict):
+            parent_name = parent_ent.name
+            for k, v in parent_ent.custom_properties.items():
+                # Skip internal meta keys
+                if not str(k).startswith("_"):
+                    inherited_props[k] = v
+
+    merged = dict(inherited_props)
+    merged.update(own_props)
+
+    return {
+        "entity_id": entity_id,
+        "entity_name": ent.name,
+        "parent_id": parent_id,
+        "parent_name": parent_name,
+        "own_properties": own_props,
+        "inherited_properties": inherited_props,
+        "merged_properties": merged
+    }
+
 # --- Relationships Endpoints (Roadmap Section 10) ---
 
 @router.get("/projects/{project_id}/relationships")

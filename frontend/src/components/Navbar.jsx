@@ -12,17 +12,27 @@ import {
   ShieldCheck,
   FolderOpen,
   Feather,
-  Layers
+  Layers,
+  LogOut,
+  User as UserIcon,
+  Paperclip
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { projectService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar({ currentProject, onProjectChange }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [seeding, setSeeding] = useState(false);
 
   const projectId = currentProject?.id;
+
+  const handleSignOut = async () => {
+    await logout();
+    navigate('/auth');
+  };
 
   const handleSeedDemo = async () => {
     try {
@@ -46,6 +56,7 @@ export default function Navbar({ currentProject, onProjectChange }) {
     { label: 'Continuity Report', path: projectId ? `/continuity/${projectId}` : null, icon: AlertTriangle, badge: currentProject?.unresolved_issues_count },
     { label: 'Characters', path: projectId ? `/characters/${projectId}` : null, icon: Users },
     { label: 'Timeline', path: projectId ? `/timeline/${projectId}` : null, icon: Clock },
+    { label: 'Vault', path: projectId ? `/vault/${projectId}` : null, icon: Paperclip },
   ];
 
   return (
@@ -144,7 +155,7 @@ export default function Navbar({ currentProject, onProjectChange }) {
             onClick={handleSeedDemo}
             disabled={seeding}
             title="Load the official 'The Last Kingdom' demonstration manuscript with intentional continuity conflicts"
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-neutral-50 border border-neutral-200 text-neutral-700 hover:bg-neutral-100 hover:border-neutral-300 transition-all shadow-2xs disabled:opacity-50"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:border-neutral-300 transition-all shadow-2xs disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5 text-blue-600" />
             <span>{seeding ? 'Loading Demo...' : 'Load Demo Story'}</span>
@@ -156,6 +167,31 @@ export default function Navbar({ currentProject, onProjectChange }) {
           >
             Projects
           </Link>
+
+          {user ? (
+            <div className="flex items-center space-x-2 pl-2 border-l border-neutral-200 dark:border-neutral-700">
+              <span
+                className="hidden xl:inline-block text-xs font-medium text-neutral-600 dark:text-neutral-300 max-w-[130px] truncate"
+                title={user.email}
+              >
+                {user.full_name || user.email.split('@')[0]}
+              </span>
+              <button
+                onClick={handleSignOut}
+                title="Sign out"
+                className="p-1.5 rounded-md text-neutral-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="text-xs font-semibold text-blue-600 hover:underline pl-2 border-l border-neutral-200 dark:border-neutral-700"
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </header>

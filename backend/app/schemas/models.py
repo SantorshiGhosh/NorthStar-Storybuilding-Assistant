@@ -6,21 +6,73 @@ from datetime import datetime
 # Helper type for IDs that can be UUID or string
 IdType = Union[str, UUID]
 
+# --- Users & Authentication ---
+class UserRegister(BaseModel):
+    email: str = Field(..., example="author@storybible.ai")
+    password: str = Field(..., min_length=6, example="SecretPassword123")
+    confirm_password: Optional[str] = Field(None, min_length=6)
+    full_name: Optional[str] = Field(None, example="Author Name")
+
+class UserLogin(BaseModel):
+    email: str = Field(..., example="author@storybible.ai")
+    password: str = Field(..., example="SecretPassword123")
+
+class UserOut(BaseModel):
+    id: IdType
+    email: str
+    full_name: Optional[str] = None
+    is_active: bool = True
+    is_superuser: bool = False
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
+class AuthResponse(BaseModel):
+    user: UserOut
+    token: str
+    token_type: str = "bearer"
+    message: Optional[str] = None
+
+class ProjectMemberOut(BaseModel):
+    id: IdType
+    project_id: IdType
+    user_id: IdType
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    role: str = "editor"
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'project_id', 'user_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+
 # --- Projects ---
 class ProjectCreate(BaseModel):
     name: str = Field(..., example="The Last Kingdom")
     description: Optional[str] = Field(None, example="High fantasy epic about Eldoria")
     user_id: Optional[str] = None
+    is_demo: Optional[bool] = False
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    is_demo: Optional[bool] = None
 
 class ProjectOut(BaseModel):
     id: IdType
     user_id: Optional[IdType] = None
     name: str
     description: Optional[str] = None
+    is_demo: bool = False
+    role: str = "owner"
     chapter_count: int = 0
     character_count: int = 0
     unresolved_issues_count: int = 0
@@ -221,7 +273,8 @@ class RelationshipOut(BaseModel):
 
 # --- Canvases ---
 class CanvasCreate(BaseModel):
-    name: str
+    name: Optional[str] = None
+    title: Optional[str] = None
     description: Optional[str] = None
     view_type: Optional[str] = "relationship"  # relationship, family_tree, plot, timeline
     layout_type: Optional[str] = "manual"
@@ -249,6 +302,7 @@ class CanvasOut(BaseModel):
     id: IdType
     project_id: IdType
     name: str
+    title: Optional[str] = None
     description: Optional[str] = None
     view_type: str = "relationship"
     layout_type: str = "manual"
@@ -262,6 +316,10 @@ class CanvasOut(BaseModel):
     @field_serializer('id', 'project_id', check_fields=False)
     def serialize_id(self, v: Any, _info):
         return str(v) if v is not None else None
+
+    @field_serializer('title', check_fields=False)
+    def serialize_title(self, v: Any, _info):
+        return v or self.name
 
     class Config:
         from_attributes = True
@@ -303,11 +361,20 @@ class NarrativeGroupOut(BaseModel):
 
 # --- Attachments ---
 class EntityAttachmentCreate(BaseModel):
-    filename: str
-    file_type: str = "image"
+    filename: Optional[str] = None
+    title: Optional[str] = None
+    file_type: Optional[str] = "image"
+    attachment_type: Optional[str] = None
     url: Optional[str] = None
+    file_url: Optional[str] = None
     description: Optional[str] = None
+    entity_id: Optional[IdType] = None
     entity_ids: Optional[List[IdType]] = []
+    tags: Optional[List[str]] = []
+    metadata: Optional[Dict[str, Any]] = None
+
+    class Config:
+        extra = "ignore"
 
 class EntityAttachmentOut(BaseModel):
     id: IdType
@@ -315,8 +382,11 @@ class EntityAttachmentOut(BaseModel):
     filename: str
     file_type: str = "image"
     file_size: int = 0
+    storage_path: Optional[str] = None
     url: Optional[str] = None
     description: Optional[str] = None
+    tags: Optional[List[str]] = []
+    metadata: Optional[Dict[str, Any]] = None
     linked_entities: Optional[List[Dict[str, Any]]] = []
     created_at: Optional[Union[datetime, str]] = None
 

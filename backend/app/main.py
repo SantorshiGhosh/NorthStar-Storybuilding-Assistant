@@ -8,7 +8,7 @@ from app.config import settings
 from app.database.connection import init_db, get_db
 from app.database import models
 from app.agents.orchestrator import orchestrator
-from app.routes import projects, manuscripts, chapters, entities, continuity, architect
+from app.routes import auth, projects, manuscripts, chapters, entities, continuity, architect
 
 # Initialize Database tables
 init_db()
@@ -129,6 +129,7 @@ def seed_demo_manuscript(db: Session = Depends(get_db)):
     }
 
 # Mount routers with /api prefix as well as root
+app.include_router(auth.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
 app.include_router(manuscripts.router, prefix="/api")
 app.include_router(chapters.router, prefix="/api")
@@ -137,6 +138,7 @@ app.include_router(continuity.router, prefix="/api")
 app.include_router(architect.router, prefix="/api")
 
 # Also mount under root to strictly adhere to roadmap endpoint table
+app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(manuscripts.router)
 app.include_router(chapters.router)

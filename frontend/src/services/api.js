@@ -6,11 +6,12 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const api = axios.create({
   baseURL: API_BASE,
   timeout: 120000, // 2-minute safety window for manuscript indexing
+  withCredentials: true,
 });
 
 // Request interceptor to attach JWT if available
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('sb_auth_token') || localStorage.getItem('supabase_token');
+  const token = localStorage.getItem('northstar_token') || localStorage.getItem('sb_auth_token') || localStorage.getItem('supabase_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -311,6 +312,11 @@ export const entityService = {
     return res.data;
   },
 
+  getResolvedProperties: async (entityId) => {
+    const res = await api.get(`/entities/${entityId}/resolved-properties`);
+    return res.data;
+  },
+
   // Relationship delegations for architectural compatibility
   getRelationships: async (projectId, options = {}) => {
     return relationshipService.getRelationships(projectId, options);
@@ -417,6 +423,12 @@ export const architectService = {
     return res.data;
   },
 
+  duplicateCanvas: async (canvasId) => {
+    const res = await api.post(`/canvases/${canvasId}/duplicate`);
+    invalidateCache('canvases:');
+    return res.data;
+  },
+
   saveCanvasNodes: async (canvasId, nodes) => {
     const res = await api.post(`/canvases/${canvasId}/nodes`, nodes);
     return res.data;
@@ -441,17 +453,66 @@ export const architectService = {
     return res.data;
   },
 
-  getAttachments: async (projectId, options = {}) => {
-    return fetchWithCache(`attachments:${projectId}`, async () => {
-      const res = await api.get(`/projects/${projectId}/attachments`);
+  getAttachments: async (projectId, params = {}, options = {}) => {
+    const paramKey = JSON.stringify(params);
+    return fetchWithCache(`attachments:${projectId}:${paramKey}`, async () => {
+      const res = await api.get(`/projects/${projectId}/attachments`, { params });
       return res.data;
-    }, { ttl: 60000, ...options });
+    }, { ttl: 30000, ...options });
+  },
+
+  uploadAttachments: async (projectId, formData) => {
+    const res = await api.post(`/projects/${projectId}/attachments/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    invalidateCache(`attachments:${projectId}`);
+    invalidateCache('attachments:');
+    return res.data;
   },
 
   createAttachment: async (projectId, data) => {
     const res = await api.post(`/projects/${projectId}/attachments`, data);
     invalidateCache(`attachments:${projectId}`);
+    invalidateCache('attachments:');
     return res.data;
+  },
+
+  deleteAttachment: async (attachmentId, projectId = null) => {
+    const res = await api.delete(`/attachments/${attachmentId}`);
+    if (projectId) invalidateCache(`attachments:${projectId}`);
+    invalidateCache('attachments:');
+    return res.data;
+  },
+
+  linkEntityAttachment: async (entityId, attachmentId, role = 'reference') => {
+    const res = await api.post(`/entities/${entityId}/attachments/${attachmentId}`, null, {
+      params: { role }
+    });
+    invalidateCache('attachments:');
+    return res.data;
+  },
+
+  unlinkEntityAttachment: async (entityId, attachmentId) => {
+    const res = await api.delete(`/entities/${entityId}/attachments/${attachmentId}`);
+    invalidateCache('attachments:');
+    return res.data;
+  },
+
+  getAttachmentQuota: async (projectId) => {
+    const res = await api.get(`/projects/${projectId}/attachments/quota`);
+    return res.data;
+  },
+
+  getAttachmentPreviewUrl: (attachmentId) => {
+    const API_BASE = import.meta.env.VITE_API_URL || '/api';
+    return `${API_BASE}/attachments/${attachmentId}/preview`;
+  },
+
+  getAttachmentDownloadUrl: (attachmentId) => {
+    const API_BASE = import.meta.env.VITE_API_URL || '/api';
+    return `${API_BASE}/attachments/${attachmentId}/download`;
   },
 
   analyzeAttachment: async (attachmentId) => {
@@ -503,6 +564,56 @@ export const architectService = {
   applyTemplate: async (projectId, templateType = 'fantasy') => {
     const res = await api.post(`/projects/${projectId}/apply-template`, null, { params: { template_type: templateType } });
     invalidateCache(`categories:${projectId}`);
+    return res.data;
+  },
+};
+
+export const authService = {
+  register: async (data) => {
+    const res = await api.post('/auth/register', data);
+    if (res.data?.token) {
+      localStorage.setItem('northstar_token', res.data.token);
+      localStorage.setItem('story_bible_user', JSON.stringify(res.data.user));
+    }
+    return res.data;
+  },
+
+  login: async (data) => {
+    const res = await api.post('/auth/login', data);
+    if (res.data?.token) {
+      localStorage.setItem('northstar_token', res.data.token);
+      localStorage.setItem('story_bible_user', JSON.stringify(res.data.user));
+    }
+    return res.data;
+  },
+
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (_) {
+      // Ignore network errors during logout
+    } finally {
+      localStorage.removeItem('northstar_token');
+      localStorage.removeItem('sb_auth_token');
+      localStorage.removeItem('story_bible_user');
+      invalidateCache();
+    }
+  },
+
+  getCurrentUser: async () => {
+    const res = await api.get('/auth/me');
+    if (res.data) {
+      localStorage.setItem('story_bible_user', JSON.stringify(res.data));
+    }
+    return res.data;
+  },
+
+  guestLogin: async () => {
+    const res = await api.post('/auth/guest');
+    if (res.data?.token) {
+      localStorage.setItem('northstar_token', res.data.token);
+      localStorage.setItem('story_bible_user', JSON.stringify(res.data.user));
+    }
     return res.data;
   },
 };
