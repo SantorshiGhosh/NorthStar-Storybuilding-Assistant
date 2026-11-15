@@ -176,39 +176,71 @@ export default function Workspace() {
   const handleSaveEditor = async (htmlContent, plainContent) => {
     if (!currentChapter) return;
     try {
-      await chapterService.updateChapter(currentChapter.id, {
+      const updated = await chapterService.updateChapter(currentChapter.id, {
         content: plainContent,
       });
+      setCurrentChapter((prev) =>
+        prev
+          ? {
+              ...prev,
+              content: plainContent,
+              word_count: updated?.word_count ?? plainContent.trim().split(/\s+/).filter(Boolean).length,
+            }
+          : prev
+      );
       // Refresh chapter list for word count
-      const updatedChaps = await chapterService.getChapters(projectId);
-      setChapters(updatedChaps);
+      const updatedChaps = await chapterService.getChapters(projectId, { forceRefresh: true });
+      if (Array.isArray(updatedChaps)) {
+        setChapters(updatedChaps);
+      }
     } catch (err) {
       console.error('Failed to save chapter:', err);
     }
   };
 
   // Handle live Continuity Guardian analysis
-  const handleAnalyzeChapter = async () => {
+  const handleAnalyzeChapter = async (liveEditorText) => {
     if (!currentChapter) return;
     try {
       setAnalyzing(true);
       // Auto-open Right Guardian Panel so author immediately sees the scanning progress and results
       setIsRightOpen(true);
 
-      const res = await chapterService.analyzeChapter(currentChapter.id, currentChapter.content, projectId);
+      // Ignore React click event objects if triggered from the right-panel refresh icon button
+      const contentToAnalyze =
+        typeof liveEditorText === 'string' && liveEditorText.trim().length > 0
+          ? liveEditorText
+          : currentChapter.content;
 
-      // If backend returned the full issues list directly, set state immediately
-      if (res && Array.isArray(res.issues) && res.issues.length > 0) {
+      // Keep currentChapter state synchronized with the latest prose being analyzed
+      setCurrentChapter((prev) =>
+        prev
+          ? {
+              ...prev,
+              content: contentToAnalyze,
+              word_count: contentToAnalyze.trim().split(/\s+/).filter(Boolean).length,
+            }
+          : prev
+      );
+
+      const res = await chapterService.analyzeChapter(
+        currentChapter.id,
+        contentToAnalyze,
+        projectId
+      );
+
+      // Always update issues state when an array is returned (even if 0 issues remain)
+      if (res && Array.isArray(res.issues)) {
         setIssues(res.issues);
       }
 
       // Switch active filter tab to 'all' so author sees all detected issues immediately
       setIssueFilter('all');
 
-      // Also refresh project issues and stats with forceRefresh
+      // Pass { forceRefresh: true } as the 3rd argument (options), NOT the 2nd argument (params)
       try {
-        const projIssues = await projectService.getIssues(projectId, { forceRefresh: true });
-        if (Array.isArray(projIssues) && projIssues.length > 0) {
+        const projIssues = await projectService.getIssues(projectId, {}, { forceRefresh: true });
+        if (Array.isArray(projIssues)) {
           setIssues(projIssues);
         }
       } catch (silentErr) {
@@ -216,6 +248,9 @@ export default function Workspace() {
       }
 
       projectService.getProject(projectId, { forceRefresh: true }).then(setProject).catch(console.error);
+      chapterService.getChapters(projectId, { forceRefresh: true }).then((chaps) => {
+        if (Array.isArray(chaps)) setChapters(chaps);
+      }).catch(console.error);
     } catch (err) {
       console.error('Failed to analyze chapter:', err);
     } finally {

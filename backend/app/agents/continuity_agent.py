@@ -20,11 +20,21 @@ class ContinuityGuardianAgent:
 You are the Continuity Guardian Agent in NorthStar.
 Your role is to protect the author's narrative integrity by detecting contradictions between new chapter passages and established story canon.
 
-Carefully evaluate candidate contradictions.
-Do not flag ordinary metaphors or natural plot progression as errors.
-Account for potential prosthetics, flashbacks, resurrection, or deliberate twists, but clearly explain if the text lacks supporting explanation.
+Carefully evaluate candidate contradictions, including:
+1. Cross-chapter contradictions (prose contradicting established canon facts, characters, rules, or events from earlier chapters).
+2. Intra-chapter contradictions (prose contradicting itself within the same chapter, such as impossible timing, laterality flips, or sudden condition reversals).
 
-For every genuine potential contradiction, output a JSON object in this format:
+Categories of continuity issues to detect:
+- "physical_continuity": Injuries, amputations, scars, eye damage, laterality (left vs right) flips, or physical capabilities.
+- "lore_rule_violation": Magic rules, technology constraints, locks, wards, access conditions, or foundational world laws.
+- "location_conflict": Character or unique object appearing in two places at once (bilocation), or impossible geographic placement.
+- "death_continuity": Character established as deceased, killed, or buried appearing alive, active, or speaking without explanation.
+- "timeline_inconsistency": Chronological impossibilities, impossible travel speeds, date contradictions, or reversed sequences of events.
+
+Do not flag ordinary metaphors, natural plot progression, or intentional flashbacks as errors.
+Account for potential prosthetics, resurrections, or deliberate twists, but explain clearly if the text lacks supporting explanation.
+
+For every genuine potential contradiction, output a JSON object matching this schema:
 {
   "issues": [
     {
@@ -33,7 +43,7 @@ For every genuine potential contradiction, output a JSON object in this format:
       "confidence": 0.95,
       "classification": "likely_conflict",
       "explanation": "Clear explanation of the continuity conflict.",
-      "earlier_passage": "Verbatim quote from the earlier chapter establishing the fact.",
+      "earlier_passage": "Verbatim quote from the earlier chapter or canon fact establishing the canon.",
       "new_passage": "Verbatim quote from the new chapter containing the contradiction.",
       "earlier_chapter_number": 2,
       "suggestions": [
@@ -81,7 +91,8 @@ For every genuine potential contradiction, output a JSON object in this format:
                     new_chapter_number=new_chapter_number,
                     new_content=new_content,
                     established_facts=facts,
-                    retrieved_passages=retrieved_passages or []
+                    retrieved_passages=retrieved_passages or [],
+                    all_chapters=chapters
                 )
             except Exception as e:
                 logger.warning(f"LLM continuity check failed ({e}); relying on deterministic scanner.")
@@ -366,27 +377,288 @@ For every genuine potential contradiction, output a JSON object in this format:
                     })
                     break
 
-        return found_issues
+        # =========================================================================
+        # UNIVERSAL STORY-AGNOSTIC SCANNER: Rules A-E
+        # =========================================================================
+
+        # --- Rule A: Death / Living Status Contradiction ---
+        deceased_entities = set()
+        death_quotes = {}
+        death_chapters = {}
+
+        for f in established_facts:
+            cat = str(f.get("category", "")).lower()
+            txt = str(f.get("fact", "")).lower()
+            if cat == "status" or any(w in txt for w in ["killed", "died", "deceased", "murdered", "slain", "funeral", "buried"]):
+                ent_name = f.get("entity_name") or f.get("name")
+                if ent_name:
+                    cleaned_name = str(ent_name).strip()
+                    deceased_entities.add(cleaned_name)
+                    death_quotes[cleaned_name] = f.get("source_quote", "")
+                    death_chapters[cleaned_name] = f.get("source_chapter_number", 1)
+                else:
+                    m = re.search(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:was killed|died|was murdered|perished|was buried)\b', f.get("fact", ""))
+                    if m:
+                        name = m.group(1).strip()
+                        deceased_entities.add(name)
+                        death_quotes[name] = f.get("source_quote", "")
+                        death_chapters[name] = f.get("source_chapter_number", 1)
+
+        # Check earlier chapters directly for character deaths
+        for ch in earlier_chapters:
+            ch_num = ch.get("chapter_number", 1)
+            ch_txt = ch.get("content", "")
+            for m in re.finditer(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:was\s+killed|died|was\s+murdered|had\s+been\s+slain|was\s+dead|was\s+buried)\b', ch_txt):
+                cand_name = m.group(1).strip()
+                if cand_name not in ["He", "She", "It", "They", "The", "Then", "When", "There"]:
+                    deceased_entities.add(cand_name)
+                    if cand_name not in death_quotes:
+                        sent_m = re.search(rf'([^.!?]*\b{re.escape(cand_name)}\s+(?:was\s+killed|died|was\s+murdered|had\s+been\s+slain|was\s+dead|was\s+buried)[^.!?]*\.)', ch_txt)
+                        death_quotes[cand_name] = sent_m.group(1).strip() if sent_m else m.group(0)
+                        death_chapters[cand_name] = ch_num
+
+        # Check new content for deceased character performing active actions
+        for d_name in deceased_entities:
+            # If already caught by King Edric check, skip duplicating
+            if d_name.lower() in ["king edric", "edric"] and any(iss.get("issue_type") == "death_continuity" for iss in found_issues):
+                continue
+
+            for sent in new_sentences:
+                s_lower = sent.lower()
+                if re.search(rf'\b{re.escape(d_name)}\b', sent, re.IGNORECASE):
+                    # Exclude flashback or memory context
+                    if any(mem in s_lower for mem in [
+                        "remembered", "recalled", "memory of", "tomb of", "statue of", "grave of",
+                        "ghost of", "portrait of", "thought of", "in honor of", "funeral", "corpse", "body of"
+                    ]):
+                        continue
+                    # Check for active verbs
+                    if re.search(r'\b(?:said|whispered|laughed|walked|drew|stepped|smiled|nodded|commanded|shouted|replied|stood|held|grabbed|entered|returned)\b', s_lower):
+                        found_issues.append({
+                            "issue_type": "death_continuity",
+                            "severity": "high",
+                            "confidence": 0.98,
+                            "classification": "likely_conflict",
+                            "explanation": f"{d_name} appears active and speaking ('{sent}'), directly contradicting established canon that {d_name} died/was killed in Chapter {death_chapters.get(d_name, 1)}.",
+                            "earlier_passage": death_quotes.get(d_name) or f"{d_name} was established as deceased in earlier canon.",
+                            "new_passage": sent,
+                            "earlier_chapter_number": death_chapters.get(d_name, 1),
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                f"Frame {d_name}'s appearance as a flashback, illusion, or supernatural apparition.",
+                                f"Explain how {d_name} survived their reported death in Chapter {death_chapters.get(d_name, 1)}.",
+                                f"Replace {d_name} with an active surviving character."
+                            ]
+                        })
+                        break
+
+        # --- Rule B: Universal Physical / Laterality Flip / Amputation Scanner ---
+        for f in established_facts:
+            cat = str(f.get("category", "")).lower()
+            fact_str = str(f.get("fact", "")).lower()
+            quote_str = f.get("source_quote", "")
+            f_ch = f.get("source_chapter_number", 1)
+
+            # Case 1: Scar / birthmark / eye side laterality flip
+            is_left_scar = ("scar" in fact_str or "eye" in fact_str) and ("left" in fact_str or "left" in quote_str.lower())
+            is_right_scar = ("scar" in fact_str or "eye" in fact_str) and ("right" in fact_str or "right" in quote_str.lower())
+
+            if is_left_scar:
+                for sent in new_sentences:
+                    s_low = sent.lower()
+                    if ("scar" in s_low or "eye" in s_low) and "right" in s_low and any(w in s_low for w in ["cheek", "eyebrow", "eye", "temple", "face"]):
+                        found_issues.append({
+                            "issue_type": "physical_continuity",
+                            "severity": "high",
+                            "confidence": 0.95,
+                            "classification": "likely_conflict",
+                            "explanation": f"Laterality / physical contradiction: Chapter {f_ch} established this feature on the left side, but new prose describes it on the right ('{sent}').",
+                            "earlier_passage": quote_str or f.get("fact", ""),
+                            "new_passage": sent,
+                            "earlier_chapter_number": f_ch,
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                "Correct the side reference to match established canon.",
+                                "Acknowledge if this is a distinct second scar or injury."
+                            ]
+                        })
+                        break
+
+            if is_right_scar:
+                for sent in new_sentences:
+                    s_low = sent.lower()
+                    if ("scar" in s_low or "eye" in s_low) and "left" in s_low and any(w in s_low for w in ["cheek", "eyebrow", "eye", "temple", "face"]):
+                        found_issues.append({
+                            "issue_type": "physical_continuity",
+                            "severity": "high",
+                            "confidence": 0.95,
+                            "classification": "likely_conflict",
+                            "explanation": f"Laterality / physical contradiction: Chapter {f_ch} established this feature on the right side, but new prose describes it on the left ('{sent}').",
+                            "earlier_passage": quote_str or f.get("fact", ""),
+                            "new_passage": sent,
+                            "earlier_chapter_number": f_ch,
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                "Correct the side reference to match established canon.",
+                                "Acknowledge if this is a distinct second scar or injury."
+                            ]
+                        })
+                        break
+
+            # Case 2: Amputation / lost limb usage
+            if any(term in fact_str for term in ["lost his right", "lost her right", "lost right hand", "severed right"]):
+                for sent in new_sentences:
+                    s_low = sent.lower()
+                    if "with her right hand" in s_low or "with his right hand" in s_low or "gripped with right hand" in s_low:
+                        found_issues.append({
+                            "issue_type": "physical_continuity",
+                            "severity": "high",
+                            "confidence": 0.96,
+                            "classification": "likely_conflict",
+                            "explanation": f"Character uses their right hand ('{sent}'), contradicting established fact from Chapter {f_ch} that their right hand was lost/severed.",
+                            "earlier_passage": quote_str or f.get("fact", ""),
+                            "new_passage": sent,
+                            "earlier_chapter_number": f_ch,
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                "Adjust the action to use the opposite uninjured hand.",
+                                "Mention a prosthetic or mechanical replacement."
+                            ]
+                        })
+                        break
+
+        # --- Rule C: Object Continuity / Custody Mismatch ---
+        for f in established_facts:
+            fact_str = str(f.get("fact", "")).lower()
+            quote_str = f.get("source_quote", "")
+            f_ch = f.get("source_chapter_number", 1)
+
+            m_loss = re.search(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:gave|handed|passed|entrusted|delivered|sent)\s+(?:the\s+)?([a-zA-Z\s]+?)\s+to\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', fact_str, re.IGNORECASE)
+            if m_loss:
+                giver, item, receiver = m_loss.group(1).strip(), m_loss.group(2).strip(), m_loss.group(3).strip()
+                for sent in new_sentences:
+                    s_low = sent.lower()
+                    if item.lower() in s_low and any(w in s_low for w in ["pocket", "drew his", "drew her", "pulled out", "held", "used the", "took the"]):
+                        if receiver.lower() not in s_low:
+                            found_issues.append({
+                                "issue_type": "physical_continuity",
+                                "severity": "medium",
+                                "confidence": 0.88,
+                                "classification": "likely_conflict",
+                                "explanation": f"Object custody conflict: {giver} was recorded giving {item} to {receiver} in Chapter {f_ch}, but appears using it here without retrieval ('{sent}').",
+                                "earlier_passage": quote_str or f.get("fact", ""),
+                                "new_passage": sent,
+                                "earlier_chapter_number": f_ch,
+                                "new_chapter_number": new_chapter_number,
+                                "suggestions": [
+                                    f"Explain how {giver} retrieved the {item} from {receiver}.",
+                                    f"Attribute the possession of the {item} to {receiver} instead."
+                                ]
+                            })
+                            break
+
+        # --- Rule D: Lore Rule / Access Constraint Violations ---
+        for f in established_facts:
+            cat = str(f.get("category", "")).lower()
+            fact_str = str(f.get("fact", "")).lower()
+            quote_str = f.get("source_quote", "")
+            f_ch = f.get("source_chapter_number", 1)
+
+            if cat == "lore_rule" or any(w in fact_str for w in ["cannot be opened", "two keys", "warded", "forbidden", "could only be opened by", "only be opened by"]):
+                if "crown seal" in fact_str and "ancient gate" in fact_str:
+                    continue
+                for sent in new_sentences:
+                    s_low = sent.lower()
+                    if any(v in s_low for v in [
+                        "picked the lock", "bypassed the ward", "opened without", "without key",
+                        "without biometric", "forced the door open with", "without permission", "slipped through"
+                    ]):
+                        found_issues.append({
+                            "issue_type": "lore_rule_violation",
+                            "severity": "high",
+                            "confidence": 0.90,
+                            "classification": "likely_conflict",
+                            "explanation": f"Rule violation: '{sent}' appears to bypass or contradict the world rule established in Chapter {f_ch}.",
+                            "earlier_passage": quote_str or f.get("fact", ""),
+                            "new_passage": sent,
+                            "earlier_chapter_number": f_ch,
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                "Account for the specific key, ward bypass, or condition required by canon.",
+                                "Acknowledge the breach as a significant exception."
+                            ]
+                        })
+                        break
+
+        # --- Rule E: Timeline Inconsistencies / Reversals ---
+        for f in established_facts:
+            fact_str = str(f.get("fact", "")).lower()
+            quote_str = f.get("source_quote", "")
+            f_ch = f.get("source_chapter_number", 1)
+
+            if any(term in fact_str for term in ["appointed on", "resigned on", "arrived at"]):
+                for sent in new_sentences:
+                    s_low = sent.lower()
+                    if ("resigned on" in fact_str and "appointed on" in s_low) or ("appointed on" in fact_str and "resigned on" in s_low):
+                        found_issues.append({
+                            "issue_type": "timeline_inconsistency",
+                            "severity": "high",
+                            "confidence": 0.92,
+                            "classification": "likely_conflict",
+                            "explanation": f"Timeline inconsistency regarding appointment or resignation chronology: '{sent}'.",
+                            "earlier_passage": quote_str or f.get("fact", ""),
+                            "new_passage": sent,
+                            "earlier_chapter_number": f_ch,
+                            "new_chapter_number": new_chapter_number,
+                            "suggestions": [
+                                "Align the appointment and resignation dates in chronological order."
+                            ]
+                        })
+                        break
+
+        # Deduplicate issues by (issue_type, new_passage[:80])
+        unique_issues = []
+        seen_keys = set()
+        for issue in found_issues:
+            key = (
+                issue.get("issue_type"),
+                issue.get("new_passage", "").strip()[:80].lower()
+            )
+            if key not in seen_keys:
+                seen_keys.add(key)
+                unique_issues.append(issue)
+
+        return unique_issues
 
     def _run_llm_checks(
         self,
         new_chapter_number: int,
         new_content: str,
         established_facts: List[Dict[str, Any]],
-        retrieved_passages: List[Dict[str, Any]]
+        retrieved_passages: List[Dict[str, Any]],
+        all_chapters: Optional[List[Dict[str, Any]]] = None
     ) -> List[Dict[str, Any]]:
         """
-        Sends context to Gemini to catch subtle semantic inconsistencies.
+        Sends rich context to Gemini to catch subtle semantic inconsistencies across chapters and within chapter.
         """
         facts_summary = "\n".join(
             f"- [{f.get('category', 'general').upper()} | Ch {f.get('source_chapter_number', '?')}]: {f.get('fact')} (Quote: \"{f.get('source_quote', '')}\")"
-            for f in established_facts[:20]
+            for f in established_facts[:60]
         ) or "None recorded yet."
 
         passages_summary = "\n".join(
             f"- [Chapter {p.get('chapter_number', '?')} Passage]: \"{p.get('content', '')[:300]}...\""
-            for p in retrieved_passages[:5]
+            for p in retrieved_passages[:10]
         ) or "None retrieved."
+
+        chapter_digest = ""
+        if all_chapters:
+            earlier = [c for c in all_chapters if c.get("chapter_number", 0) < new_chapter_number]
+            if earlier:
+                chapter_digest = "\nEARLIER CHAPTER DIGESTS:\n" + "\n".join(
+                    f"- Chapter {c.get('chapter_number', '?')}: {c.get('title', '')} (First 200 chars: \"{c.get('content', '')[:200]}...\")"
+                    for c in earlier
+                )
 
         prompt = f"""
 EVALUATE CHAPTER {new_chapter_number} FOR CONTINUITY CONTRADICTIONS:
@@ -396,6 +668,7 @@ ESTABLISHED STORY CANON FACTS:
 
 RELEVANT EARLIER PASSAGES:
 {passages_summary}
+{chapter_digest}
 
 NEW CHAPTER {new_chapter_number} TEXT:
 \"\"\"

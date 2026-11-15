@@ -282,9 +282,13 @@ def list_attachments(
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    target_ent_id = entity_id if isinstance(entity_id, str) and entity_id else None
+    target_file_type = file_type if isinstance(file_type, str) and file_type else None
+    target_search = search if isinstance(search, str) and search else None
+
     query = db.query(models.EntityAttachment).filter(models.EntityAttachment.project_id == project_id)
-    if file_type:
-        query = query.filter(models.EntityAttachment.file_type == file_type)
+    if target_file_type:
+        query = query.filter(models.EntityAttachment.file_type == target_file_type)
     atts = query.order_by(desc(models.EntityAttachment.created_at)).all()
 
     res = []
@@ -295,17 +299,17 @@ def list_attachments(
         for l in links:
             if l.entity:
                 linked_ents.append({"entity_id": str(l.entity_id), "name": l.entity.name, "role": l.role})
-            if entity_id and str(l.entity_id) == str(entity_id):
+            if target_ent_id and str(l.entity_id) == str(target_ent_id):
                 is_linked_to_requested_entity = True
 
-        if entity_id and not is_linked_to_requested_entity:
+        if target_ent_id and not is_linked_to_requested_entity:
             continue
 
         meta = a.meta_info if isinstance(a.meta_info, dict) else {}
         tags = meta.get("tags", []) if isinstance(meta.get("tags"), list) else []
 
-        if search:
-            s_lower = search.lower()
+        if target_search:
+            s_lower = target_search.lower()
             fname_match = s_lower in (a.filename or "").lower()
             desc_match = s_lower in (a.description or "").lower()
             tag_match = any(s_lower in t.lower() for t in tags)
@@ -342,8 +346,11 @@ async def upload_attachment_files(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    desc_val = description if isinstance(description, str) else None
+    type_val = file_type if isinstance(file_type, str) else None
+
     parsed_entity_ids = []
-    if entity_ids:
+    if isinstance(entity_ids, str) and entity_ids:
         try:
             parsed_entity_ids = json.loads(entity_ids)
             if not isinstance(parsed_entity_ids, list):
@@ -352,7 +359,7 @@ async def upload_attachment_files(
             parsed_entity_ids = [e.strip() for e in entity_ids.split(",") if e.strip()]
 
     parsed_tags = []
-    if tags:
+    if isinstance(tags, str) and tags:
         try:
             parsed_tags = json.loads(tags)
             if not isinstance(parsed_tags, list):
@@ -378,7 +385,7 @@ async def upload_attachment_files(
 
         original_filename = f.filename or "attachment"
         guessed_mime = f.content_type or mimetypes.guess_type(original_filename)[0] or "application/octet-stream"
-        category = file_type or detect_file_type_category(original_filename, guessed_mime)
+        category = type_val or detect_file_type_category(original_filename, guessed_mime)
 
         att_id = models.gen_uuid()
         safe_name = "".join(c for c in original_filename if c.isalnum() or c in "._- ")
@@ -404,7 +411,7 @@ async def upload_attachment_files(
             file_size=file_size,
             storage_path=target_path,
             url=f"/api/attachments/{att_id}/preview",
-            description=description,
+            description=desc_val,
             meta_info=meta_info
         )
         db.add(att)
@@ -650,7 +657,7 @@ def analyze_attachment_with_ai(attachment_id: str, db: Session = Depends(get_db)
         f"Suggest relevant characters, world locations, artifacts, or narrative lore this asset represents."
         f"Return JSON strictly in format: {{\"suggested_entities\": [\"name1\", \"name2\"], \"lore_summary\": \"...\"}}"
     )
-    suggestions = ai_provider.generate_json(prompt, model_name=ai_provider.fallback_models[0]) or {
+    suggestions = ai_provider.generate_json(prompt) or {
         "suggested_entities": ["Reference Subject"],
         "lore_summary": "Visual moodboard / reference material for universe design."
     }

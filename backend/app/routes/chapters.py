@@ -128,6 +128,48 @@ def analyze_chapter(
         db.commit()
         db.refresh(ch)
 
+        # Re-chunk passages and re-index in vector service
+        try:
+            passages = document_parser.chunk_into_passages(ch.content)
+            db.query(models.Passage).filter(
+                models.Passage.project_id == ch.project_id,
+                models.Passage.chapter_id == ch.id
+            ).delete()
+            all_p = []
+            for p in passages:
+                db_p = models.Passage(
+                    project_id=ch.project_id,
+                    chapter_id=ch.id,
+                    passage_index=p["passage_index"],
+                    content=p["content"],
+                    char_start=p["char_start"],
+                    char_end=p["char_end"]
+                )
+                db.add(db_p)
+                db.flush()
+                all_p.append({
+                    "id": db_p.id,
+                    "chapter_id": ch.id,
+                    "chapter_number": ch.chapter_number,
+                    "passage_index": p["passage_index"],
+                    "content": p["content"]
+                })
+            db.commit()
+            vector_service.index_passages(ch.project_id, all_p)
+        except Exception as e:
+            logger.warning(f"Re-indexing edited chapter passages error: {e}")
+
+    # Delete existing "unresolved" / "open" models.ContinuityIssue rows for chapter_id == ch.id
+    try:
+        db.query(models.ContinuityIssue).filter(
+            models.ContinuityIssue.project_id == ch.project_id,
+            models.ContinuityIssue.chapter_id == ch.id,
+            models.ContinuityIssue.status.in_(["unresolved", "open"])
+        ).delete(synchronize_session=False)
+        db.commit()
+    except Exception as e:
+        logger.warning(f"Clearing prior unresolved issues error: {e}")
+
     # 1. Extract and update canon facts for this chapter
     try:
         orchestrator._extract_and_persist_chapter_memory(db, ch.project_id, ch, fast_mode=False)

@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import re
@@ -10,7 +11,7 @@ class AIProviderService:
     """
     Robust Gemini AI Provider service with multi-model automatic fallback.
     Supported fallback priority:
-      1. User configured model (if set)
+      1. User configured model (if valid)
       2. gemini-2.5-flash
       3. gemini-2.0-flash
       4. gemini-1.5-flash
@@ -25,14 +26,17 @@ class AIProviderService:
     ]
 
     def __init__(self):
-        self.api_key = settings.GEMINI_API_KEY
+        self.api_key = ""
         self._genai_client = None
         self._legacy_configured = False
         self._init_client()
 
     def _init_client(self):
-        self.api_key = settings.GEMINI_API_KEY
-        if not self.api_key:
+        raw_key = settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
+        self.api_key = raw_key.strip().strip('"').strip("'") if raw_key else ""
+        if not self.api_key or not self.api_key.startswith("AIza"):
+            self._genai_client = None
+            self._legacy_configured = False
             return
 
         # Attempt to init new google.genai
@@ -55,17 +59,20 @@ class AIProviderService:
         Sends structured prompt to Gemini with multi-model fallback and JSON fence stripping.
         Returns parsed dict/list or None if unavailable/quota-limited.
         """
-        if not self.api_key or self.api_key != settings.GEMINI_API_KEY:
+        current_env_key = (settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")).strip().strip('"').strip("'")
+        if not self.api_key or self.api_key != current_env_key:
             self._init_client()
 
-        if not self.api_key:
-            logger.debug("GEMINI_API_KEY is not configured; relying on deterministic agent logic.")
+        if not self.api_key or not self.api_key.startswith("AIza"):
+            logger.debug("Valid GEMINI_API_KEY is not configured; relying on deterministic agent logic.")
             return None
 
         # Build list of models to try in priority order
         models_to_try = []
-        if settings.GEMINI_MODEL and settings.GEMINI_MODEL not in self.CANDIDATE_MODELS:
-            models_to_try.append(settings.GEMINI_MODEL)
+        known_valid_prefixes = ("gemini-2.5", "gemini-2.0", "gemini-1.5")
+        if settings.GEMINI_MODEL and any(settings.GEMINI_MODEL.startswith(p) for p in known_valid_prefixes):
+            if settings.GEMINI_MODEL not in self.CANDIDATE_MODELS:
+                models_to_try.append(settings.GEMINI_MODEL)
         models_to_try.extend(self.CANDIDATE_MODELS)
 
         combined_prompt = ""
