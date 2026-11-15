@@ -22,7 +22,7 @@ app = FastAPI(
 )
 
 # CORS setup
-origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
+origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip() and origin.strip() != "*"]
 for default_origin in [
     "https://northstar-eight-neon.vercel.app",
     "http://localhost:5173",
@@ -33,16 +33,13 @@ for default_origin in [
     if default_origin not in origins:
         origins.append(default_origin)
 
-if "*" not in origins:
-    origins.append("*")
-
 from fastapi.middleware.gzip import GZipMiddleware
 
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
+    allow_origin_regex=r"^https?:\/\/(localhost|127\.0\.0\.1|.*\.vercel\.app|.*\.onrender\.com)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,7 +54,7 @@ import traceback
 async def global_exception_handler(request: Request, exc: Exception):
     print(f"[ERROR] {request.method} {request.url.path} failed: {exc}")
     traceback.print_exc()
-    origin = request.headers.get("origin", "*")
+    origin = request.headers.get("origin") or "https://northstar-eight-neon.vercel.app"
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc), "type": type(exc).__name__},
