@@ -46,6 +46,9 @@ class CentralAIOrchestrator:
         raw_text = document_parser.extract_text_from_bytes(file_bytes, file_ext)
 
         # 3. Clean up prior data for this project to prevent duplicate chapters on re-upload
+        ent_ids = db.query(models.Entity.id).filter(models.Entity.project_id == project_id)
+        db.query(models.EntityAttachmentLink).filter(models.EntityAttachmentLink.entity_id.in_(ent_ids)).delete(synchronize_session=False)
+        db.query(models.CanvasNode).filter(models.CanvasNode.entity_id.in_(ent_ids)).delete(synchronize_session=False)
         db.query(models.ContinuityIssue).filter(models.ContinuityIssue.project_id == project_id).delete()
         db.query(models.TimelineEvent).filter(models.TimelineEvent.project_id == project_id).delete()
         db.query(models.Relationship).filter(models.Relationship.project_id == project_id).delete()
@@ -120,13 +123,8 @@ class CentralAIOrchestrator:
         except Exception as e:
             logger.warning(f"Vector indexing skipped or encountered error: {e}")
 
-        # 7. Extract narrative memory chapter-by-chapter
-        for chapter in db_chapters:
-            self._extract_and_persist_chapter_memory(db, project_id, chapter, fast_mode=fast_mode)
-
-        # 8. Run continuity analysis for later chapters against earlier established memory
-        for chapter in db_chapters:
-            self.analyze_chapter_continuity(db, project_id, chapter.id, skip_llm=fast_mode)
+        # 7. High-performance batch ingestion of narrative memory & continuity analysis
+        self._batch_ingest_manuscript_memory(db, project_id, db_chapters, fast_mode=fast_mode)
 
         manuscript.status = "processed"
         db.commit()
@@ -146,16 +144,258 @@ class CentralAIOrchestrator:
                 models.Chapter.project_id == project_id
             ).order_by(models.Chapter.chapter_number.asc()).all()
 
-            for chapter in chapters:
-                self._extract_and_persist_chapter_memory(bg_db, project_id, chapter, fast_mode=False)
-
-            for chapter in chapters:
-                self.analyze_chapter_continuity(bg_db, project_id, chapter.id, skip_llm=False)
+            self._batch_ingest_manuscript_memory(bg_db, project_id, chapters, fast_mode=False)
             logger.info(f"Background AI enrichment complete for project {project_id}")
         except Exception as e:
             logger.warning(f"Background AI enrichment warning: {e}")
         finally:
             bg_db.close()
+
+    def _batch_ingest_manuscript_memory(
+        self,
+        db: Session,
+        project_id: str,
+        db_chapters: List[models.Chapter],
+        fast_mode: bool = True
+    ):
+        """
+        High-performance, single-pass batch persistence for manuscript ingestion.
+        Eliminates hundreds of sequential remote database round-trips by:
+          1. Aggregating entities, facts, relationships, timeline events across all chapters in memory.
+          2. Batch-flushing entities in a single round-trip to resolve all IDs.
+          3. Batch-inserting facts, relationships, timeline events, and detected continuity issues.
+          4. Committing once, reducing ingestion time from minutes down to seconds.
+        """
+        if not db_chapters:
+            return
+
+        # 1. Load existing entities for this project to handle deduplication in memory
+        existing_ents = db.query(models.Entity).filter(models.Entity.project_id == project_id).all()
+        entity_name_to_id: Dict[str, str] = {e.name.strip().lower(): e.id for e in existing_ents}
+        entity_name_to_obj: Dict[str, models.Entity] = {e.name.strip().lower(): e for e in existing_ents}
+
+        new_entities: List[models.Entity] = []
+        raw_chapter_extractions = []
+
+        # 2. Extract memory from each chapter (deterministic / heuristic in fast_mode)
+        for chapter in db_chapters:
+            if fast_mode:
+                ext_res = extraction_agent._heuristic_extraction(
+                    content=chapter.content,
+                    chapter_number=chapter.chapter_number,
+                    chapter_title=chapter.title
+                )
+            else:
+                ext_res = extraction_agent.extract_from_chapter(
+                    chapter_content=chapter.content,
+                    chapter_number=chapter.chapter_number,
+                    chapter_title=chapter.title
+                )
+            raw_chapter_extractions.append((chapter, ext_res))
+
+            # Register entities in memory
+            for ent_data in ext_res.get("entities", []):
+                clean_name = ent_data.get("name", "").strip()
+                if not clean_name:
+                    continue
+                key = clean_name.lower()
+                traits = list(set(ent_data.get("traits", [])))
+                desc = ent_data.get("description", "")
+
+                if key in entity_name_to_obj:
+                    # Update existing entity in memory
+                    existing = entity_name_to_obj[key]
+                    if desc and not existing.description:
+                        existing.description = desc
+                    if traits:
+                        merged = set(existing.traits or [])
+                        merged.update(traits)
+                        existing.traits = list(merged)
+                else:
+                    new_id = models.gen_uuid()
+                    new_ent = models.Entity(
+                        id=new_id,
+                        project_id=project_id,
+                        name=clean_name,
+                        entity_type=ent_data.get("entity_type", "character").lower().strip(),
+                        description=desc,
+                        traits=traits,
+                        first_appearance_chapter=chapter.chapter_number,
+                        first_appearance_chapter_id=chapter.id,
+                        meta_info={}
+                    )
+                    db.add(new_ent)
+                    new_entities.append(new_ent)
+                    entity_name_to_id[key] = new_id
+                    entity_name_to_obj[key] = new_ent
+
+        # Flush entities once to guarantee foreign key IDs exist
+        if new_entities:
+            db.flush()
+
+        # 3. Batch persist facts and relationships
+        seen_fact_keys = set()
+        seen_rel_keys = set()
+
+        for chapter, ext_res in raw_chapter_extractions:
+            for ent_data in ext_res.get("entities", []):
+                clean_name = ent_data.get("name", "").strip().lower()
+                ent_id = entity_name_to_id.get(clean_name)
+                if not ent_id:
+                    continue
+
+                for fact_data in ent_data.get("facts", []):
+                    f_text = fact_data.get("fact", "").strip()
+                    if not f_text:
+                        continue
+                    f_key = (ent_id, f_text.lower())
+                    if f_key in seen_fact_keys:
+                        continue
+                    seen_fact_keys.add(f_key)
+
+                    quote = fact_data.get("source_quote") or ""
+                    if not quote.strip():
+                        for sent in chapter.content.split(". "):
+                            if clean_name in sent.lower():
+                                quote = sent.strip() + "."
+                                break
+                        if not quote.strip():
+                            quote = chapter.content[:150]
+
+                    db.add(models.StoryFact(
+                        id=models.gen_uuid(),
+                        project_id=project_id,
+                        entity_id=ent_id,
+                        fact=f_text,
+                        category=fact_data.get("category", "general"),
+                        fact_category=fact_data.get("category", "general"),
+                        source_chapter_id=chapter.id,
+                        source_chapter_number=chapter.chapter_number,
+                        source_quote=quote.strip(),
+                        confidence=fact_data.get("confidence", 1.0),
+                        is_active=True
+                    ))
+
+            for rel_data in ext_res.get("relationships", []):
+                src_key = rel_data.get("source_name", "").strip().lower()
+                tgt_key = rel_data.get("target_name", "").strip().lower()
+                src_id = entity_name_to_id.get(src_key)
+                tgt_id = entity_name_to_id.get(tgt_key)
+
+                if src_id and tgt_id and src_id != tgt_id:
+                    rel_type = rel_data.get("relation_type", "associated_with")
+                    rel_key = (src_id, tgt_id, rel_type)
+                    if rel_key in seen_rel_keys:
+                        continue
+                    seen_rel_keys.add(rel_key)
+
+                    rel_quote = rel_data.get("source_quote") or ""
+                    if not rel_quote.strip():
+                        for sent in chapter.content.split(". "):
+                            if rel_data.get("source_name", "").lower() in sent.lower() and rel_data.get("target_name", "").lower() in sent.lower():
+                                rel_quote = sent.strip() + "."
+                                break
+                        if not rel_quote.strip():
+                            rel_quote = chapter.content[:150]
+
+                    db.add(models.Relationship(
+                        id=models.gen_uuid(),
+                        project_id=project_id,
+                        source_entity_id=src_id,
+                        target_entity_id=tgt_id,
+                        relation_type=rel_type,
+                        source_chapter_id=chapter.id,
+                        source_quote=rel_quote.strip(),
+                        description=rel_data.get("description", "")
+                    ))
+
+            # 4. Timeline Events
+            tl_events = timeline_agent.extract_events_from_chapter(
+                chapter_content=chapter.content,
+                chapter_number=chapter.chapter_number,
+                chapter_title=chapter.title
+            )
+            for ev in tl_events:
+                db.add(models.TimelineEvent(
+                    id=models.gen_uuid(),
+                    project_id=project_id,
+                    title=ev.get("title", f"Events in Chapter {chapter.chapter_number}"),
+                    description=ev.get("description", ""),
+                    chapter_id=chapter.id,
+                    chapter_number=chapter.chapter_number,
+                    chronology_order=chapter.chapter_number,
+                    date_or_time_label=ev.get("date_or_time_label"),
+                    participants=ev.get("participants", []),
+                    location=ev.get("location")
+                ))
+
+            for ev_data in ext_res.get("timeline_events", []):
+                db.add(models.TimelineEvent(
+                    id=models.gen_uuid(),
+                    project_id=project_id,
+                    title=ev_data.get("title", f"Event in Chapter {chapter.chapter_number}"),
+                    description=ev_data.get("description", ""),
+                    chapter_id=chapter.id,
+                    chapter_number=chapter.chapter_number,
+                    chronology_order=chapter.chapter_number,
+                    location=ev_data.get("location"),
+                    participants=ev_data.get("participants", [])
+                ))
+
+        # 5. Fast-path Continuity Guardian analysis across all chapters
+        all_chs_data = [
+            {
+                "id": str(c.id),
+                "chapter_number": c.chapter_number,
+                "title": c.title,
+                "content": c.content
+            }
+            for c in db_chapters
+        ]
+
+        # In-memory facts for continuity verification
+        in_memory_facts = []
+        for chapter, ext_res in raw_chapter_extractions:
+            for ent_data in ext_res.get("entities", []):
+                for fact_data in ent_data.get("facts", []):
+                    in_memory_facts.append({
+                        "fact": fact_data.get("fact", ""),
+                        "category": fact_data.get("category", "general"),
+                        "source_chapter_number": chapter.chapter_number,
+                        "source_quote": fact_data.get("source_quote", ""),
+                        "entity_name": ent_data.get("name", "")
+                    })
+
+        for chapter in db_chapters:
+            detected_issues = continuity_agent.analyze_chapter_continuity(
+                new_chapter_number=chapter.chapter_number,
+                new_content=chapter.content,
+                established_facts=in_memory_facts,
+                all_chapters=all_chs_data,
+                skip_llm=fast_mode
+            )
+            for issue_dict in detected_issues:
+                conf = float(issue_dict.get("confidence", 0.90))
+                db.add(models.ContinuityIssue(
+                    id=models.gen_uuid(),
+                    project_id=project_id,
+                    chapter_id=chapter.id,
+                    issue_type=issue_dict.get("issue_type", "continuity_issue"),
+                    severity=issue_dict.get("severity", "high"),
+                    confidence=conf,
+                    explanation=issue_dict.get("explanation", ""),
+                    earlier_passage=issue_dict.get("earlier_passage"),
+                    new_passage=issue_dict.get("new_passage"),
+                    earlier_chapter_number=issue_dict.get("earlier_chapter_number"),
+                    new_chapter_number=chapter.chapter_number,
+                    suggestions=issue_dict.get("suggestions", []),
+                    classification=issue_dict.get("classification", "likely_conflict"),
+                    evidence=issue_dict.get("evidence"),
+                    status="unresolved"
+                ))
+
+        # Single batch commit for all narrative memory
+        db.commit()
 
     def _extract_and_persist_chapter_memory(
         self,

@@ -177,24 +177,47 @@ export const projectService = {
     return res.data;
   },
 
-  uploadManuscript: async (projectId, file) => {
+  uploadManuscript: async (projectId, file, onProgress) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await api.post(`/projects/${projectId}/upload`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    // Invalidate everything relating to this project
-    invalidateCache(`project:${projectId}`);
-    invalidateCache(`project:bundle:${projectId}`);
-    invalidateCache(`chapters:${projectId}`);
-    invalidateCache(`issues:${projectId}`);
-    invalidateCache(`graph:${projectId}`);
-    invalidateCache(`entities:${projectId}`);
-    invalidateCache(`timeline:${projectId}`);
-    invalidateCache('projects:list');
-    return res.data;
+
+    let lastError = null;
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await api.post(`/projects/${projectId}/upload`, formData, {
+          timeout: 180000, // 3-minute timeout window
+          onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.total) {
+              const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              onProgress(percent);
+            }
+          },
+        });
+
+        // Invalidate everything relating to this project
+        invalidateCache(`project:${projectId}`);
+        invalidateCache(`project:bundle:${projectId}`);
+        invalidateCache(`chapters:${projectId}`);
+        invalidateCache(`issues:${projectId}`);
+        invalidateCache(`graph:${projectId}`);
+        invalidateCache(`entities:${projectId}`);
+        invalidateCache(`timeline:${projectId}`);
+        invalidateCache('projects:list');
+        return res.data;
+      } catch (err) {
+        lastError = err;
+        const isNetworkErr = err.message === 'Network Error' || !err.response || err.code === 'ECONNABORTED';
+        if (isNetworkErr && attempt < maxRetries) {
+          console.warn(`[Upload] Attempt ${attempt} encountered network drop/server waking up. Retrying in ${attempt * 3}s...`);
+          await new Promise((resolve) => setTimeout(resolve, attempt * 3000));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw lastError;
   },
 
   getGraph: async (projectId, options = {}) => {
@@ -467,11 +490,7 @@ export const architectService = {
   },
 
   uploadAttachments: async (projectId, formData) => {
-    const res = await api.post(`/projects/${projectId}/attachments/upload`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const res = await api.post(`/projects/${projectId}/attachments/upload`, formData);
     invalidateCache(`attachments:${projectId}`);
     invalidateCache('attachments:');
     return res.data;

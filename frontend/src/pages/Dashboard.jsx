@@ -12,11 +12,41 @@ import {
   Trash2,
   FileText,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  CheckCircle2,
+  Loader2,
+  Circle
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { projectService, getCached, prefetchProjectWorkspace } from '../services/api';
+
+const UPLOAD_STAGES = [
+  {
+    id: 1,
+    title: 'Upload & Vault Encryption',
+    desc: 'Encrypting manuscript with AES-256-GCM vault security',
+    threshold: 25,
+  },
+  {
+    id: 2,
+    title: 'Chapter & Passage Segmentation',
+    desc: 'Detecting chapters, word counts & indexing passages',
+    threshold: 50,
+  },
+  {
+    id: 3,
+    title: 'Entity & Relationship Extraction',
+    desc: 'Extracting characters, locations, factions & lore facts',
+    threshold: 75,
+  },
+  {
+    id: 4,
+    title: 'Continuity Guardian Verification',
+    desc: 'Checking cross-chapter consistency against established canon',
+    threshold: 100,
+  },
+];
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -37,6 +67,8 @@ export default function Dashboard() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSeconds, setUploadSeconds] = useState(0);
 
   const fetchProjects = async () => {
     try {
@@ -78,17 +110,54 @@ export default function Dashboard() {
   };
 
   const handleUploadManuscript = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!uploadFile || !selectedUploadProject) return;
+
+    let secondsInterval = null;
+    let progressInterval = null;
 
     try {
       setUploading(true);
       setUploadError('');
-      await projectService.uploadManuscript(selectedUploadProject.id, uploadFile);
+      setUploadProgress(5);
+      setUploadSeconds(0);
+
+      secondsInterval = setInterval(() => {
+        setUploadSeconds((prev) => prev + 1);
+      }, 1000);
+
+      // Smooth responsive progress ticker across stages matching fast backend execution
+      progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev < 26) return prev + 3; // Stage 1: Upload & Encryption (~1s)
+          if (prev < 52) return prev + 2; // Stage 2: Segmentation (~2.5s)
+          if (prev < 76) return prev + 2; // Stage 3: Entity Extraction (~4s)
+          if (prev < 94) return prev + 1; // Stage 4: Continuity Verification (~5s+)
+          return prev;
+        });
+      }, 140);
+
+      await projectService.uploadManuscript(selectedUploadProject.id, uploadFile, (networkPct) => {
+        // Map 0-100% upload network progress to the first stage (0-25%)
+        const mapped = Math.round((networkPct / 100) * 25);
+        setUploadProgress((prev) => Math.max(prev, mapped));
+      });
+
+      clearInterval(progressInterval);
+      clearInterval(secondsInterval);
+
+      // Mark all 4 stages 100% complete
+      setUploadProgress(100);
+
+      // Allow 750ms so user can see all 4 steps marked Done
+      await new Promise((resolve) => setTimeout(resolve, 750));
+
       setShowUploadModal(false);
       setUploadFile(null);
       navigate(`/workspace/${selectedUploadProject.id}`);
     } catch (err) {
+      if (progressInterval) clearInterval(progressInterval);
+      if (secondsInterval) clearInterval(secondsInterval);
       console.error('Upload manuscript error:', err);
       const detail = err.response?.data?.detail;
       let formattedError = '';
@@ -99,7 +168,7 @@ export default function Dashboard() {
       } else if (detail && typeof detail === 'object') {
         formattedError = detail.msg || detail.message || JSON.stringify(detail);
       } else if (err.message === 'Network Error' || !err.response) {
-        formattedError = 'Connection failed: The Render backend service may be spinning up from idle (cold start takes ~50s) or had a temporary connection drop. Please wait a few seconds and try again.';
+        formattedError = 'Connection failed: The Render backend service was spinning up or restarting after a deployment. Please click "Retry Upload" below.';
       } else {
         formattedError = (err.code === 'ECONNABORTED' || err.message?.includes('timeout'))
           ? 'Upload connection timed out while processing. Large manuscripts may still be building memory in the background.'
@@ -143,6 +212,9 @@ export default function Dashboard() {
       setProjects(prev); // Rollback on error
     }
   };
+
+  const completedStagesCount = UPLOAD_STAGES.filter((s) => uploadProgress >= s.threshold).length;
+  const remainingStagesCount = UPLOAD_STAGES.length - completedStagesCount;
 
   return (
     <div className="min-h-screen bg-[#fbfbf9] flex flex-col">
@@ -371,47 +443,172 @@ export default function Dashboard() {
 
       {/* Upload Manuscript Modal */}
       {showUploadModal && selectedUploadProject && (
-        <div className="fixed inset-0 z-50 bg-neutral-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 p-6 max-w-md w-full text-left">
-            <h3 className="text-base font-bold text-neutral-900 mb-1">
-              Upload Manuscript
-            </h3>
-            <p className="text-xs text-neutral-500 mb-4">
-              Add your document to <span className="font-semibold text-neutral-700">{selectedUploadProject.name}</span>. The system parses chapters, encrypts the file into vault storage, and extracts canon facts.
-            </p>
+        <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`bg-white rounded-2xl shadow-xl border border-neutral-200 p-6 ${uploading ? 'max-w-lg' : 'max-w-md'} w-full text-left transition-all`}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-base font-bold text-neutral-900">
+                {uploading ? 'Analyzing Manuscript' : 'Upload Manuscript'}
+              </h3>
+              {!uploading && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    setUploadFile(null);
+                    setUploadError('');
+                  }}
+                  className="text-neutral-400 hover:text-neutral-600 text-sm font-semibold p-1"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {!uploading && (
+              <p className="text-xs text-neutral-500 mb-4">
+                Add your document to <span className="font-semibold text-neutral-700">{selectedUploadProject.name}</span>. The system parses chapters, encrypts the file into vault storage, and extracts canon facts.
+              </p>
+            )}
 
             {uploadError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs">
-                {uploadError}
+              <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs space-y-2">
+                <p>{uploadError}</p>
+                {uploadFile && (
+                  <button
+                    type="button"
+                    onClick={() => handleUploadManuscript()}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium text-[11px] transition-colors shadow-xs"
+                  >
+                    <span>Retry Upload</span>
+                  </button>
+                )}
               </div>
             )}
 
             {uploading ? (
-              <div className="py-6 space-y-4">
-                <div className="flex items-center justify-center space-x-2 text-blue-600 font-semibold text-xs">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Processing Manuscript with Multi-Agent Pipeline...</span>
+              <div className="py-2 space-y-4">
+                {/* Header card with Done / Left Summary and Percentage */}
+                <div className="bg-neutral-900 text-white rounded-xl p-4 shadow-sm border border-neutral-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="flex h-2.5 w-2.5 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                      </span>
+                      <span className="text-xs font-semibold tracking-wide uppercase text-neutral-300">
+                        {uploadProgress >= 100 ? 'Processing Complete' : 'Multi-Agent Pipeline'}
+                      </span>
+                    </div>
+                    <span className="text-base font-mono font-bold text-blue-400">
+                      {uploadProgress}%
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-neutral-800 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 transition-all duration-500 ease-out rounded-full"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+
+                  {/* Metrics Bar: Done, Left, Elapsed Time */}
+                  <div className="flex items-center justify-between mt-3 text-xs text-neutral-300 border-t border-neutral-800 pt-2.5">
+                    <div className="flex items-center space-x-2">
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold text-[11px] border border-emerald-500/30">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        <span>{completedStagesCount} Done</span>
+                      </span>
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold text-[11px] border border-amber-500/30">
+                        <Clock className="w-3 h-3 mr-1" />
+                        <span>{remainingStagesCount} Left</span>
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-neutral-400 font-mono">
+                      Elapsed: {uploadSeconds}s
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2.5 bg-neutral-50 p-4 rounded-xl border border-neutral-200/80 text-left text-xs">
-                  <div className="flex items-center space-x-2 text-neutral-800">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="font-medium">1. Parsing manuscript & AES-256-GCM Vault Encryption</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-neutral-800">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="font-medium">2. Segmenting chapters & indexing passages</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-neutral-800">
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                    <span className="font-medium">3. Extracting canonical entities, facts & relationships</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-neutral-800">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="font-medium">4. Running Continuity Guardian contradiction analysis</span>
-                  </div>
+
+                {/* Individual Stage Cards */}
+                <div className="space-y-2 text-left">
+                  {UPLOAD_STAGES.map((stage, idx) => {
+                    const isDone = uploadProgress >= stage.threshold;
+                    const isActive = !isDone && (idx === 0 || uploadProgress >= UPLOAD_STAGES[idx - 1].threshold);
+
+                    return (
+                      <div
+                        key={stage.id}
+                        className={`flex items-start justify-between p-3 rounded-xl border transition-all duration-300 ${
+                          isDone
+                            ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                            : isActive
+                            ? 'bg-blue-50/80 border-blue-300 shadow-xs ring-1 ring-blue-400/30 text-blue-950'
+                            : 'bg-neutral-50/60 border-neutral-200 text-neutral-400 opacity-70'
+                        }`}
+                      >
+                        <div className="flex items-start space-x-3 pr-2">
+                          <div className="mt-0.5">
+                            {isDone ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                            ) : isActive ? (
+                              <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
+                            ) : (
+                              <Circle className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span
+                                className={`text-xs font-semibold ${
+                                  isDone
+                                    ? 'text-emerald-900'
+                                    : isActive
+                                    ? 'text-blue-900 font-bold'
+                                    : 'text-neutral-500'
+                                }`}
+                              >
+                                {stage.id}. {stage.title}
+                              </span>
+                            </div>
+                            <p
+                              className={`text-[11px] mt-0.5 leading-tight ${
+                                isDone
+                                  ? 'text-emerald-700'
+                                  : isActive
+                                  ? 'text-blue-700'
+                                  : 'text-neutral-400'
+                              }`}
+                            >
+                              {stage.desc}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Status Badge: Done vs In Progress vs Left to do */}
+                        <div className="flex-shrink-0 self-center">
+                          {isDone ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              ✓ Done
+                            </span>
+                          ) : isActive ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300 animate-pulse">
+                              In Progress
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-500 border border-neutral-200">
+                              Left to do
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="text-[11px] text-neutral-400 text-center">
-                  Verifying evidence against established canon memory...
+
+                <p className="text-[11px] text-neutral-400 text-center pt-1">
+                  Verifying evidence against established canon memory &bull; please keep this tab open
                 </p>
               </div>
             ) : (
