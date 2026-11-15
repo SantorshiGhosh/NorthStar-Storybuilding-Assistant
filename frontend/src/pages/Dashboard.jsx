@@ -15,12 +15,15 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { useAuth } from '../context/AuthContext';
 import { projectService, getCached, prefetchProjectWorkspace } from '../services/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState(() => getCached('projects:list') || []);
-  const [loading, setLoading] = useState(() => !getCached('projects:list'));
+  const { user } = useAuth();
+  const userKey = user?.id || 'anon';
+  const [projects, setProjects] = useState(() => getCached(`projects:list:${userKey}`) || []);
+  const [loading, setLoading] = useState(() => !getCached(`projects:list:${userKey}`));
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -49,7 +52,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [user?.id]);
 
   const handleCreateProject = async (e) => {
     e.preventDefault();

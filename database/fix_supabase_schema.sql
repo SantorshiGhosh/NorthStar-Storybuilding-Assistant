@@ -15,9 +15,11 @@ ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH T
 UPDATE users SET is_active = TRUE WHERE is_active IS NULL;
 UPDATE users SET is_superuser = FALSE WHERE is_superuser IS NULL;
 
--- 3. Ensure critical project isolation columns exist
+-- 3. Ensure critical project isolation columns & foreign key reference public.users
 ALTER TABLE IF EXISTS projects ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE IF EXISTS projects ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;
+ALTER TABLE IF EXISTS public.projects DROP CONSTRAINT IF EXISTS projects_user_id_fkey;
+ALTER TABLE IF EXISTS public.projects ADD CONSTRAINT projects_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 -- 4. Ensure manuscript security and architecture columns exist
 ALTER TABLE IF EXISTS manuscripts ADD COLUMN IF NOT EXISTS is_encrypted BOOLEAN DEFAULT TRUE;

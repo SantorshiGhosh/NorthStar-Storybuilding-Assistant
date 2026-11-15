@@ -134,7 +134,12 @@ export function prefetchProjectWorkspace(projectId) {
 
 export const projectService = {
   getProjects: async (options = {}) => {
-    return fetchWithCache('projects:list', async () => {
+    let userId = 'anon';
+    try {
+      const userStr = localStorage.getItem('story_bible_user');
+      if (userStr) userId = JSON.parse(userStr)?.id || 'anon';
+    } catch (_) {}
+    return fetchWithCache(`projects:list:${userId}`, async () => {
       const res = await api.get('/projects');
       return res.data;
     }, { ttl: 30000, ...options });
@@ -570,19 +575,23 @@ export const architectService = {
 
 export const authService = {
   register: async (data) => {
+    invalidateCache();
     const res = await api.post('/auth/register', data);
     if (res.data?.token) {
       localStorage.setItem('northstar_token', res.data.token);
       localStorage.setItem('story_bible_user', JSON.stringify(res.data.user));
+      invalidateCache();
     }
     return res.data;
   },
 
   login: async (data) => {
+    invalidateCache();
     const res = await api.post('/auth/login', data);
     if (res.data?.token) {
       localStorage.setItem('northstar_token', res.data.token);
       localStorage.setItem('story_bible_user', JSON.stringify(res.data.user));
+      invalidateCache();
     }
     return res.data;
   },
@@ -609,10 +618,12 @@ export const authService = {
   },
 
   guestLogin: async () => {
+    invalidateCache();
     const res = await api.post('/auth/guest');
     if (res.data?.token) {
       localStorage.setItem('northstar_token', res.data.token);
       localStorage.setItem('story_bible_user', JSON.stringify(res.data.user));
+      invalidateCache();
     }
     return res.data;
   },

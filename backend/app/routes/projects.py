@@ -22,27 +22,32 @@ def create_project(
     current_user: Optional[models.User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to create a project. Please sign in."
+        )
+
     try:
-        user_id = current_user.id if current_user else (data.user_id if data.user_id else None)
+        user_id = current_user.id
         project = models.Project(
             id=models.gen_uuid(),
             name=data.name.strip(),
             description=data.description.strip() if data.description else None,
             user_id=user_id,
-            is_demo=bool(data.is_demo)
+            is_demo=bool(data.is_demo) if current_user.is_superuser else False
         )
         db.add(project)
         db.flush()
 
         # Add creator as owner in ProjectMember
-        if user_id:
-            member = models.ProjectMember(
-                id=models.gen_uuid(),
-                project_id=project.id,
-                user_id=user_id,
-                role="owner"
-            )
-            db.add(member)
+        member = models.ProjectMember(
+            id=models.gen_uuid(),
+            project_id=project.id,
+            user_id=user_id,
+            role="owner"
+        )
+        db.add(member)
 
         db.commit()
         db.refresh(project)
@@ -73,35 +78,40 @@ def list_projects(
 ):
     """
     Lists projects strictly isolated by authenticated user.
-    - An authenticated user sees:
-      1. Projects they own
-      2. Projects they are explicitly granted membership in
-      3. Global demo projects
-    - An unauthenticated visitor only sees demo projects or legacy unowned projects.
+    - Superusers see all projects for administrative oversight.
+    - An authenticated user strictly sees:
+      1. Projects they created / own (project.user_id == current_user.id)
+      2. Projects they are explicitly granted membership in (via project_members)
+    - A guest demo user sees their own created projects + official demo projects.
+    - Unauthenticated visitors see only official demo projects (empty if none).
     """
     query = db.query(models.Project)
 
     if current_user:
-        if not current_user.is_superuser:
+        if current_user.is_superuser:
+            pass  # superuser sees all
+        else:
             member_project_subquery = db.query(models.ProjectMember.project_id).filter(
                 models.ProjectMember.user_id == current_user.id
             )
-            query = query.filter(
-                or_(
-                    models.Project.user_id == current_user.id,
-                    models.Project.id.in_(member_project_subquery),
-                    models.Project.is_demo == True,
-                    models.Project.user_id == None  # Allow legacy demo projects
+            if current_user.email == "guest.author@storybible.ai":
+                query = query.filter(
+                    or_(
+                        models.Project.user_id == current_user.id,
+                        models.Project.id.in_(member_project_subquery),
+                        models.Project.is_demo == True
+                    )
                 )
-            )
+            else:
+                query = query.filter(
+                    or_(
+                        models.Project.user_id == current_user.id,
+                        models.Project.id.in_(member_project_subquery)
+                    )
+                )
     else:
-        # Unauthenticated: only demo or unassigned projects
-        query = query.filter(
-            or_(
-                models.Project.is_demo == True,
-                models.Project.user_id == None
-            )
-        )
+        # Unauthenticated: only demo projects
+        query = query.filter(models.Project.is_demo == True)
 
     projects = query.order_by(models.Project.updated_at.desc()).all()
     if not projects:

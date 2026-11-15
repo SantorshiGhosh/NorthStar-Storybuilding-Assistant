@@ -59,7 +59,9 @@ def init_db():
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_superuser BOOLEAN DEFAULT FALSE;",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;",
                 "ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;",
-                "ALTER TABLE projects ADD COLUMN IF NOT EXISTS user_id VARCHAR(36);",
+                "ALTER TABLE projects ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;",
+                "ALTER TABLE public.projects DROP CONSTRAINT IF EXISTS projects_user_id_fkey;",
+                "ALTER TABLE public.projects ADD CONSTRAINT projects_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;",
             ]
             for stmt in fast_path_stmts:
                 try:

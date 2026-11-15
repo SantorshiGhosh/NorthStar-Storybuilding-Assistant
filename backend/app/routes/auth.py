@@ -134,10 +134,6 @@ def require_project_access(
             )
         return project
 
-    # If project has no owner (legacy record), allow the current user to access or claim it
-    if project.user_id is None:
-        return project
-
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Access denied: You do not have permission to access this project."
