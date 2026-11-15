@@ -49,7 +49,6 @@ export default function Navbar({ currentProject, onProjectChange }) {
   };
 
   const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: FolderOpen },
     { label: 'Story Architect', path: projectId ? `/architect/${projectId}` : null, icon: Compass },
     { label: 'Workspace', path: projectId ? `/workspace/${projectId}` : null, icon: BookOpen },
     { label: 'Knowledge Graph', path: projectId ? `/graph/${projectId}` : null, icon: GitFork },
@@ -78,14 +77,25 @@ export default function Navbar({ currentProject, onProjectChange }) {
             </div>
           </Link>
 
-          {currentProject && (
-            <div className="hidden sm:flex items-center space-x-2 pl-3 border-l border-neutral-200">
-              <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
-              <span className="text-xs font-medium text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded-md truncate max-w-[160px]">
-                {currentProject.name}
-              </span>
-            </div>
-          )}
+          <div className="hidden sm:flex items-center space-x-2 pl-3 border-l border-neutral-200 dark:border-neutral-800">
+            <Link
+              to="/dashboard"
+              className="flex items-center space-x-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+              title="Dashboard"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Dashboard</span>
+            </Link>
+
+            {currentProject && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md truncate max-w-[160px]">
+                  {currentProject.name}
+                </span>
+              </>
+            )}
+          </div>
 
           {/* Prominent Environment Switcher for Project */}
           {projectId && (
