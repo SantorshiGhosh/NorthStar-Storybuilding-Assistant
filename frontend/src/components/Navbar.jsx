@@ -60,10 +60,10 @@ export default function Navbar({ currentProject, onProjectChange }) {
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[#eae9e4] px-4 lg:px-8 py-2.5 transition-all">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-[#eae9e4] px-4 sm:px-6 lg:px-8 py-2.5 transition-all">
+      <div className="w-full flex items-center justify-between gap-4">
         {/* Brand & Project Breadcrumb */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 shrink-0">
           <Link to="/" className="flex items-center space-x-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-neutral-900 text-white flex items-center justify-center shadow-xs group-hover:bg-blue-600 transition-colors">
               <ShieldCheck className="w-4 h-4" />
@@ -148,7 +148,7 @@ export default function Navbar({ currentProject, onProjectChange }) {
         </nav>
 
         {/* Right Action buttons */}
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2.5 shrink-0">
           <ThemeToggle />
 
           <button
