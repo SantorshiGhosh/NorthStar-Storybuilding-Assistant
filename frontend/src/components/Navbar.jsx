@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  BookOpen,
   Compass,
   GitFork,
   AlertTriangle,
@@ -141,8 +140,6 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
   }
 
   const navItems = [
-    { label: 'Story Architect', path: projectId ? `/architect/${projectId}` : null, icon: Compass },
-    { label: 'Workspace', path: projectId ? `/workspace/${projectId}` : null, icon: BookOpen },
     { label: 'Knowledge Graph', path: projectId ? `/graph/${projectId}` : null, icon: GitFork },
     { label: 'Continuity Report', path: projectId ? `/continuity/${projectId}` : null, icon: AlertTriangle, badge: currentProject?.unresolved_issues_count },
     { label: 'Characters', path: projectId ? `/characters/${projectId}` : null, icon: Users },
