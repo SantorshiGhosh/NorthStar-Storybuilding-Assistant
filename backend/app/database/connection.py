@@ -50,18 +50,42 @@ def init_db():
     except Exception as e:
         print(f"[DB Warning] Could not auto-run database migrations on startup: {e}")
 
+    # Direct fast-path for critical user & project isolation columns on PostgreSQL / SQLite
+    try:
+        with engine.connect() as conn:
+            fast_path_stmts = [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_superuser BOOLEAN DEFAULT FALSE;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;",
+                "ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_demo BOOLEAN DEFAULT FALSE;",
+                "ALTER TABLE projects ADD COLUMN IF NOT EXISTS user_id VARCHAR(36);",
+            ]
+            for stmt in fast_path_stmts:
+                try:
+                    conn.execute(text(stmt))
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+    except Exception as ddl_err:
+        print(f"[DB Note] Direct fast-path column ensure skipped: {ddl_err}")
+
     # Dialect-agnostic column migrations using SQLAlchemy inspection
     columns_to_ensure = [
-        ("projects", "is_demo", "BOOLEAN DEFAULT 0"),
+        ("users", "full_name", "VARCHAR(255)"),
+        ("users", "is_active", "BOOLEAN DEFAULT TRUE"),
+        ("users", "is_superuser", "BOOLEAN DEFAULT FALSE"),
+        ("users", "updated_at", "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"),
+        ("projects", "is_demo", "BOOLEAN DEFAULT FALSE"),
         ("projects", "user_id", "VARCHAR(36)"),
-        ("manuscripts", "is_encrypted", "BOOLEAN DEFAULT 1"),
-        ("manuscripts", "encrypted", "BOOLEAN DEFAULT 1"),
+        ("manuscripts", "is_encrypted", "BOOLEAN DEFAULT TRUE"),
+        ("manuscripts", "encrypted", "BOOLEAN DEFAULT TRUE"),
         ("entities", "category_id", "VARCHAR(36)"),
         ("entities", "canon_status", "VARCHAR(50) DEFAULT 'established'"),
         ("entities", "protection_level", "INTEGER DEFAULT 1"),
         ("entities", "provenance", "VARCHAR(50) DEFAULT 'manual'"),
         ("entities", "custom_properties", "TEXT DEFAULT '{}'"),
-        ("entities", "is_archived", "BOOLEAN DEFAULT 0"),
+        ("entities", "is_archived", "BOOLEAN DEFAULT FALSE"),
         ("entities", "first_appearance_chapter_id", "VARCHAR(36)"),
         ("relationships", "direction", "VARCHAR(50) DEFAULT 'directed'"),
         ("relationships", "custom_properties", "TEXT DEFAULT '{}'"),
@@ -91,6 +115,7 @@ def init_db():
                             conn.execute(text(stmt))
                             conn.commit()
                         except Exception as add_err:
+                            conn.rollback()
                             print(f"[DB Info] Column addition ({table_name}.{col_name}): {add_err}")
     except Exception as e:
         print(f"[DB Warning] Column migration inspection skipped: {e}")

@@ -30,11 +30,22 @@ class MigrationManager:
 
     def record_migration(self, version: str):
         with engine.connect() as conn:
-            conn.execute(
-                text("INSERT INTO schema_migrations (version, applied_at) VALUES (:v, :t);"),
-                {"v": version, "t": datetime.utcnow()}
-            )
-            conn.commit()
+            try:
+                conn.execute(
+                    text("INSERT INTO schema_migrations (version, applied_at) VALUES (:v, :t) ON CONFLICT (version) DO NOTHING;"),
+                    {"v": version, "t": datetime.utcnow()}
+                )
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                try:
+                    conn.execute(
+                        text("INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (:v, :t);"),
+                        {"v": version, "t": datetime.utcnow()}
+                    )
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
 
     def remove_migration(self, version: str):
         with engine.connect() as conn:
@@ -57,6 +68,7 @@ class MigrationManager:
             ("001_core_architecture", self._mig_001_core),
             ("002_story_architect_extensions", self._mig_002_architect),
             ("003_auth_and_isolation", self._mig_003_auth_isolation),
+            ("004_user_columns_and_defaults", self._mig_004_users),
         ]
 
         for version, func in migrations:
@@ -73,8 +85,8 @@ class MigrationManager:
     def _mig_001_core(self):
         """Ensures core manuscript and continuity columns exist."""
         columns = [
-            ("manuscripts", "is_encrypted", "BOOLEAN DEFAULT 1"),
-            ("manuscripts", "encrypted", "BOOLEAN DEFAULT 1"),
+            ("manuscripts", "is_encrypted", "BOOLEAN DEFAULT TRUE"),
+            ("manuscripts", "encrypted", "BOOLEAN DEFAULT TRUE"),
             ("continuity_issues", "classification", "VARCHAR(50) DEFAULT 'likely_conflict'"),
             ("continuity_issues", "evidence", "TEXT DEFAULT '[]'"),
             ("story_facts", "fact_category", "VARCHAR(50) DEFAULT 'general'"),
@@ -89,7 +101,7 @@ class MigrationManager:
             ("entities", "protection_level", "INTEGER DEFAULT 1"),
             ("entities", "provenance", "VARCHAR(50) DEFAULT 'manual'"),
             ("entities", "custom_properties", "TEXT DEFAULT '{}'"),
-            ("entities", "is_archived", "BOOLEAN DEFAULT 0"),
+            ("entities", "is_archived", "BOOLEAN DEFAULT FALSE"),
             ("entities", "first_appearance_chapter_id", "VARCHAR(36)"),
             ("relationships", "direction", "VARCHAR(50) DEFAULT 'directed'"),
             ("relationships", "custom_properties", "TEXT DEFAULT '{}'"),
@@ -108,7 +120,17 @@ class MigrationManager:
         """Ensures user ownership columns exist on projects."""
         columns = [
             ("projects", "user_id", "VARCHAR(36)"),
-            ("projects", "is_demo", "BOOLEAN DEFAULT 0"),
+            ("projects", "is_demo", "BOOLEAN DEFAULT FALSE"),
+        ]
+        self._add_columns_if_missing(columns)
+
+    def _mig_004_users(self):
+        """Ensures users table has full_name, is_active, is_superuser, updated_at."""
+        columns = [
+            ("users", "full_name", "VARCHAR(255)"),
+            ("users", "is_active", "BOOLEAN DEFAULT TRUE"),
+            ("users", "is_superuser", "BOOLEAN DEFAULT FALSE"),
+            ("users", "updated_at", "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"),
         ]
         self._add_columns_if_missing(columns)
 
@@ -125,6 +147,7 @@ class MigrationManager:
                             conn.execute(text(stmt))
                             conn.commit()
                         except Exception as e:
+                            conn.rollback()
                             logger.warning(f"Column add note ({table_name}.{col_name}): {e}")
 
 migration_manager = MigrationManager()

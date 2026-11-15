@@ -1,12 +1,16 @@
 import re
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import bcrypt
 from jose import jwt, JWTError
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import models
+
+logger = logging.getLogger("auth_service")
 
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 
@@ -62,19 +66,64 @@ class AuthService:
             return False
         return bool(EMAIL_REGEX.match(email.strip()))
 
-    @staticmethod
-    def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
-        """Fetch user by case-insensitive email."""
+    @classmethod
+    def _heal_users_table(cls, db: Session):
+        """Self-healing: Ensures all required columns exist on the users table in database."""
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+        statements = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_superuser BOOLEAN DEFAULT FALSE;",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;"
+        ]
+        for stmt in statements:
+            try:
+                db.execute(text(stmt))
+                db.commit()
+            except Exception as ex:
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+                logger.warning(f"[Auth Healing Note] {stmt} -> {ex}")
+        logger.info("[Auth Service] Self-healed users table missing columns successfully.")
+
+    @classmethod
+    def get_user_by_email(cls, db: Session, email: str) -> Optional[models.User]:
+        """Fetch user by case-insensitive email with automatic schema self-healing."""
         if not email:
             return None
-        return db.query(models.User).filter(models.User.email.ilike(email.strip())).first()
+        clean_email = email.strip()
+        try:
+            return db.query(models.User).filter(models.User.email.ilike(clean_email)).first()
+        except Exception as e:
+            err_str = str(e).lower()
+            if any(term in err_str for term in ["is_superuser", "undefinedcolumn", "no such column", "users."]):
+                logger.warning(f"[AuthService] Detected missing column on users table query ({e}). Self-healing...")
+                cls._heal_users_table(db)
+                return db.query(models.User).filter(models.User.email.ilike(clean_email)).first()
+            raise e
 
-    @staticmethod
-    def get_user_by_id(db: Session, user_id: str) -> Optional[models.User]:
-        """Fetch user by unique ID."""
+    @classmethod
+    def get_user_by_id(cls, db: Session, user_id: str) -> Optional[models.User]:
+        """Fetch user by unique ID with automatic schema self-healing."""
         if not user_id:
             return None
-        return db.query(models.User).filter(models.User.id == str(user_id)).first()
+        uid_str = str(user_id)
+        try:
+            return db.query(models.User).filter(models.User.id == uid_str).first()
+        except Exception as e:
+            err_str = str(e).lower()
+            if any(term in err_str for term in ["is_superuser", "undefinedcolumn", "no such column", "users."]):
+                logger.warning(f"[AuthService] Detected missing column on users table query ({e}). Self-healing...")
+                cls._heal_users_table(db)
+                return db.query(models.User).filter(models.User.id == uid_str).first()
+            raise e
 
     @classmethod
     def register_user(
@@ -109,9 +158,21 @@ class AuthService:
             is_active=True,
             is_superuser=False
         )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+        try:
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+        except Exception as e:
+            err_str = str(e).lower()
+            if any(term in err_str for term in ["is_superuser", "undefinedcolumn", "no such column", "users."]):
+                logger.warning(f"[AuthService] Detected missing column during user registration ({e}). Self-healing...")
+                cls._heal_users_table(db)
+                db.add(new_user)
+                db.commit()
+                db.refresh(new_user)
+            else:
+                db.rollback()
+                raise e
         return new_user
 
     @classmethod
@@ -140,9 +201,21 @@ class AuthService:
                 is_active=True,
                 is_superuser=False
             )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
+            try:
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+            except Exception as e:
+                err_str = str(e).lower()
+                if any(term in err_str for term in ["is_superuser", "undefinedcolumn", "no such column", "users."]):
+                    logger.warning(f"[AuthService] Detected missing column during guest user creation ({e}). Self-healing...")
+                    cls._heal_users_table(db)
+                    db.add(user)
+                    db.commit()
+                    db.refresh(user)
+                else:
+                    db.rollback()
+                    raise e
         return user
 
 auth_service = AuthService()
