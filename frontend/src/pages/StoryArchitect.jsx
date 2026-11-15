@@ -46,13 +46,20 @@ import {
   Eye,
   Sliders,
   X,
-  ExternalLink
+  ExternalLink,
+  RotateCcw,
+  Copy,
+  Edit2,
+  CheckCircle2,
+  AlertCircle,
+  LayoutGrid
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AuditCentreModal from '../components/AuditCentreModal';
 import SnapshotManagerModal from '../components/SnapshotManagerModal';
 import ImportExportModal from '../components/ImportExportModal';
 import EntityMatchingDrawer from '../components/EntityMatchingDrawer';
+import { computeLayout } from '../services/graphLayouts';
 import {
   projectService,
   entityService,
@@ -90,9 +97,9 @@ function ArchitectNode({ data, selected }) {
 
   return (
     <div
-      className={`bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-3.5 shadow-xs transition-all w-56 text-left select-none border-l-4 ${typeBg} ${
+      className={`bg-white dark:bg-neutral-900 rounded-xl border p-3.5 shadow-xs transition-all w-56 text-left select-none border-l-4 ${typeBg} ${
         selected ? 'ring-2 ring-blue-500 shadow-md' : 'hover:border-neutral-300 dark:hover:border-neutral-700'
-      }`}
+      } ${data.isSearchMatch ? 'ring-2 ring-amber-400 bg-amber-50/20' : 'border-neutral-200 dark:border-neutral-800'}`}
     >
       <Handle type="target" position={Position.Top} className="w-2.5 h-2.5 bg-neutral-400" />
 
@@ -183,6 +190,18 @@ export default function StoryArchitect() {
   // New Canvas Modal
   const [showNewCanvasModal, setShowNewCanvasModal] = useState(false);
   const [newCanvasTitle, setNewCanvasTitle] = useState('');
+  const [showRenameCanvasModal, setShowRenameCanvasModal] = useState(false);
+  const [renameCanvasTitle, setRenameCanvasTitle] = useState('');
+
+  // Search & Filters
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Layout history & state
+  const [previousLayout, setPreviousLayout] = useState(null);
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'failed'
+
+  // Context Menu
+  const [contextMenu, setContextMenu] = useState(null);
 
   // Connect Nodes Modal (Edge creation)
   const [pendingConnection, setPendingConnection] = useState(null);
@@ -294,9 +313,14 @@ export default function StoryArchitect() {
     setActiveCanvas(canvas);
     try {
       const details = await architectService.getCanvasDetails(canvas.id);
-      if (details.nodes && details.nodes.length > 0) {
-        // Apply saved canvas node coordinates
-        const nodePosMap = new Map(details.nodes.map((cn) => [String(cn.entity_id), { x: cn.x, y: cn.y }]));
+      const nodePosMap = new Map();
+      if (Array.isArray(details.nodes)) {
+        details.nodes.forEach((cn) => nodePosMap.set(String(cn.entity_id), { x: cn.x, y: cn.y }));
+      }
+      if (details.node_coords) {
+        Object.entries(details.node_coords).forEach(([eid, pos]) => nodePosMap.set(String(eid), pos));
+      }
+      if (nodePosMap.size > 0) {
         setNodes((prev) =>
           prev.map((node) => {
             const pos = nodePosMap.get(String(node.id));
@@ -313,16 +337,85 @@ export default function StoryArchitect() {
   const handleSaveLayout = async () => {
     if (!activeCanvas) return;
     try {
+      setSaveStatus('saving');
       const payload = nodes.map((n) => ({
         entity_id: n.id,
         x: n.position.x,
         y: n.position.y,
       }));
       await architectService.saveCanvasNodes(activeCanvas.id, payload);
-      alert('Canvas layout saved successfully!');
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err) {
       console.error('Failed to save canvas layout:', err);
+      setSaveStatus('failed');
       alert('Error saving canvas: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  // Auto-Layout Handlers
+  const handleApplyLayout = (type) => {
+    if (!nodes || nodes.length === 0) return;
+    setPreviousLayout(nodes.map((n) => ({ id: n.id, position: { ...n.position } })));
+    const arranged = computeLayout(nodes, edges, type);
+    setNodes(arranged);
+    if (activeCanvas) {
+      architectService.updateCanvas(activeCanvas.id, { layout_type: type }).catch(() => {});
+    }
+  };
+
+  const handleRestoreLayout = () => {
+    if (!previousLayout) return;
+    const posMap = new Map(previousLayout.map((p) => [p.id, p.position]));
+    setNodes((prev) =>
+      prev.map((n) => ({
+        ...n,
+        position: posMap.get(n.id) || n.position,
+      }))
+    );
+    setPreviousLayout(null);
+  };
+
+  // Canvas Management Handlers
+  const handleDuplicateCanvas = async () => {
+    if (!activeCanvas) return;
+    try {
+      const copy = await architectService.duplicateCanvas(activeCanvas.id);
+      setCanvases((prev) => [...prev, copy]);
+      setActiveCanvas(copy);
+    } catch (err) {
+      alert('Failed to duplicate canvas: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleDeleteCanvas = async () => {
+    if (!activeCanvas) return;
+    if (canvases.length <= 1) {
+      alert('At least one canvas must be retained in your story bible.');
+      return;
+    }
+    const confirm = window.confirm(
+      `Delete canvas "${activeCanvas.name || activeCanvas.title}"? Your narrative entities and relationships will remain safe and intact.`
+    );
+    if (!confirm) return;
+    try {
+      await architectService.deleteCanvas(activeCanvas.id);
+      const remaining = canvases.filter((c) => c.id !== activeCanvas.id);
+      setCanvases(remaining);
+      setActiveCanvas(remaining[0] || null);
+    } catch (err) {
+      alert('Failed to delete canvas: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleRenameCanvas = async (newName) => {
+    if (!activeCanvas || !newName?.trim()) return;
+    try {
+      const updated = await architectService.updateCanvas(activeCanvas.id, { name: newName.trim() });
+      setCanvases((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
+      setActiveCanvas((prev) => ({ ...prev, ...updated }));
+    } catch (err) {
+      alert('Failed to rename canvas: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -332,6 +425,7 @@ export default function StoryArchitect() {
     if (!newCanvasTitle.trim()) return;
     try {
       const newCanvas = await architectService.createCanvas(projectId, {
+        name: newCanvasTitle.trim(),
         title: newCanvasTitle.trim(),
         view_type: viewMode,
       });
@@ -369,9 +463,28 @@ export default function StoryArchitect() {
       const fullEnt = entities.find((e) => String(e.id) === String(node.id)) || node.data;
       setSelectedEntity(fullEnt);
       setIsPropertiesDrawerOpen(true);
+      setContextMenu(null);
     },
     [entities]
   );
+
+  // Context Menu & Pane Interaction Handlers
+  const onNodeContextMenu = useCallback((event, node) => {
+    event.preventDefault();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      node: node,
+    });
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const onPaneDoubleClick = useCallback((event) => {
+    setShowNewEntityModal(true);
+  }, []);
 
   // Connect two nodes (drag edge handle)
   const onConnect = useCallback((connection) => {
@@ -548,7 +661,7 @@ export default function StoryArchitect() {
                     : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-850'
                 }`}
               >
-                {c.title}
+                {c.name || c.title || 'Canvas'}
               </button>
             ))}
             <button
@@ -558,6 +671,36 @@ export default function StoryArchitect() {
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
+            {activeCanvas && (
+              <div className="flex items-center space-x-0.5 pl-1">
+                <button
+                  onClick={() => {
+                    setRenameCanvasTitle(activeCanvas.name || activeCanvas.title || '');
+                    setShowRenameCanvasModal(true);
+                  }}
+                  className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded"
+                  title="Rename active canvas"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={handleDuplicateCanvas}
+                  className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded"
+                  title="Duplicate active canvas"
+                >
+                  <Copy className="w-3 h-3" />
+                </button>
+                {canvases.length > 1 && (
+                  <button
+                    onClick={handleDeleteCanvas}
+                    className="p-1 text-neutral-400 hover:text-red-600 rounded"
+                    title="Delete active canvas (entities preserved)"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 4 Dedicated View Modes */}
@@ -600,6 +743,39 @@ export default function StoryArchitect() {
             </button>
           </div>
 
+          {/* Six Auto-Layouts */}
+          <div className="flex items-center space-x-1 bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200 dark:border-neutral-700">
+            <LayoutGrid className="w-3.5 h-3.5 text-neutral-400 ml-1.5" />
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleApplyLayout(e.target.value);
+                  e.target.value = '';
+                }
+              }}
+              className="px-1.5 py-1 text-xs bg-transparent text-neutral-700 dark:text-neutral-300 focus:outline-none"
+              title="Apply auto-layout algorithms"
+            >
+              <option value="" disabled>Auto-Layout...</option>
+              <option value="force_directed">Force-Directed</option>
+              <option value="hierarchical">Hierarchical</option>
+              <option value="circular">Circular</option>
+              <option value="grid">Grid Matrix</option>
+              <option value="family_tree">Family Tree</option>
+            </select>
+            {previousLayout && (
+              <button
+                onClick={handleRestoreLayout}
+                className="flex items-center space-x-1 px-1.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors"
+                title="Restore layout prior to auto-arrangement"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Restore</span>
+              </button>
+            )}
+          </div>
+
           {/* World Template Selector */}
           <select
             defaultValue=""
@@ -618,8 +794,33 @@ export default function StoryArchitect() {
           </select>
         </div>
 
-        {/* Right Action Tools: Snapshots, Audit, Matching Queue, Import/Export, + Node */}
+        {/* Right Action Tools: Search, Save Status, Snapshots, Audit, Matching Queue, Import/Export, + Node */}
         <div className="flex items-center space-x-2">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="w-3 h-3 text-neutral-400 absolute left-2.5 top-2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search nodes..."
+              className="w-28 lg:w-40 text-xs pl-7 pr-2 py-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-700 dark:text-neutral-200 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Save status badge */}
+          {saveStatus !== 'idle' && (
+            <div className="flex items-center space-x-1 text-[11px] font-medium px-2 py-1 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+              {saveStatus === 'saving' && <span className="text-neutral-500 animate-pulse">Saving...</span>}
+              {saveStatus === 'saved' && (
+                <span className="text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Saved</span>
+                </span>
+              )}
+              {saveStatus === 'failed' && <span className="text-red-500">Save failed</span>}
+            </div>
+          )}
           {/* Matching Queue Button */}
           {matchingCandidatesCount > 0 && (
             <button
@@ -747,6 +948,9 @@ export default function StoryArchitect() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onNodeContextMenu={onNodeContextMenu}
+            onPaneClick={onPaneClick}
+            onDoubleClick={onPaneDoubleClick}
             nodeTypes={nodeTypes}
             fitView
             minZoom={0.2}
@@ -759,6 +963,55 @@ export default function StoryArchitect() {
               className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden shadow-xs"
             />
           </ReactFlow>
+
+          {/* Context Menu for Node Actions */}
+          {contextMenu && (
+            <div
+              className="fixed z-50 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl py-1 text-xs text-neutral-700 dark:text-neutral-200 min-w-[170px]"
+              style={{ top: contextMenu.y, left: contextMenu.x }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  const fullEnt = entities.find((e) => String(e.id) === String(contextMenu.node.id)) || contextMenu.node.data;
+                  setSelectedEntity(fullEnt);
+                  setIsPropertiesDrawerOpen(true);
+                  setContextMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center space-x-2"
+              >
+                <Sliders className="w-3.5 h-3.5 text-blue-500" />
+                <span>Quick Properties</span>
+              </button>
+              <Link
+                to={`/entity/${projectId}/${contextMenu.node.id}`}
+                className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center space-x-2"
+                onClick={() => setContextMenu(null)}
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Full Profile & Vault</span>
+              </Link>
+              <div className="border-t border-neutral-100 dark:border-neutral-800 my-1" />
+              <button
+                onClick={async () => {
+                  if (contextMenu.node.data?.protection_level >= 3) {
+                    alert('Cannot delete Locked or Immutable entity.');
+                    setContextMenu(null);
+                    return;
+                  }
+                  if (window.confirm(`Delete "${contextMenu.node.data?.name || contextMenu.node.data?.label}" from story bible?`)) {
+                    await entityService.deleteEntity(contextMenu.node.id);
+                    setNodes((prev) => prev.filter((n) => n.id !== contextMenu.node.id));
+                  }
+                  setContextMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 flex items-center space-x-2"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Entity</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right: Quick Properties Drawer (Collapsible) */}
@@ -1147,6 +1400,58 @@ export default function StoryArchitect() {
                 className="px-4 py-1.5 text-xs font-semibold bg-neutral-900 text-white rounded-lg hover:bg-neutral-800"
               >
                 Create Canvas
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Rename Canvas Modal */}
+      {showRenameCanvasModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleRenameCanvas(renameCanvasTitle);
+              setShowRenameCanvasModal(false);
+            }}
+            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Rename Canvas</h4>
+              <button
+                type="button"
+                onClick={() => setShowRenameCanvasModal(false)}
+                className="p-1 text-neutral-400 hover:text-neutral-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Canvas Name</label>
+              <input
+                type="text"
+                required
+                value={renameCanvasTitle}
+                onChange={(e) => setRenameCanvasTitle(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRenameCanvasModal(false)}
+                className="px-3 py-1.5 text-xs text-neutral-600 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 text-xs font-semibold bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800"
+              >
+                Save
               </button>
             </div>
           </form>

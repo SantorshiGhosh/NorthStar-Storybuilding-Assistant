@@ -7,17 +7,50 @@ from app.database.connection import Base
 def gen_uuid():
     return str(uuid.uuid4())
 
-class Project(Base):
-    __tablename__ = "projects"
+class User(Base):
+    __tablename__ = "users"
 
     id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
-    user_id = Column(Uuid(as_uuid=False), nullable=True)
-    name = Column(String(255), nullable=False)
-    description = Column(Text, nullable=True)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    full_name = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
+    owned_projects = relationship("Project", back_populates="owner", foreign_keys="Project.user_id", cascade="all, delete-orphan")
+    memberships = relationship("ProjectMember", back_populates="user", cascade="all, delete-orphan")
+
+
+class ProjectMember(Base):
+    __tablename__ = "project_members"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    project_id = Column(Uuid(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Uuid(as_uuid=False), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(50), default="editor")  # owner, editor, viewer
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project", back_populates="members")
+    user = relationship("User", back_populates="memberships")
+
+
+class Project(Base):
+    __tablename__ = "projects"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id = Column(Uuid(as_uuid=False), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    is_demo = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    owner = relationship("User", back_populates="owned_projects", foreign_keys=[user_id])
+    members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
     manuscripts = relationship("Manuscript", back_populates="project", cascade="all, delete-orphan")
     chapters = relationship("Chapter", back_populates="project", cascade="all, delete-orphan")
     entities = relationship("Entity", back_populates="project", cascade="all, delete-orphan")
@@ -381,6 +414,7 @@ class SensitiveApproval(Base):
     payload = Column(JSON, nullable=False)
     status = Column(String(50), default="pending")  # pending, approved, rejected
     decision_notes = Column(Text, nullable=True)
+    decided_by_id = Column(Uuid(as_uuid=False), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     decided_at = Column(DateTime, nullable=True)
 
