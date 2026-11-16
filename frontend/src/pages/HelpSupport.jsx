@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   HelpCircle,
-  BookOpen,
   Wrench,
   Mail,
   Phone,
@@ -607,7 +606,6 @@ export default function HelpSupport() {
           {/* Quick Section Navigation Tabs */}
           <div className="flex flex-wrap items-center gap-2 pt-2">
             {[
-              { id: 'all', label: 'All Resources', icon: BookOpen },
               { id: 'faqs', label: 'FAQs', icon: HelpCircle },
               { id: 'guide', label: 'Getting Started Guide', icon: Compass },
               { id: 'troubleshooting', label: 'Troubleshooting', icon: Wrench },
@@ -619,8 +617,10 @@ export default function HelpSupport() {
                 <button
                   key={tab.id}
                   onClick={() => {
-                    setActiveTab(tab.id);
-                    if (tab.id !== 'all') {
+                    if (activeTab === tab.id) {
+                      setActiveTab('all');
+                    } else {
+                      setActiveTab(tab.id);
                       document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth' });
                     }
                   }}

@@ -348,8 +348,8 @@ export default function TermsModal({ isOpen, onClose }) {
               If you have any questions or feedback regarding these Terms, please contact our support team:
             </p>
             <div className="bg-[#f6f6f4] dark:bg-[#121214] p-3.5 rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] text-xs space-y-1">
-              <div><strong>Official Support Email:</strong> <a href="mailto:support@storybible.ai" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">support@storybible.ai</a></div>
-              <div><strong>Telephone Helpline:</strong> <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">+1 (800) 555-0199</a></div>
+              <div><strong>Official Support Email:</strong> <a href="mailto:codebrew@gmail.com" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">codebrew@gmail.com</a></div>
+              <div><strong>Telephone Helpline:</strong> <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">+919231456311</a></div>
             </div>
           </section>
         </div>

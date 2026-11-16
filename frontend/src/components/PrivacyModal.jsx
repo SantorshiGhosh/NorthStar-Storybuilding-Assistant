@@ -260,7 +260,7 @@ export default function PrivacyModal({ isOpen, onClose }) {
             <ul className="list-disc pl-5 space-y-1">
               <li><strong>AI Providers:</strong> Google Gemini API for narrative entity extraction and auditing.</li>
               <li><strong>Authentication / Cloud:</strong> Optional Firebase authentication and Supabase database / storage integration.</li>
-              <li><strong>Email Dispatch:</strong> SMTP email services for customer support ticket routing to <code className="px-1.5 py-0.5 rounded bg-[#1c1815]/5 dark:bg-white/5 font-mono text-[11px]">support@storybible.ai</code>.</li>
+              <li><strong>Email Dispatch:</strong> SMTP email services for customer support ticket routing to <code className="px-1.5 py-0.5 rounded bg-[#1c1815]/5 dark:bg-white/5 font-mono text-[11px]">codebrew@gmail.com</code>.</li>
             </ul>
           </section>
 
@@ -339,8 +339,8 @@ export default function PrivacyModal({ isOpen, onClose }) {
               For privacy inquiries, data access requests, or questions regarding data handling practices:
             </p>
             <div className="bg-[#f6f6f4] dark:bg-[#121214] p-3.5 rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] text-xs space-y-1">
-              <div><strong>Privacy &amp; Support Email:</strong> <a href="mailto:support@storybible.ai" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">support@storybible.ai</a></div>
-              <div><strong>Telephone Helpline:</strong> <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">+1 (800) 555-0199</a></div>
+              <div><strong>Privacy &amp; Support Email:</strong> <a href="mailto:codebrew@gmail.com" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">codebrew@gmail.com</a></div>
+              <div><strong>Telephone Helpline:</strong> <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">+919231456311</a></div>
             </div>
           </section>
         </div>

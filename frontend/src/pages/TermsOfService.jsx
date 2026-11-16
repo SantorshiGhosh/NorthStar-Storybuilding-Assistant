@@ -366,14 +366,14 @@ export default function TermsOfService() {
             <div className="bg-[#f6f6f4] dark:bg-[#121214] p-4 rounded-xl border border-[#1c1815]/10 dark:border-white/10 space-y-1.5 mt-2">
               <div>
                 <strong>Official Support Email:</strong>{' '}
-                <a href="mailto:support@storybible.ai" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">
-                  support@storybible.ai
+                <a href="mailto:codebrew@gmail.com" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">
+                  codebrew@gmail.com
                 </a>
               </div>
               <div>
                 <strong>Telephone Helpline:</strong>{' '}
                 <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">
-                  +1 (800) 555-0199
+                  +919231456311
                 </a>
               </div>
             </div>
@@ -406,8 +406,8 @@ export default function TermsOfService() {
             <Link to="/support" className="hover:text-[#1c1815] dark:hover:text-[#f5f5f7] transition-colors">
               Help &amp; Support
             </Link>
-            <a href="mailto:support@storybible.ai" className="hover:text-[#1c1815] dark:hover:text-[#f5f5f7] transition-colors">
-              support@storybible.ai
+            <a href="mailto:codebrew@gmail.com" className="hover:text-[#1c1815] dark:hover:text-[#f5f5f7] transition-colors">
+              codebrew@gmail.com
             </a>
             <span className="text-[#8e8e93]/60">&copy; {new Date().getFullYear()} NorthStar AI</span>
           </div>
