@@ -32,6 +32,8 @@ import Sidebar from '../components/Sidebar';
 import Editor from '../components/Editor';
 import IssueCard from '../components/IssueCard';
 import EntityMatchingDrawer from '../components/EntityMatchingDrawer';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { projectService, chapterService, architectService, getCached } from '../services/api';
 
 const PANELS_STORAGE_KEY = 'northstar_workspace_panels';
@@ -57,6 +59,7 @@ const getSavedPanelState = () => {
 
 export default function Workspace() {
   const { projectId } = useParams();
+  const toast = useToast();
 
   const cachedBundle = getCached(`project:bundle:${projectId}`);
   const cachedProj = getCached(`project:${projectId}`) || cachedBundle?.project;
@@ -64,6 +67,7 @@ export default function Workspace() {
   const cachedIssues = getCached(`issues:${projectId}:{}`) || cachedBundle?.issues;
 
   const [project, setProject] = useState(() => cachedProj || null);
+  useDocumentTitle(project?.name ? `${project.name} | Manuscript Workspace` : 'Manuscript Workspace');
   const [chapters, setChapters] = useState(() => Array.isArray(cachedChaps) ? cachedChaps : []);
   const [selectedChapterId, setSelectedChapterId] = useState(() => cachedChaps?.[0]?.id || null);
   const [currentChapter, setCurrentChapter] = useState(() => cachedChaps?.[0] || null);
@@ -175,11 +179,13 @@ export default function Workspace() {
       setChapters([...chapters, created]);
       setSelectedChapterId(created.id);
       setCurrentChapter(created);
+      toast.success(`Chapter "${created.title || 'New Chapter'}" created`);
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
         setIsLeftOpen(false);
       }
     } catch (err) {
       console.error('Failed to add chapter:', err);
+      toast.error('Failed to add chapter');
     }
   };
 
@@ -204,8 +210,10 @@ export default function Workspace() {
       if (Array.isArray(updatedChaps)) {
         setChapters(updatedChaps);
       }
+      toast.success('Chapter saved to encrypted vault');
     } catch (err) {
       console.error('Failed to save chapter:', err);
+      toast.error('Failed to save chapter');
     }
   };
 
@@ -242,6 +250,13 @@ export default function Workspace() {
       // Always update issues state when an array is returned
       if (res && Array.isArray(res.issues)) {
         setIssues(res.issues);
+        if (res.issues.length > 0) {
+          toast.warning(`Continuity audit: ${res.issues.length} potential contradiction(s) found`);
+        } else {
+          toast.success('Continuity audit passed: No contradictions detected');
+        }
+      } else {
+        toast.success('Continuity audit complete');
       }
 
       setIssueFilter('all');
@@ -261,6 +276,7 @@ export default function Workspace() {
       }).catch(console.error);
     } catch (err) {
       console.error('Failed to analyze chapter:', err);
+      toast.error(err.message || 'Continuity audit failed');
     } finally {
       setAnalyzing(false);
     }

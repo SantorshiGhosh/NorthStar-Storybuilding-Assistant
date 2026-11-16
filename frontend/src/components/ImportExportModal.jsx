@@ -12,8 +12,10 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { architectService, entityService } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 export default function ImportExportModal({ projectId, projectName, isOpen, onClose, onImportSuccess }) {
+  const toast = useToast();
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -34,9 +36,10 @@ export default function ImportExportModal({ projectId, projectName, isOpen, onCl
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+      toast.success('Narrative bundle exported as JSON');
     } catch (err) {
       console.error('Export failed:', err);
-      alert('Export failed: ' + (err.response?.data?.detail || err.message));
+      toast.error('Export failed: ' + (err.response?.data?.detail || err.message));
     } finally {
       setExporting(false);
     }
@@ -48,7 +51,7 @@ export default function ImportExportModal({ projectId, projectName, isOpen, onCl
       const data = await architectService.exportProject(projectId);
       const entities = data.entities || [];
       if (entities.length === 0) {
-        alert('No entities to export as CSV.');
+        toast.warning('No entities to export as CSV.');
         return;
       }
       const headers = ['id', 'name', 'entity_type', 'canon_status', 'protection_level', 'description'];
@@ -68,9 +71,10 @@ export default function ImportExportModal({ projectId, projectName, isOpen, onCl
       document.body.appendChild(link);
       link.click();
       link.remove();
+      toast.success('Entities exported as CSV');
     } catch (err) {
       console.error('CSV Export failed:', err);
-      alert('CSV Export failed: ' + err.message);
+      toast.error('CSV Export failed: ' + err.message);
     } finally {
       setExporting(false);
     }
@@ -120,10 +124,9 @@ export default function ImportExportModal({ projectId, projectName, isOpen, onCl
           custom_properties: ent.custom_properties || {},
         });
       }
-      alert(`Successfully imported ${ents.length} entities into current project!`);
+      toast.success(`Successfully imported ${ents.length} entities into current project!`);
       if (onImportSuccess) onImportSuccess();
       onClose();
-      window.location.reload();
     } catch (err) {
       console.error('Import failed:', err);
       setImportError('Import failed: ' + (err.response?.data?.detail || err.message));

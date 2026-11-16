@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { projectService, getCached, prefetchProjectWorkspace } from '../services/api';
 
 const UPLOAD_STAGES = [
@@ -49,8 +51,10 @@ const UPLOAD_STAGES = [
 ];
 
 export default function Dashboard() {
+  useDocumentTitle('My Story Projects & Dashboard');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
   const userKey = user?.id || 'anon';
   const [projects, setProjects] = useState(() => getCached(`projects:list:${userKey}`) || []);
   const [loading, setLoading] = useState(() => !getCached(`projects:list:${userKey}`));
@@ -100,10 +104,12 @@ export default function Dashboard() {
       setNewProjectDesc('');
       if (created) {
         setProjects((prev) => [created, ...(Array.isArray(prev) ? prev.filter((p) => p.id !== created.id) : [])]);
+        toast.success(`Project "${created.name}" created successfully`);
       }
       await fetchProjects();
     } catch (err) {
       console.error('Failed to create project:', err);
+      toast.error(err.response?.data?.detail || 'Failed to create story project');
     } finally {
       setCreating(false);
     }
@@ -187,10 +193,12 @@ export default function Dashboard() {
     const prev = [...projects];
     // Optimistic delete: remove from UI immediately
     setProjects(projects.filter((p) => p.id !== id));
+    toast.info('Story project deleted');
     try {
       await projectService.deleteProject(id);
     } catch (err) {
       console.error('Failed to delete project:', err);
+      toast.error('Failed to delete story project from server');
       setProjects(prev); // Rollback on error
     }
   };
@@ -428,24 +436,30 @@ export default function Dashboard() {
       </main>
 
       {/* ========================================================
-          MINIMAL PAPER FOOTER
+          ENHANCED MONOCHROME FOOTER
           ======================================================== */}
       <footer className="border-t border-[#1c1c1e]/10 dark:border-white/10 bg-[#f6f6f4] dark:bg-[#161618] py-8 transition-colors mt-auto">
-        <div className="max-w-[1180px] mx-auto px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div className="flex items-center space-x-2.5">
-            <div className="h-6 w-6 rounded-[6px] bg-[#1c1c1e] dark:bg-[#f5f5f7] text-white dark:text-[#1c1c1e] flex items-center justify-center font-bold text-xs tracking-tighter shadow-2xs">
+            <Link to="/dashboard" className="h-6 w-6 rounded-[6px] bg-[#1c1c1e] dark:bg-[#f5f5f7] text-white dark:text-[#1c1c1e] flex items-center justify-center font-bold text-xs tracking-tighter shadow-2xs hover:opacity-90 transition-opacity">
               N
-            </div>
+            </Link>
             <span className="text-[13px] font-medium text-[#636366] dark:text-[#8e8e93]">
               NorthStar &bull; AI Continuity Guardian
             </span>
           </div>
 
-          <div className="flex items-center space-x-6 text-[12.5px] text-[#8e8e93]">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-[#8e8e93]">
             <Link to="/dashboard" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
               Workspaces
             </Link>
-            <span className="text-[#8e8e93]/60">&copy; 2026 NorthStar AI</span>
+            <a href="mailto:support@storybible.ai" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
+              support@storybible.ai
+            </a>
+            <a href="tel:+18005550199" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
+              +1 (800) 555-0199
+            </a>
+            <span className="text-[#8e8e93]/60">&copy; {new Date().getFullYear()} NorthStar AI</span>
           </div>
         </div>
       </footer>

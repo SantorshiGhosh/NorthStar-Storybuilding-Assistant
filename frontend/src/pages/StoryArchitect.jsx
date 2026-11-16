@@ -54,6 +54,8 @@ import Navbar from '../components/Navbar';
 import ImportExportModal from '../components/ImportExportModal';
 import EntityMatchingDrawer from '../components/EntityMatchingDrawer';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import {
   projectService,
   entityService,
@@ -132,11 +134,13 @@ const nodeTypes = { architectNode: ArchitectNode };
 export default function StoryArchitect() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   // Core Data
   const [project, setProject] = useState(null);
+  useDocumentTitle(project?.name ? `${project.name} | Story Architect` : 'Story Architect');
   const [canvases, setCanvases] = useState([]);
   const [activeCanvas, setActiveCanvas] = useState(null);
   const [groups, setGroups] = useState([]);
@@ -339,11 +343,12 @@ export default function StoryArchitect() {
       }));
       await architectService.saveCanvasNodes(activeCanvas.id, payload);
       setSaveStatus('saved');
+      toast.success('Canvas layout saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err) {
       console.error('Failed to save canvas layout:', err);
       setSaveStatus('failed');
-      alert('Error saving canvas: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error saving canvas: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -354,15 +359,16 @@ export default function StoryArchitect() {
       const copy = await architectService.duplicateCanvas(activeCanvas.id);
       setCanvases((prev) => [...prev, copy]);
       setActiveCanvas(copy);
+      toast.success('Canvas duplicated');
     } catch (err) {
-      alert('Failed to duplicate canvas: ' + (err.response?.data?.detail || err.message));
+      toast.error('Failed to duplicate canvas: ' + (err.response?.data?.detail || err.message));
     }
   };
 
   const handleDeleteCanvas = async () => {
     if (!activeCanvas) return;
     if (canvases.length <= 1) {
-      alert('At least one canvas must be retained in your story bible.');
+      toast.warning('At least one canvas must be retained in your story bible.');
       return;
     }
     const confirm = window.confirm(
@@ -374,8 +380,9 @@ export default function StoryArchitect() {
       const remaining = canvases.filter((c) => c.id !== activeCanvas.id);
       setCanvases(remaining);
       setActiveCanvas(remaining[0] || null);
+      toast.info('Canvas deleted');
     } catch (err) {
-      alert('Failed to delete canvas: ' + (err.response?.data?.detail || err.message));
+      toast.error('Failed to delete canvas: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -385,8 +392,9 @@ export default function StoryArchitect() {
       const updated = await architectService.updateCanvas(activeCanvas.id, { name: newName.trim() });
       setCanvases((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
       setActiveCanvas((prev) => ({ ...prev, ...updated }));
+      toast.success('Canvas renamed');
     } catch (err) {
-      alert('Failed to rename canvas: ' + (err.response?.data?.detail || err.message));
+      toast.error('Failed to rename canvas: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -404,9 +412,10 @@ export default function StoryArchitect() {
       setActiveCanvas(newCanvas);
       setShowNewCanvasModal(false);
       setNewCanvasTitle('');
+      toast.success('New canvas created');
     } catch (err) {
       console.error('Failed to create canvas:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -524,9 +533,10 @@ export default function StoryArchitect() {
       setShowNewEntityModal(false);
       setNewEntityName('');
       setNewEntityDesc('');
+      toast.success(`Entity "${created.name}" created`);
     } catch (err) {
       console.error('Failed to create entity:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -544,9 +554,10 @@ export default function StoryArchitect() {
       setShowNewGroupModal(false);
       setNewGroupName('');
       setNewGroupParentId('');
+      toast.success(`Group "${created.name}" created`);
     } catch (err) {
       console.error('Failed to create group:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -559,9 +570,10 @@ export default function StoryArchitect() {
     try {
       await architectService.deleteGroup(groupId);
       setGroups((prev) => prev.filter((g) => g.id !== groupId));
+      toast.info('Group deleted');
     } catch (err) {
       console.error('Failed to delete group:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -588,9 +600,10 @@ export default function StoryArchitect() {
             : n
         )
       );
+      toast.success('Entity properties updated');
     } catch (err) {
       console.error('Failed to update entity:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -930,13 +943,14 @@ export default function StoryArchitect() {
               <button
                 onClick={async () => {
                   if (contextMenu.node.data?.protection_level >= 3) {
-                    alert('Cannot delete Locked or Immutable entity.');
+                    toast.warning('Cannot delete Locked or Immutable entity.');
                     setContextMenu(null);
                     return;
                   }
                   if (window.confirm(`Delete "${contextMenu.node.data?.name || contextMenu.node.data?.label}" from story bible?`)) {
                     await entityService.deleteEntity(contextMenu.node.id);
                     setNodes((prev) => prev.filter((n) => n.id !== contextMenu.node.id));
+                    toast.info('Entity deleted from story bible');
                   }
                   setContextMenu(null);
                 }}

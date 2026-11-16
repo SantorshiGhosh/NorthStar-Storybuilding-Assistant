@@ -8,6 +8,7 @@ import {
 
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Landing from './pages/Landing';
@@ -24,6 +25,7 @@ const Timeline = lazy(() => import('./pages/Timeline'));
 const StoryArchitect = lazy(() => import('./pages/StoryArchitect'));
 const EntityProfile = lazy(() => import('./pages/EntityProfile'));
 const AttachmentVault = lazy(() => import('./pages/AttachmentVault'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageSkeleton() {
   return (
@@ -103,8 +105,9 @@ export default function App() {
     <ThemeProvider>
       <ErrorBoundary>
         <AuthProvider>
-          <BrowserRouter>
-            <Suspense fallback={<PageSkeleton />}>
+          <ToastProvider>
+            <BrowserRouter>
+              <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
@@ -191,10 +194,11 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </BrowserRouter>
+          </ToastProvider>
         </AuthProvider>
       </ErrorBoundary>
     </ThemeProvider>

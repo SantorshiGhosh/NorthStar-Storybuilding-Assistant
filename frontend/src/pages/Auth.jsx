@@ -3,11 +3,14 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ShieldCheck, Eye, EyeOff, Check, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, login, register, guestLogin } = useAuth();
+  const toast = useToast();
 
   React.useEffect(() => {
     if (user) {
@@ -16,6 +19,7 @@ export default function Auth() {
   }, [user, navigate]);
 
   const [isSignUp, setIsSignUp] = useState(false);
+  useDocumentTitle(isSignUp ? 'Create Author Account' : 'Author Sign In');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,16 +55,20 @@ export default function Auth() {
           confirm_password: confirmPassword,
           full_name: fullName.trim() || undefined,
         });
+        toast.success('Account created successfully! Welcome to NorthStar.');
       } else {
         await login({
           email: email.trim(),
           password,
         });
+        toast.success('Signed in successfully. Welcome back!');
       }
       navigate(redirectTarget, { replace: true });
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || 'Authentication failed. Please check your credentials.';
-      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      const formatted = typeof msg === 'string' ? msg : JSON.stringify(msg);
+      setError(formatted);
+      toast.error(formatted);
     } finally {
       setSubmitting(false);
     }
@@ -71,10 +79,12 @@ export default function Auth() {
     try {
       setSubmitting(true);
       await guestLogin();
+      toast.info('Guest session active. Your narrative workspace is isolated for this visit.');
       navigate(redirectTarget, { replace: true });
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || 'Failed to initialize guest session.';
       setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -115,7 +125,7 @@ export default function Auth() {
               About
             </a>
             <a
-              href="mailto:support@northstar.fiction"
+              href="mailto:support@storybible.ai"
               className="font-inter text-sm text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#1c1815] dark:hover:text-[#f0f6fc] transition-colors editorial-link-underline pb-0.5"
             >
               Help &amp; Support

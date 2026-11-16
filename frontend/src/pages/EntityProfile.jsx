@@ -44,14 +44,18 @@ import {
   Check
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { projectService, entityService, relationshipService, architectService } from '../services/api';
 
 export default function EntityProfile() {
   const { projectId, entityId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [project, setProject] = useState(null);
   const [entity, setEntity] = useState(null);
+  useDocumentTitle(entity?.name ? `${entity.name} | Lore Profile` : 'Lore Profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -248,10 +252,10 @@ export default function EntityProfile() {
       const refreshedResolved = await entityService.getResolvedProperties(entityId).catch(() => null);
       setInheritedData(refreshedResolved);
 
-      alert('Entity profile and custom properties saved successfully.');
+      toast.success('Entity profile and custom properties saved successfully');
     } catch (err) {
       console.error('Failed to update entity:', err);
-      alert('Error updating entity: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error updating entity: ' + (err.response?.data?.detail || err.message));
     } finally {
       setSaving(false);
     }
@@ -259,7 +263,7 @@ export default function EntityProfile() {
 
   const handleDeleteEntity = async () => {
     if (protectionLevel >= 3) {
-      alert('Cannot delete: Entity is Protected/Locked (Level ' + protectionLevel + '). Lower protection level first.');
+      toast.warning('Cannot delete: Entity is Protected/Locked (Level ' + protectionLevel + '). Lower protection level first.');
       return;
     }
     const confirmed = window.confirm(
@@ -269,10 +273,11 @@ export default function EntityProfile() {
 
     try {
       await entityService.deleteEntity(entityId);
+      toast.info(`Entity "${entity.name}" deleted`);
       navigate(`/architect/${projectId}`);
     } catch (err) {
       console.error('Failed to delete entity:', err);
-      alert('Error deleting entity: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error deleting entity: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -418,9 +423,10 @@ export default function EntityProfile() {
       setShowUploadModal(false);
       const updatedAttachments = await architectService.getAttachments(projectId, {}, { forceRefresh: true });
       setAttachments(updatedAttachments || []);
+      toast.success('File uploaded to vault');
     } catch (err) {
       console.error('File upload failed:', err);
-      alert('Upload failed: ' + (err.response?.data?.detail || err.message));
+      toast.error('Upload failed: ' + (err.response?.data?.detail || err.message));
     } finally {
       setUploading(false);
     }
@@ -432,9 +438,10 @@ export default function EntityProfile() {
       const updatedAttachments = await architectService.getAttachments(projectId, {}, { forceRefresh: true });
       setAttachments(updatedAttachments || []);
       setShowLinkVaultModal(false);
+      toast.success('Attachment linked to entity');
     } catch (err) {
       console.error('Failed to link attachment:', err);
-      alert('Error linking attachment: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error linking attachment: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -443,9 +450,10 @@ export default function EntityProfile() {
       await architectService.unlinkEntityAttachment(entityId, attId);
       const updatedAttachments = await architectService.getAttachments(projectId, {}, { forceRefresh: true });
       setAttachments(updatedAttachments || []);
+      toast.info('Attachment unlinked');
     } catch (err) {
       console.error('Failed to unlink attachment:', err);
-      alert('Error unlinking attachment: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error unlinking attachment: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -456,9 +464,10 @@ export default function EntityProfile() {
       await architectService.deleteAttachment(attId, projectId);
       const updatedAttachments = await architectService.getAttachments(projectId, {}, { forceRefresh: true });
       setAttachments(updatedAttachments || []);
+      toast.info('Attachment deleted');
     } catch (err) {
       console.error('Failed to delete attachment:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -471,9 +480,10 @@ export default function EntityProfile() {
         result: res.suggestions,
         note: res.note,
       });
+      toast.success('AI canon analysis complete');
     } catch (err) {
       console.error('AI analysis failed:', err);
-      alert('AI analysis failed: ' + (err.response?.data?.detail || err.message));
+      toast.error('AI analysis failed: ' + (err.response?.data?.detail || err.message));
     } finally {
       setAnalyzingId(null);
     }
@@ -491,20 +501,22 @@ export default function EntityProfile() {
       });
       setShowAddRel(false);
       setRelTargetId('');
+      toast.success('Relationship connected');
       await loadData();
     } catch (err) {
       console.error('Failed to create relationship:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
   const handleRemoveRelationship = async (edgeId) => {
     try {
       await relationshipService.deleteRelationship(edgeId);
+      toast.info('Relationship removed');
       await loadData();
     } catch (err) {
       console.error('Failed to delete relationship:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 

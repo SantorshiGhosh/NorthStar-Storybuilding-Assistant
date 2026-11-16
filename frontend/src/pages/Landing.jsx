@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -8,20 +8,26 @@ import {
   ArrowRight,
   CheckCircle,
   AlertTriangle,
-  Lock
+  Lock,
+  Menu,
+  X,
+  FolderOpen
 } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import OrbitalCards from '../components/OrbitalCards/OrbitalCards';
 import { useAuth } from '../context/AuthContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 export default function Landing() {
+  useDocumentTitle('Continuity Guardian for Novelists & Screenwriters');
   const { user } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#faf6ef] dark:bg-[#0d1117] text-[#1c1815] dark:text-[#f0f6fc] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
       {/* Top Header */}
       <header className="border-b border-[#1c1815]/10 dark:border-[#30363d] bg-[#faf6ef]/90 dark:bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-[#7b2d3b] text-[#faf6ef] flex items-center justify-center shadow-xs group-hover:bg-[#5e1f2b] transition-colors">
               <ShieldCheck className="w-4 h-4" />
@@ -36,25 +42,68 @@ export default function Landing() {
             {user ? (
               <Link
                 to="/dashboard"
-                className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] transition-all shadow-xs"
+                className="hidden sm:inline-flex text-xs font-semibold px-4 py-2 rounded-lg bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] transition-all shadow-xs"
               >
                 Workspace
               </Link>
             ) : (
               <Link
                 to="/auth"
-                className="text-xs font-medium text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] px-3 py-1.5 transition-colors"
+                className="hidden sm:inline-flex text-xs font-medium text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] px-3 py-1.5 transition-colors"
               >
                 Sign In
               </Link>
             )}
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="sm:hidden h-8 w-8 rounded-lg border border-[#1c1815]/15 dark:border-[#30363d] flex items-center justify-center text-[#1c1815] dark:text-[#f0f6fc] hover:bg-[#1c1815]/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+              aria-label="Toggle navigation"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden fixed inset-x-0 top-16 bg-[#faf6ef] dark:bg-[#161b22] border-b border-[#1c1815]/10 dark:border-[#30363d] shadow-xl p-4 space-y-3 z-50">
+            {user ? (
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] text-xs font-semibold shadow-xs"
+              >
+                <FolderOpen className="w-4 h-4" />
+                <span>Open Workspaces</span>
+              </Link>
+            ) : (
+              <div className="space-y-2">
+                <Link
+                  to="/auth"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] text-xs font-semibold shadow-xs"
+                >
+                  <span>Get Started / Sign In</span>
+                </Link>
+              </div>
+            )}
+            <div className="pt-2 border-t border-[#1c1815]/10 dark:border-[#30363d] flex justify-between text-xs text-[#1c1815]/60 dark:text-[#8b949e]">
+              <a href="mailto:support@storybible.ai" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5]">
+                support@storybible.ai
+              </a>
+              <a href="tel:+18005550199" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5]">
+                +1 (800) 555-0199
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="flex-1 bg-[#faf6ef] dark:bg-[#0d1117] transition-colors duration-200">
         {/* 1. First Impression: Dynamic Orbital Cards (Narrative Guardian Showcase) */}
-        <section className="w-full bg-[#faf6ef] dark:bg-[#0d1117] flex justify-center transition-colors duration-200">
+        <section className="w-full bg-[#faf6ef] dark:bg-[#0d1117] relative transition-colors duration-200">
           <OrbitalCards />
         </section>
 
@@ -215,9 +264,94 @@ export default function Landing() {
         </section>
       </main>
 
-      {/* Minimal Footer */}
-      <footer className="border-t border-[#1c1815]/10 dark:border-[#30363d] py-8 bg-[#faf6ef] dark:bg-[#0d1117] text-xs text-[#1c1815]/50 dark:text-[#6e7681] text-center transition-colors duration-200">
-        <p>NorthStar &mdash; AI Continuity Guardian &bull; Built for Novelists &amp; Screenwriters</p>
+      {/* Comprehensive Responsive Footer */}
+      <footer className="border-t border-[#1c1815]/10 dark:border-[#30363d] py-12 bg-[#faf6ef] dark:bg-[#0d1117] text-xs text-[#1c1815]/60 dark:text-[#8b949e] transition-colors duration-200">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8 text-left">
+          {/* Brand Col */}
+          <div className="sm:col-span-2 space-y-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#7b2d3b] text-[#faf6ef] flex items-center justify-center shadow-xs">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <span className="font-fraunces font-medium text-[#1c1815] dark:text-[#f0f6fc] text-base tracking-tight">
+                NorthStar AI
+              </span>
+            </div>
+            <p className="text-xs text-[#1c1815]/60 dark:text-[#8b949e] max-w-sm leading-relaxed">
+              The calm, verifiable continuity guardian for novelists and screenwriters. AI-powered canon preservation without touching author prose.
+            </p>
+            <div className="pt-2 flex flex-col space-y-1.5 text-xs">
+              <div className="flex items-center space-x-2">
+                <span className="text-[#1c1815]/50 dark:text-[#6e7681]">Email:</span>
+                <a href="mailto:support@storybible.ai" className="text-[#7b2d3b] dark:text-[#fca5a5] hover:underline font-medium">
+                  support@storybible.ai
+                </a>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-[#1c1815]/50 dark:text-[#6e7681]">Phone:</span>
+                <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] hover:underline font-medium">
+                  +1 (800) 555-0199
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="space-y-2.5">
+            <h4 className="font-semibold text-xs text-[#1c1815] dark:text-[#f0f6fc] uppercase tracking-wider">Product</h4>
+            <ul className="space-y-2 text-xs">
+              <li>
+                <Link to={user ? "/dashboard" : "/auth"} className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+                  {user ? 'My Workspaces' : 'Get Started'}
+                </Link>
+              </li>
+              <li>
+                <Link to="/auth" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+                  Author Login
+                </Link>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors cursor-pointer text-left"
+                >
+                  Continuity Showcase
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Integrity & Security */}
+          <div className="space-y-2.5">
+            <h4 className="font-semibold text-xs text-[#1c1815] dark:text-[#f0f6fc] uppercase tracking-wider">Security & Canon</h4>
+            <ul className="space-y-2 text-xs">
+              <li className="text-[#1c1815]/70 dark:text-[#8b949e]">
+                AES-256-GCM Vault Storage
+              </li>
+              <li className="text-[#1c1815]/70 dark:text-[#8b949e]">
+                Zero Training on Author Prose
+              </li>
+              <li className="text-[#1c1815]/70 dark:text-[#8b949e]">
+                Author Sovereignty Protected
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom bar with dynamic year */}
+        <div className="max-w-6xl mx-auto px-6 pt-6 border-t border-[#1c1815]/10 dark:border-[#30363d] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#1c1815]/50 dark:text-[#6e7681]">
+          <p>&copy; {new Date().getFullYear()} NorthStar AI &bull; AI Continuity Guardian for Novelists &amp; Screenwriters</p>
+          <div className="flex items-center space-x-4">
+            <a href="mailto:support@storybible.ai" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+              Support
+            </a>
+            <span>&bull;</span>
+            <a href="tel:+18005550199" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+              +1 (800) 555-0199
+            </a>
+          </div>
+        </div>
       </footer>
     </div>
   );

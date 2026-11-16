@@ -13,8 +13,10 @@ import {
   Sparkles
 } from 'lucide-react';
 import { architectService, projectService } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 export default function SnapshotManagerModal({ projectId, isOpen, onClose, onSnapshotRestored }) {
+  const toast = useToast();
   const [snapshots, setSnapshots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -62,11 +64,12 @@ export default function SnapshotManagerModal({ projectId, isOpen, onClose, onSna
       setSnapshotDesc('');
       setIsMilestone(false);
       setShowCreateForm(false);
+      toast.success('Snapshot milestone saved');
       await loadSnapshots();
       setSelectedSnapshot(newSnap);
     } catch (err) {
       console.error('Failed to create snapshot:', err);
-      alert('Error creating snapshot: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error creating snapshot: ' + (err.response?.data?.detail || err.message));
     } finally {
       setCreating(false);
     }
@@ -77,15 +80,14 @@ export default function SnapshotManagerModal({ projectId, isOpen, onClose, onSna
       setRestoring(true);
       await architectService.restoreSnapshot(snapshotId);
       setConfirmRestoreId(null);
+      toast.success('Story canon restored to snapshot state');
       if (onSnapshotRestored) {
         onSnapshotRestored();
       }
       onClose();
-      // Hard refresh or notify parent
-      window.location.reload();
     } catch (err) {
       console.error('Failed to restore snapshot:', err);
-      alert('Error restoring snapshot: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error restoring snapshot: ' + (err.response?.data?.detail || err.message));
     } finally {
       setRestoring(false);
     }

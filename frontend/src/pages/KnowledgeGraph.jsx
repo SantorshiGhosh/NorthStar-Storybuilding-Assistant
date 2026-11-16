@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { projectService, entityService, getCached } from '../services/api';
 
 // Custom React Flow Node Card
@@ -93,6 +95,7 @@ const nodeTypes = { custom: CustomEntityNode };
 export default function KnowledgeGraph() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -101,6 +104,7 @@ export default function KnowledgeGraph() {
   const cachedEnts = getCached(`entities:${projectId}:{}`);
 
   const [project, setProject] = useState(() => cachedProj || null);
+  useDocumentTitle(project?.name ? `${project.name} | Knowledge Graph` : 'Knowledge Graph');
   const [nodes, setNodes, onNodesChange] = useNodesState(() => cachedGraph?.nodes || []);
   const [edges, setEdges, onEdgesChange] = useEdgesState(() => cachedGraph?.edges || []);
   const [allNodes, setAllNodes] = useState(() => cachedGraph?.nodes || []);

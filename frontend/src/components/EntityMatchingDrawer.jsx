@@ -13,8 +13,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { architectService } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 export default function EntityMatchingDrawer({ projectId, isOpen, onClose, onCandidateResolved }) {
+  const toast = useToast();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
@@ -44,12 +46,13 @@ export default function EntityMatchingDrawer({ projectId, isOpen, onClose, onCan
         target_entity_id: targetEntityId,
       });
       setCandidates((prev) => prev.filter((c) => c.id !== candidateId));
+      toast.success('Decision recorded');
       if (onCandidateResolved) {
         onCandidateResolved();
       }
     } catch (err) {
       console.error('Failed to resolve candidate:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     } finally {
       setProcessingId(null);
     }

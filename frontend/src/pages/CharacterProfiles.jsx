@@ -12,16 +12,20 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import CharacterCard from '../components/CharacterCard';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { projectService, entityService, getCached } from '../services/api';
 
 export default function CharacterProfiles() {
   const { projectId } = useParams();
+  const toast = useToast();
 
   const cachedProj = getCached(`project:${projectId}`);
   const cachedEntities = getCached(`entities:${projectId}:{}`) || getCached(`entities:${projectId}`);
   const initialChars = cachedEntities ? cachedEntities.filter((e) => e.entity_type === 'character') : [];
 
   const [project, setProject] = useState(() => cachedProj || null);
+  useDocumentTitle(project?.name ? `${project.name} | Character Dossiers` : 'Character Dossiers');
   const [characters, setCharacters] = useState(() => initialChars);
   const [selectedCharacter, setSelectedCharacter] = useState(() => initialChars[0] || null);
   const [loading, setLoading] = useState(() => !cachedEntities);
@@ -93,9 +97,11 @@ export default function CharacterProfiles() {
       });
       setSelectedCharacter(updated);
       setShowEditModal(false);
+      toast.success(`Character "${editName}" updated successfully`);
       loadData();
     } catch (err) {
       console.error('Failed to update character:', err);
+      toast.error('Failed to update character');
     } finally {
       setSaving(false);
     }

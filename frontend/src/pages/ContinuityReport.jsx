@@ -13,15 +13,19 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import IssueCard from '../components/IssueCard';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { projectService, getCached } from '../services/api';
 
 export default function ContinuityReport() {
   const { projectId } = useParams();
+  const toast = useToast();
 
   const cachedProj = getCached(`project:${projectId}`);
   const cachedIssues = getCached(`issues:${projectId}:{}`) || getCached(`issues:${projectId}`);
 
   const [project, setProject] = useState(() => cachedProj || null);
+  useDocumentTitle(project?.name ? `${project.name} | Continuity Report` : 'Continuity Report');
   const [issues, setIssues] = useState(() => cachedIssues || []);
   const [loading, setLoading] = useState(() => !cachedIssues);
 
@@ -54,6 +58,7 @@ export default function ContinuityReport() {
   const handleStatusUpdate = (updatedIssue) => {
     setIssues(issues.map((i) => (i.id === updatedIssue.id ? updatedIssue : i)));
     projectService.getProject(projectId).then(setProject);
+    toast.success(`Contradiction marked as ${updatedIssue.status}`);
   };
 
   const filterTabs = [

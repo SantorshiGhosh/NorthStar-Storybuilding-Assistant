@@ -27,12 +27,16 @@ import {
   AlertCircle
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { useToast } from '../context/ToastContext';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { projectService, entityService, architectService } from '../services/api';
 
 export default function AttachmentVault() {
   const { projectId } = useParams();
+  const toast = useToast();
 
   const [project, setProject] = useState(null);
+  useDocumentTitle(project?.name ? `${project.name} | Confidential Vault` : 'Confidential Vault');
   const [entities, setEntities] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const [quota, setQuota] = useState(null);
@@ -149,10 +153,11 @@ export default function AttachmentVault() {
       setUploadTags('');
       setUploadEntityIds([]);
       setShowUploadModal(false);
+      toast.success('Files encrypted and stored in vault');
       await loadVaultData();
     } catch (err) {
       console.error('Upload failed:', err);
-      alert('Upload failed: ' + (err.response?.data?.detail || err.message));
+      toast.error('Upload failed: ' + (err.response?.data?.detail || err.message));
     } finally {
       setUploading(false);
       setUploadProgress('');
@@ -178,10 +183,11 @@ export default function AttachmentVault() {
       setLinkDesc('');
       setLinkEntityIds([]);
       setShowLinkModal(false);
+      toast.success('Reference link created');
       await loadVaultData();
     } catch (err) {
       console.error('Failed to create reference link:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -191,16 +197,18 @@ export default function AttachmentVault() {
 
     try {
       await architectService.deleteAttachment(attachmentId, projectId);
+      toast.info('Attachment removed from vault');
       await loadVaultData();
     } catch (err) {
       console.error('Failed to delete attachment:', err);
-      alert('Error deleting attachment: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error deleting attachment: ' + (err.response?.data?.detail || err.message));
     }
   };
 
   const handleUnlinkEntity = async (attachmentId, entityId) => {
     try {
       await architectService.unlinkEntityAttachment(entityId, attachmentId);
+      toast.info('Entity unlinked');
       await loadVaultData();
       if (managingAttachment && managingAttachment.id === attachmentId) {
         setManagingAttachment((prev) => ({
@@ -210,7 +218,7 @@ export default function AttachmentVault() {
       }
     } catch (err) {
       console.error('Failed to unlink entity:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -219,13 +227,14 @@ export default function AttachmentVault() {
     try {
       await architectService.linkEntityAttachment(entityToLink, managingAttachment.id);
       setEntityToLink('');
+      toast.success('Entity linked');
       await loadVaultData();
       const updated = await architectService.getAttachments(projectId, {}, { forceRefresh: true });
       const found = updated.find((a) => a.id === managingAttachment.id);
       if (found) setManagingAttachment(found);
     } catch (err) {
       console.error('Failed to link entity:', err);
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      toast.error('Error: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -238,9 +247,10 @@ export default function AttachmentVault() {
         result: res.suggestions,
         note: res.note,
       });
+      toast.success('AI canon analysis complete');
     } catch (err) {
       console.error('AI analysis failed:', err);
-      alert('AI analysis failed: ' + (err.response?.data?.detail || err.message));
+      toast.error('AI analysis failed: ' + (err.response?.data?.detail || err.message));
     } finally {
       setAnalyzingId(null);
     }

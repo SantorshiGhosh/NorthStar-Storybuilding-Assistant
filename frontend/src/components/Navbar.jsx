@@ -44,7 +44,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
         <div className="max-w-[1180px] h-full mx-auto flex items-center justify-between gap-4">
           {/* LEFT: Brand cluster */}
           <div className="flex items-center space-x-2.5 shrink-0">
-            <Link to="/" className="flex items-center space-x-2.5 group">
+            <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
               <div className="h-7 w-7 rounded-[7px] bg-[#1c1c1e] dark:bg-[#f5f5f7] text-white dark:text-[#1c1c1e] flex items-center justify-center font-bold text-sm tracking-tighter shadow-2xs transition-colors shrink-0">
                 N
               </div>
@@ -92,12 +92,12 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
             </a>
 
             {user ? (
-              <div className="flex items-center space-x-2 pl-2.5 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
+              <div className="hidden sm:flex items-center space-x-2 pl-2.5 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
                 <div className="h-6 w-6 rounded-full bg-[#1c1c1e]/10 dark:bg-white/10 flex items-center justify-center text-[#1c1c1e] dark:text-[#f5f5f7] shrink-0 font-medium text-[11px] select-none">
                   {authorName.charAt(0).toUpperCase()}
                 </div>
                 <span
-                  className="hidden sm:inline-block text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] whitespace-nowrap shrink-0"
+                  className="inline-block text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] whitespace-nowrap shrink-0"
                   title={user.email || authorName}
                 >
                   {authorName}
@@ -111,7 +111,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2 pl-2 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
+              <div className="hidden sm:flex items-center space-x-2 pl-2 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
                 <Link
                   to="/auth"
                   className="text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] hover:underline whitespace-nowrap"
@@ -120,8 +120,71 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                 </Link>
               </div>
             )}
+
+            {/* Mobile Menu Hamburger for Dashboard */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="sm:hidden h-8 w-8 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-center text-[#1c1c1e] dark:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu dropdown for Dashboard */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden fixed inset-x-0 top-16 bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 shadow-2xl z-50 p-4 space-y-3">
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-full btn btn-solid btn-md flex items-center justify-center space-x-2 text-xs shadow-2xs cursor-pointer"
+            >
+              <FolderOpen className="w-4 h-4" />
+              <span>My Story Projects</span>
+            </button>
+
+            {user ? (
+              <div className="pt-3 border-t border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="h-7 w-7 rounded-full bg-[#1c1c1e]/10 dark:bg-white/10 flex items-center justify-center text-[#1c1c1e] dark:text-[#f5f5f7] font-semibold text-xs select-none">
+                    {authorName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <span className="block text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">
+                      {authorName}
+                    </span>
+                    <span className="block text-[10px] text-[#8e8e93] truncate max-w-[170px]">
+                      {user.email || 'Author session'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleSignOut();
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 text-xs font-medium transition-colors flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-[#1c1c1e]/10 dark:border-white/10">
+                <Link
+                  to="/auth"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full btn btn-outline btn-md text-xs text-center"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </header>
     );
   }

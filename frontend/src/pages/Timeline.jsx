@@ -7,6 +7,7 @@ import {
   Calendar
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 import { projectService, getCached } from '../services/api';
 
 export default function Timeline() {
@@ -16,6 +17,7 @@ export default function Timeline() {
   const cachedEvents = getCached(`timeline:${projectId}`);
 
   const [project, setProject] = useState(() => cachedProj || null);
+  useDocumentTitle(project?.name ? `${project.name} | Timeline` : 'Story Timeline');
   const [events, setEvents] = useState(() => cachedEvents || []);
   const [loading, setLoading] = useState(() => !cachedEvents);
 
