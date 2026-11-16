@@ -69,13 +69,10 @@ class MigrationManager:
             ("002_story_architect_extensions", self._mig_002_architect),
             ("003_auth_and_isolation", self._mig_003_auth_isolation),
             ("004_user_columns_and_defaults", self._mig_004_users),
-<<<<<<< HEAD
-            ("005_support_messages", self._mig_005_support),
-            ("006_support_queries", self._mig_006_support_queries),
-=======
             ("005_narrative_intelligence_engine", self._mig_005_narrative_intelligence),
             ("006_narrative_accuracy_overhaul", self._mig_006_narrative_accuracy),
->>>>>>> 81f737c (Fixing the Backend)
+            ("005_support_messages", self._mig_005_support),
+            ("006_support_queries", self._mig_006_support_queries),
         ]
 
         for version, func in migrations:
@@ -141,7 +138,6 @@ class MigrationManager:
         ]
         self._add_columns_if_missing(columns)
 
-<<<<<<< HEAD
     def _mig_005_support(self):
         """Ensures support_messages table exists."""
         with engine.connect() as conn:
@@ -177,7 +173,7 @@ class MigrationManager:
                 );
             """))
             conn.commit()
-=======
+
     def _mig_005_narrative_intelligence(self):
         """Ensures temporal versioning, manuscript versioning, and narrative state columns exist."""
         columns = [
@@ -214,7 +210,6 @@ class MigrationManager:
             ("entity_mentions", "metadata", "JSON DEFAULT '{}'"),
         ]
         self._add_columns_if_missing(columns)
->>>>>>> 81f737c (Fixing the Backend)
 
     def _add_columns_if_missing(self, columns: List[Tuple[str, str, str]]):
         inspector = inspect(engine)

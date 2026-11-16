@@ -459,7 +459,6 @@ class EntityMatchingCandidate(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-<<<<<<< HEAD
 class SupportMessage(Base):
     __tablename__ = "support_messages"
 
@@ -490,7 +489,8 @@ class SupportQuery(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", foreign_keys=[user_id])
-=======
+
+
 class ProcessingJob(Base):
     __tablename__ = "processing_jobs"
 
@@ -596,4 +596,4 @@ class EntityMention(Base):
 
     project = relationship("Project", back_populates="entity_mentions")
     resolved_entity = relationship("Entity", back_populates="mentions", foreign_keys=[resolved_entity_id])
->>>>>>> 81f737c (Fixing the Backend)
+

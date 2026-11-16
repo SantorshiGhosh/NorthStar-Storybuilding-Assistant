@@ -25,13 +25,10 @@ const Timeline = lazy(() => import('./pages/Timeline'));
 const StoryArchitect = lazy(() => import('./pages/StoryArchitect'));
 const EntityProfile = lazy(() => import('./pages/EntityProfile'));
 const AttachmentVault = lazy(() => import('./pages/AttachmentVault'));
-<<<<<<< HEAD
 const HelpSupport = lazy(() => import('./pages/HelpSupport'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
-=======
 const ProductionV2Dashboard = lazy(() => import('./production-v2/pages/ProductionV2Dashboard'));
->>>>>>> 81f737c (Fixing the Backend)
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageSkeleton() {
