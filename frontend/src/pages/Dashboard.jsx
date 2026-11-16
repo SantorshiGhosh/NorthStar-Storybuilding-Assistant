@@ -10,12 +10,12 @@ import {
   Clock,
   Sparkles,
   Trash2,
-  FileText,
   ChevronRight,
   ShieldCheck,
   CheckCircle2,
   Loader2,
-  Circle
+  Circle,
+  Check
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
@@ -217,183 +217,289 @@ export default function Dashboard() {
   const remainingStagesCount = UPLOAD_STAGES.length - completedStagesCount;
 
   return (
-    <div className="min-h-screen bg-[#fbfbf9] flex flex-col">
+    <div className="min-h-screen bg-[#f6f6f4] dark:bg-[#161618] text-[#1c1c1e] dark:text-[#f5f5f7] flex flex-col font-sans transition-colors duration-200">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-neutral-200/80 gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">
-              Projects & NorthStar
+      {/* ========================================================
+          HERO SECTION WITH 28px DOTTED GRID & FADE OVERLAY
+          ======================================================== */}
+      <section className="relative border-b border-[#1c1c1e]/10 dark:border-white/10 overflow-hidden">
+        {/* Dotted engineering grid background */}
+        <div className="absolute inset-0 graphite-grid-bg pointer-events-none" />
+        {/* Soft paper gradient fading over the grid */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#f6f6f4]/40 to-[#f6f6f4] dark:via-[#161618]/40 dark:to-[#161618] pointer-events-none" />
+
+        <div className="relative max-w-[1180px] mx-auto px-6 lg:px-8 pt-14 pb-12 sm:pt-20 sm:pb-16 lg:pt-24 lg:pb-20">
+          <div className="max-w-3xl text-left">
+            {/* Eyebrow pill */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#1c1c1e]/10 dark:border-white/10 bg-[#fcfcfb] dark:bg-[#1c1c1e] px-3 py-1 shadow-2xs mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1c1c1e] dark:bg-white" />
+              <span className="text-[12px] font-medium text-[#636366] dark:text-[#8e8e93]">
+                AI Continuity Guardian &bull; monochrome
+              </span>
+            </div>
+
+            {/* Bold tightest-tracked headline */}
+            <h1 className="text-4xl sm:text-6xl lg:text-[66px] font-bold tracking-[-0.03em] leading-[1.04] text-[#1c1c1e] dark:text-[#f5f5f7]">
+              Every story, <br className="hidden sm:inline" />
+              one calm canon.
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-              Select an active story workspace or upload a manuscript to build persistent canon memory.
+
+            {/* Graphite subhead */}
+            <p className="mt-5 text-[17px] sm:text-[18px] text-[#48484a] dark:text-[#8e8e93] leading-relaxed max-w-xl">
+              A restrained, monochrome story workspace in graphite and platinum. Persistent lore vaults, chapter segmentation, and multi-agent contradiction detection, drawn on hairlines so the writing stays quiet and the canon stays obvious.
+            </p>
+
+            {/* CTA button pair */}
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="btn btn-solid btn-lg shadow-2xs"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                <span>New Story Project</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const el = document.getElementById('projects');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="btn btn-outline btn-lg shadow-2xs"
+              >
+                <FolderOpen className="w-4 h-4 mr-1 text-[#8e8e93]" />
+                <span>My Projects</span>
+              </button>
+            </div>
+
+            {/* Check-marked feature notes row */}
+            <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-[12.5px] font-medium text-[#8e8e93] dark:text-[#8e8e93]">
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-[#1c1c1e] dark:text-[#f5f5f7]" />
+                <span>AES-256 Vault Encryption</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-[#1c1c1e] dark:text-[#f5f5f7]" />
+                <span>Chapter Segmentation</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-[#1c1c1e] dark:text-[#f5f5f7]" />
+                <span>Entity &amp; Lore Memory</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-[#1c1c1e] dark:text-[#f5f5f7]" />
+                <span>Proactive Contradiction Audit</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================
+          MY PROJECTS MAIN WORKSPACE (FULL WIDTH CENTERED)
+          ======================================================== */}
+      <main id="projects" className="flex-1 max-w-[1180px] w-full mx-auto px-6 lg:px-8 py-12 lg:py-16 text-left scroll-mt-6">
+        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between pb-3 mb-6 border-b border-[#1c1c1e]/10 dark:border-white/10 gap-2">
+          <div>
+            <h2 className="text-2xl sm:text-[27px] font-semibold tracking-[-0.03em] text-[#1c1c1e] dark:text-[#f5f5f7]">
+              My Projects
+            </h2>
+            <p className="text-[14px] sm:text-[15px] text-[#636366] dark:text-[#8e8e93] leading-relaxed mt-1">
+              One primary narrative container per story. Manuscript uploads, character continuity, and chapter segmentation mapped on hairline cards with zero hue.
             </p>
           </div>
-
-          <div className="flex items-center space-x-2.5">
-            <button
-              onClick={handleSeedDemo}
-              disabled={seeding}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 text-xs font-semibold shadow-2xs transition-colors disabled:opacity-50"
-              title="Loads The Last Kingdom demo manuscript with pre-configured canon and continuity checks"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{seeding ? 'Loading Demo...' : 'Load Demo Manuscript ("The Last Kingdom")'}</span>
-            </button>
-
+          <div className="flex items-center space-x-3 shrink-0">
+            <span className="state-cap">
+              {projects.length} {projects.length === 1 ? 'WORKSPACE' : 'WORKSPACES'}
+            </span>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold shadow-xs transition-colors"
+              className="btn btn-solid btn-sm shadow-2xs"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5 mr-1" />
               <span>New Project</span>
             </button>
           </div>
         </div>
 
-        {/* Projects Grid */}
-        <div className="mt-8">
-          {loading && (!Array.isArray(projects) || projects.length === 0) ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[1, 2, 3].map((n) => (
-                <div key={n} className="bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs animate-pulse space-y-4 text-left">
-                  <div className="flex items-start justify-between">
-                    <div className="h-5 bg-neutral-200 rounded-md w-2/3" />
-                    <div className="h-4 bg-neutral-100 rounded-md w-6" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-neutral-100 rounded-md w-full" />
-                    <div className="h-3 bg-neutral-100 rounded-md w-4/5" />
-                  </div>
-                  <div className="pt-4 border-t border-neutral-100 flex items-center justify-between">
-                    <div className="h-3.5 bg-neutral-200 rounded-md w-24" />
-                    <div className="h-4 bg-neutral-100 rounded-full w-20" />
-                  </div>
-                  <div className="pt-3 border-t border-neutral-50 flex items-center justify-between">
-                    <div className="h-3 bg-neutral-100 rounded-md w-28" />
-                    <div className="h-3 bg-blue-100 rounded-md w-24" />
-                  </div>
+        {loading && (!Array.isArray(projects) || projects.length === 0) ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3].map((n) => (
+              <div
+                key={n}
+                className="bg-[#fcfcfb] dark:bg-[#1c1c1e] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 p-5 shadow-2xs animate-pulse space-y-4"
+              >
+                <div className="h-5 bg-[#1c1c1e]/10 dark:bg-white/10 rounded-md w-2/3" />
+                <div className="space-y-2">
+                  <div className="h-3 bg-[#1c1c1e]/5 dark:bg-white/5 rounded-md w-full" />
+                  <div className="h-3 bg-[#1c1c1e]/5 dark:bg-white/5 rounded-md w-4/5" />
                 </div>
-              ))}
-            </div>
-          ) : (!Array.isArray(projects) || projects.length === 0) ? (
-            <div className="bg-white rounded-2xl border border-neutral-200/80 p-12 text-center max-w-md mx-auto shadow-xs">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
-                <FolderOpen className="w-6 h-6" />
+                <div className="pt-4 border-t border-[#1c1c1e]/10 dark:border-white/10 flex justify-between">
+                  <div className="h-3.5 bg-[#1c1c1e]/10 dark:bg-white/10 rounded-md w-20" />
+                  <div className="h-3.5 bg-[#1c1c1e]/5 dark:bg-white/5 rounded-md w-16" />
+                </div>
               </div>
-              <h3 className="text-base font-semibold text-neutral-900 mb-1">
-                No story projects yet
-              </h3>
-              <p className="text-xs text-neutral-500 mb-6 leading-relaxed">
-                Start by creating a new story project, or load the official demo manuscript to see the Continuity Guardian in action.
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="w-full py-2.5 rounded-lg bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition-colors"
-                >
-                  Create Story Project
-                </button>
-              </div>
+            ))}
+          </div>
+        ) : (!Array.isArray(projects) || projects.length === 0) ? (
+          <div className="rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 bg-[#fcfcfb] dark:bg-[#1c1c1e] p-12 text-center max-w-md mx-auto shadow-2xs">
+            <div className="w-12 h-12 rounded-lg bg-[#1c1c1e]/5 dark:bg-white/5 border border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-center mx-auto mb-4">
+              <FolderOpen className="w-6 h-6 text-[#8e8e93]" />
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {projects.map((proj) => (
-                <div
-                  key={proj.id}
-                  onMouseEnter={() => prefetchProjectWorkspace(proj.id)}
-                  onClick={() => navigate(`/workspace/${proj.id}`)}
-                  className="bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs hover:border-neutral-300 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between text-left group"
-                >
-                  <div>
-                    {/* Top Row: Title + Delete button */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="text-base font-bold text-neutral-900 group-hover:text-blue-600 transition-colors truncate">
-                        {proj.name}
-                      </h3>
-                      <button
-                        onClick={(e) => handleDeleteProject(proj.id, e)}
-                        className="p-1 text-neutral-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors shrink-0"
-                        title="Delete Project"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Manuscript info or description */}
-                    <p className="text-xs text-neutral-500 line-clamp-2 mb-4 leading-relaxed">
-                      {proj.description || (proj.manuscript_title ? `Manuscript: ${proj.manuscript_title}` : 'No description provided.')}
-                    </p>
-                  </div>
-
-                  {/* Metadata Stats */}
-                  <div className="pt-4 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
-                    <div className="flex items-center space-x-3">
-                      <span className="flex items-center space-x-1">
-                        <BookOpen className="w-3.5 h-3.5 text-neutral-400" />
-                        <span>{proj.chapter_count} ch</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <Users className="w-3.5 h-3.5 text-neutral-400" />
-                        <span>{proj.character_count} chars</span>
-                      </span>
-                    </div>
-
-                    {/* Issues pill */}
-                    {proj.unresolved_issues_count > 0 ? (
-                      <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-semibold text-[10px]">
-                        <AlertTriangle className="w-3 h-3 text-amber-600" />
-                        <span>{proj.unresolved_issues_count} contradictions</span>
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">
-                        Canon Clean
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Card Quick Action Bar */}
-                  <div className="mt-4 pt-3 border-t border-neutral-50 flex items-center justify-between text-xs font-medium">
+            <h3 className="text-base font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] mb-1">
+              No story projects yet
+            </h3>
+            <p className="text-xs text-[#636366] dark:text-[#8e8e93] mb-6 leading-relaxed">
+              Start by creating a new narrative container, or load the official demo manuscript to examine cross-chapter continuity.
+            </p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="btn btn-solid btn-md w-full"
+              >
+                Create Story Project
+              </button>
+              <button
+                onClick={handleSeedDemo}
+                disabled={seeding}
+                className="btn btn-outline btn-md w-full"
+              >
+                {seeding ? 'Loading Demo...' : 'Load Demo Story ("The Last Kingdom")'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {projects.map((proj) => (
+              <div
+                key={proj.id}
+                onMouseEnter={() => prefetchProjectWorkspace(proj.id)}
+                onClick={() => navigate(`/workspace/${proj.id}`)}
+                className="rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 bg-[#fcfcfb] dark:bg-[#1c1c1e] p-5 shadow-2xs hover:border-[#1c1c1e]/30 dark:hover:border-white/30 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group text-left"
+              >
+                <div>
+                  {/* Top Row: Title + Delete button */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="text-[15px] font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] group-hover:text-black dark:group-hover:text-white transition-colors truncate">
+                      {proj.name}
+                    </h3>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedUploadProject(proj);
-                        setShowUploadModal(true);
-                      }}
-                      className="text-neutral-600 hover:text-neutral-900 flex items-center space-x-1 text-[11px]"
+                      onClick={(e) => handleDeleteProject(proj.id, e)}
+                      className="p-1 text-[#8e8e93] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors shrink-0"
+                      title="Delete Project"
                     >
-                      <Upload className="w-3 h-3" />
-                      <span>Upload Manuscript</span>
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
+                  </div>
 
-                    <span className="text-blue-600 flex items-center space-x-0.5 text-[11px] group-hover:translate-x-0.5 transition-transform">
-                      <span>Open Workspace</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                  {/* Manuscript info or description */}
+                  <p className="text-xs text-[#636366] dark:text-[#8e8e93] line-clamp-2 mb-4 leading-relaxed">
+                    {proj.description || (proj.manuscript_title ? `Manuscript: ${proj.manuscript_title}` : 'No premise provided.')}
+                  </p>
+                </div>
+
+                {/* Metadata Stats */}
+                <div className="pt-4 border-t border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between text-[11px] text-[#636366] dark:text-[#8e8e93]">
+                  <div className="flex items-center space-x-3 font-mono-cap">
+                    <span className="flex items-center space-x-1">
+                      <BookOpen className="w-3.5 h-3.5 text-[#8e8e93]" />
+                      <span>{proj.chapter_count} ch</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <Users className="w-3.5 h-3.5 text-[#8e8e93]" />
+                      <span>{proj.character_count} chars</span>
                     </span>
                   </div>
+
+                  {/* Issues pill */}
+                  {proj.unresolved_issues_count > 0 ? (
+                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-[#1c1c1e]/5 dark:bg-white/5 border border-[#1c1c1e]/10 dark:border-white/10 text-[10px] font-mono-cap text-[#1c1c1e] dark:text-[#f5f5f7]">
+                      <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                      <span>{proj.unresolved_issues_count} contradictions</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-[#1c1c1e]/3 dark:bg-white/5 border border-[#1c1c1e]/10 dark:border-white/10 text-[10px] font-mono-cap text-[#636366] dark:text-[#8e8e93]">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      <span>Canon Clean</span>
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+
+                {/* Card Quick Action Bar */}
+                <div className="mt-4 pt-3 border-t border-[#1c1c1e]/5 dark:border-white/5 flex items-center justify-between text-xs font-medium">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedUploadProject(proj);
+                      setShowUploadModal(true);
+                    }}
+                    className="btn btn-ghost btn-sm text-[11.5px] px-2 py-1"
+                  >
+                    <Upload className="w-3 h-3 mr-1" />
+                    <span>Upload Manuscript</span>
+                  </button>
+
+                  <span className="text-[#1c1c1e] dark:text-[#f5f5f7] flex items-center space-x-0.5 text-[11.5px] font-medium group-hover:translate-x-0.5 transition-transform">
+                    <span>Open Workspace</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
-      {/* Create Project Modal */}
+      {/* ========================================================
+          MINIMAL PAPER FOOTER
+          ======================================================== */}
+      <footer className="border-t border-[#1c1c1e]/10 dark:border-white/10 bg-[#f6f6f4] dark:bg-[#161618] py-8 transition-colors mt-auto">
+        <div className="max-w-[1180px] mx-auto px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-2.5">
+            <div className="h-6 w-6 rounded-[6px] bg-[#1c1c1e] dark:bg-[#f5f5f7] text-white dark:text-[#1c1c1e] flex items-center justify-center font-bold text-xs tracking-tighter shadow-2xs">
+              N
+            </div>
+            <span className="text-[13px] font-medium text-[#636366] dark:text-[#8e8e93]">
+              NorthStar &bull; AI Continuity Guardian
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-6 text-[12.5px] text-[#8e8e93]">
+            <Link to="/dashboard" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
+              Workspaces
+            </Link>
+            <span className="text-[#8e8e93]/60">&copy; 2026 NorthStar AI</span>
+          </div>
+        </div>
+      </footer>
+
+      {/* ========================================================
+          CREATE PROJECT MODAL (PRESERVED FUNCTIONALITY)
+          ======================================================== */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-neutral-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 p-6 max-w-md w-full text-left">
-            <h3 className="text-base font-bold text-neutral-900 mb-1">
-              Create NorthStar Project
-            </h3>
-            <p className="text-xs text-neutral-500 mb-5">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#fcfcfb] dark:bg-[#1c1c1e] rounded-2xl shadow-xl border border-[#1c1c1e]/10 dark:border-white/10 p-6 max-w-md w-full text-left transition-colors">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-base font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">
+                Create NorthStar Project
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] text-sm p-1 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-[#636366] dark:text-[#8e8e93] mb-5">
               Set up a dedicated narrative container for your novel, script, or series.
             </p>
 
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                <label className="block text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] mb-1.5">
                   Project Title
                 </label>
                 <input
@@ -403,12 +509,12 @@ export default function Dashboard() {
                   onChange={(e) => setNewProjectName(e.target.value)}
                   placeholder="e.g. The Last Kingdom"
                   autoFocus
-                  className="w-full text-xs p-2.5 border border-neutral-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2.5 bg-white dark:bg-[#222224] border border-[#1c1c1e]/15 dark:border-white/15 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e] dark:focus:border-white focus:ring-1 focus:ring-[#1c1c1e] dark:focus:ring-white transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                <label className="block text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] mb-1.5">
                   Premise or Logline (Optional)
                 </label>
                 <textarea
@@ -416,7 +522,7 @@ export default function Dashboard() {
                   value={newProjectDesc}
                   onChange={(e) => setNewProjectDesc(e.target.value)}
                   placeholder="A fantasy saga of honor, siege warfare, and forgotten ancient laws..."
-                  className="w-full text-xs p-2.5 border border-neutral-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full text-xs p-2.5 bg-white dark:bg-[#222224] border border-[#1c1c1e]/15 dark:border-white/15 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e] dark:focus:border-white focus:ring-1 focus:ring-[#1c1c1e] dark:focus:ring-white transition-colors"
                 />
               </div>
 
@@ -424,14 +530,14 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-3.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg"
+                  className="btn btn-ghost btn-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
-                  className="px-4 py-2 min-w-[80px] text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg shadow-xs disabled:opacity-50 transition-colors"
+                  className="btn btn-solid btn-sm min-w-[80px]"
                 >
                   {creating ? 'Creating...' : 'Create'}
                 </button>
@@ -441,12 +547,14 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Upload Manuscript Modal */}
+      {/* ========================================================
+          UPLOAD MANUSCRIPT MODAL (4-STAGE PIPELINE PRESERVED)
+          ======================================================== */}
       {showUploadModal && selectedUploadProject && (
-        <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={`bg-white rounded-2xl shadow-xl border border-neutral-200 p-6 ${uploading ? 'max-w-lg' : 'max-w-md'} w-full text-left transition-all`}>
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`bg-[#fcfcfb] dark:bg-[#1c1c1e] rounded-2xl shadow-xl border border-[#1c1c1e]/10 dark:border-white/10 p-6 ${uploading ? 'max-w-lg' : 'max-w-md'} w-full text-left transition-all`}>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-base font-bold text-neutral-900">
+              <h3 className="text-base font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">
                 {uploading ? 'Analyzing Manuscript' : 'Upload Manuscript'}
               </h3>
               {!uploading && (
@@ -457,7 +565,7 @@ export default function Dashboard() {
                     setUploadFile(null);
                     setUploadError('');
                   }}
-                  className="text-neutral-400 hover:text-neutral-600 text-sm font-semibold p-1"
+                  className="text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] text-sm p-1 transition-colors"
                 >
                   ✕
                 </button>
@@ -465,19 +573,19 @@ export default function Dashboard() {
             </div>
 
             {!uploading && (
-              <p className="text-xs text-neutral-500 mb-4">
-                Add your document to <span className="font-semibold text-neutral-700">{selectedUploadProject.name}</span>. The system parses chapters, encrypts the file into vault storage, and extracts canon facts.
+              <p className="text-xs text-[#636366] dark:text-[#8e8e93] mb-4">
+                Add your document to <span className="font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">{selectedUploadProject.name}</span>. The system parses chapters, encrypts the file into vault storage, and extracts canon facts.
               </p>
             )}
 
             {uploadError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs space-y-2">
+              <div className="mb-4 p-3 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-lg text-xs space-y-2">
                 <p>{uploadError}</p>
                 {uploadFile && (
                   <button
                     type="button"
                     onClick={() => handleUploadManuscript()}
-                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium text-[11px] transition-colors shadow-xs"
+                    className="btn btn-solid btn-sm text-[11px]"
                   >
                     <span>Retry Upload</span>
                   </button>
@@ -487,45 +595,45 @@ export default function Dashboard() {
 
             {uploading ? (
               <div className="py-2 space-y-4">
-                {/* Header card with Done / Left Summary and Percentage */}
-                <div className="bg-neutral-900 text-white rounded-xl p-4 shadow-sm border border-neutral-800">
+                {/* Graphite Pipeline Card */}
+                <div className="bg-[#1c1c1e] dark:bg-[#222224] text-white rounded-xl p-4 shadow-sm border border-white/10">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
-                      <span className="flex h-2.5 w-2.5 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                       </span>
-                      <span className="text-xs font-semibold tracking-wide uppercase text-neutral-300">
+                      <span className="state-cap text-[#8e8e93]">
                         {uploadProgress >= 100 ? 'Processing Complete' : 'Multi-Agent Pipeline'}
                       </span>
                     </div>
-                    <span className="text-base font-mono font-bold text-blue-400">
+                    <span className="text-sm font-mono font-semibold text-[#f5f5f7]">
                       {uploadProgress}%
                     </span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full bg-neutral-800 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-[#2c2c2e] dark:bg-[#161618] rounded-full h-1.5 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 transition-all duration-500 ease-out rounded-full"
+                      className="h-full bg-white transition-all duration-500 ease-out rounded-full"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
 
                   {/* Metrics Bar: Done, Left, Elapsed Time */}
-                  <div className="flex items-center justify-between mt-3 text-xs text-neutral-300 border-t border-neutral-800 pt-2.5">
+                  <div className="flex items-center justify-between mt-3 text-xs text-[#8e8e93] border-t border-white/10 pt-2.5">
                     <div className="flex items-center space-x-2">
-                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold text-[11px] border border-emerald-500/30">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-white/10 text-[#f5f5f7] font-medium text-[10px] border border-white/15">
+                        <CheckCircle2 className="w-3 h-3 mr-0.5 text-white" />
                         <span>{completedStagesCount} Done</span>
                       </span>
-                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold text-[11px] border border-amber-500/30">
-                        <Clock className="w-3 h-3 mr-1" />
+                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-white/5 text-[#8e8e93] font-medium text-[10px] border border-white/10">
+                        <Clock className="w-3 h-3 mr-0.5 text-[#8e8e93]" />
                         <span>{remainingStagesCount} Left</span>
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-neutral-400 font-mono">
+                    <div className="text-[11px] text-[#8e8e93] font-mono">
                       Elapsed: {uploadSeconds}s
                     </div>
                   </div>
@@ -542,31 +650,29 @@ export default function Dashboard() {
                         key={stage.id}
                         className={`flex items-start justify-between p-3 rounded-xl border transition-all duration-300 ${
                           isDone
-                            ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                            ? 'bg-[#fcfcfb] dark:bg-[#222224] border-[#1c1c1e]/10 dark:border-white/10 text-[#1c1c1e] dark:text-[#f5f5f7]'
                             : isActive
-                            ? 'bg-blue-50/80 border-blue-300 shadow-xs ring-1 ring-blue-400/30 text-blue-950'
-                            : 'bg-neutral-50/60 border-neutral-200 text-neutral-400 opacity-70'
+                            ? 'bg-white dark:bg-[#28282b] border-[#1c1c1e] dark:border-white shadow-2xs ring-1 ring-[#1c1c1e]/15 dark:ring-white/20 text-[#1c1c1e] dark:text-[#f5f5f7]'
+                            : 'bg-white/40 dark:bg-white/[0.02] border-[#1c1c1e]/5 dark:border-white/5 text-[#8e8e93] opacity-60'
                         }`}
                       >
                         <div className="flex items-start space-x-3 pr-2">
                           <div className="mt-0.5">
                             {isDone ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-[#1c1c1e] dark:text-white flex-shrink-0" />
                             ) : isActive ? (
-                              <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
+                              <Loader2 className="w-4 h-4 text-[#1c1c1e] dark:text-white animate-spin flex-shrink-0" />
                             ) : (
-                              <Circle className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                              <Circle className="w-4 h-4 text-[#8e8e93] flex-shrink-0" />
                             )}
                           </div>
                           <div>
                             <div className="flex items-center space-x-2">
                               <span
                                 className={`text-xs font-semibold ${
-                                  isDone
-                                    ? 'text-emerald-900'
-                                    : isActive
-                                    ? 'text-blue-900 font-bold'
-                                    : 'text-neutral-500'
+                                  isDone || isActive
+                                    ? 'text-[#1c1c1e] dark:text-[#f5f5f7]'
+                                    : 'text-[#8e8e93]'
                                 }`}
                               >
                                 {stage.id}. {stage.title}
@@ -574,11 +680,9 @@ export default function Dashboard() {
                             </div>
                             <p
                               className={`text-[11px] mt-0.5 leading-tight ${
-                                isDone
-                                  ? 'text-emerald-700'
-                                  : isActive
-                                  ? 'text-blue-700'
-                                  : 'text-neutral-400'
+                                isDone || isActive
+                                  ? 'text-[#636366] dark:text-[#8e8e93]'
+                                  : 'text-[#8e8e93]'
                               }`}
                             >
                               {stage.desc}
@@ -586,19 +690,19 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        {/* Status Badge: Done vs In Progress vs Left to do */}
+                        {/* Status Badge */}
                         <div className="flex-shrink-0 self-center">
                           {isDone ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#1c1c1e]/10 dark:bg-white/10 text-[#1c1c1e] dark:text-[#f5f5f7]">
                               ✓ Done
                             </span>
                           ) : isActive ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300 animate-pulse">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#1c1c1e] dark:bg-white text-white dark:text-[#1c1c1e] animate-pulse">
                               In Progress
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-500 border border-neutral-200">
-                              Left to do
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#1c1c1e]/5 dark:bg-white/5 text-[#8e8e93]">
+                              Pending
                             </span>
                           )}
                         </div>
@@ -607,13 +711,13 @@ export default function Dashboard() {
                   })}
                 </div>
 
-                <p className="text-[11px] text-neutral-400 text-center pt-1">
+                <p className="text-[11px] text-[#8e8e93] text-center pt-1">
                   Verifying evidence against established canon memory &bull; please keep this tab open
                 </p>
               </div>
             ) : (
               <form onSubmit={handleUploadManuscript} className="space-y-4">
-                <div className="border-2 border-dashed border-neutral-300 rounded-xl p-6 text-center hover:border-neutral-400 transition-colors cursor-pointer bg-neutral-50/50">
+                <div className="border-2 border-dashed border-[#1c1c1e]/15 dark:border-white/15 rounded-xl p-6 text-center hover:border-[#1c1c1e]/30 dark:hover:border-white/30 transition-colors cursor-pointer bg-white/50 dark:bg-white/[0.02]">
                   <input
                     type="file"
                     id="manuscript-file-input"
@@ -623,11 +727,11 @@ export default function Dashboard() {
                     className="hidden"
                   />
                   <label htmlFor="manuscript-file-input" className="cursor-pointer">
-                    <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-                    <span className="text-xs font-semibold text-neutral-800 block">
+                    <Upload className="w-8 h-8 text-[#8e8e93] mx-auto mb-2" />
+                    <span className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block">
                       {uploadFile ? uploadFile.name : 'Select or drag DOCX, TXT, MD, or PDF'}
                     </span>
-                    <span className="text-[11px] text-neutral-400 block mt-1">
+                    <span className="text-[11px] text-[#8e8e93] block mt-1">
                       Up to 25 MB &bull; AES-256-GCM Vault Encrypted
                     </span>
                   </label>
@@ -640,16 +744,16 @@ export default function Dashboard() {
                       setShowUploadModal(false);
                       setUploadFile(null);
                     }}
-                    className="px-3.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg"
+                    className="btn btn-ghost btn-sm"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={uploading || !uploadFile}
-                    className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs disabled:opacity-50"
+                    className="btn btn-solid btn-sm"
                   >
-                    Upload & Build Memory
+                    Upload &amp; Build Memory
                   </button>
                 </div>
               </form>

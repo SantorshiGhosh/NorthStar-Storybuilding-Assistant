@@ -14,8 +14,8 @@ export default function ThemeToggle({ className = '', showLabel = false }) {
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       className={`relative inline-flex items-center justify-center p-2 rounded-lg text-xs font-medium border transition-colors duration-350 ease-in-out cursor-pointer ${
         isDark
-          ? 'bg-neutral-800 border-neutral-700 text-amber-400 hover:bg-neutral-750 hover:text-amber-300 hover:border-neutral-600 shadow-2xs'
-          : 'bg-[#fbf9f4] border-[#1c1815]/15 text-[#1c1815]/70 hover:bg-white hover:text-[#7b2d3b] hover:border-[#7b2d3b]/30 shadow-2xs'
+          ? 'bg-[#1c1c1e] border-[#2c2c2e] text-[#f5f5f7] hover:bg-[#222224] hover:border-[#3a3a3c] shadow-2xs'
+          : 'bg-white border-[#e5e5ea] text-[#1c1c1e] hover:bg-[#f2f2f7] hover:border-[#d1d1d6] shadow-2xs'
       } ${className}`}
     >
       <span className="sr-only">

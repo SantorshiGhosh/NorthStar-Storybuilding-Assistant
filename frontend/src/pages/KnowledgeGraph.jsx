@@ -26,41 +26,36 @@ import {
   Plus
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { useTheme } from '../context/ThemeContext';
 import { projectService, entityService, getCached } from '../services/api';
 
 // Custom React Flow Node Card
 function CustomEntityNode({ data, selected }) {
-  const badgeColors = {
-    character: 'bg-blue-50 text-blue-700 border-blue-200',
-    location: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    object: 'bg-amber-50 text-amber-700 border-amber-200',
-    rule: 'bg-red-50 text-red-700 border-red-200',
-    faction: 'bg-purple-50 text-purple-700 border-purple-200',
-  }[data.entity_type] || 'bg-neutral-100 text-neutral-700 border-neutral-200';
-
   return (
     <div
-      className={`bg-white rounded-xl border p-3.5 shadow-xs transition-all w-52 text-left select-none ${
-        selected ? 'ring-2 ring-blue-500 border-blue-500 shadow-md' : 'border-neutral-200/90 hover:border-neutral-300'
+      className={`bg-[#fcfcfb] dark:bg-[#1c1c1e] rounded-xl border p-3.5 shadow-2xs transition-all w-56 text-left select-none border-l-2 border-l-[#1c1c1e] dark:border-l-white ${
+        selected
+          ? 'ring-2 ring-[#1c1c1e] dark:ring-white shadow-md'
+          : 'border-[#1c1c1e]/10 dark:border-white/10 hover:border-[#1c1c1e]/25 dark:hover:border-white/25'
       }`}
     >
-      <Handle type="target" position={Position.Top} className="w-2 h-2 bg-neutral-400" />
+      <Handle type="target" position={Position.Top} className="w-2.5 h-2.5 bg-[#8e8e93] dark:bg-[#636366] border-2 border-white dark:border-[#1c1c1e]" />
 
       <div className="flex items-center justify-between mb-1.5">
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badgeColors} capitalize`}>
+        <span className="text-[9.5px] font-mono-cap px-2 py-0.5 rounded-full bg-[#1c1c1e]/5 dark:bg-white/10 text-[#636366] dark:text-[#8e8e93] uppercase tracking-wider">
           {data.badge || data.entity_type}
         </span>
-        <span className="text-[10px] text-neutral-400">
+        <span className="text-[10px] text-[#8e8e93] font-mono-cap">
           Ch {data.first_appearance || 1}
         </span>
       </div>
 
-      <h4 className="text-sm font-bold text-neutral-900 leading-snug truncate">
+      <h4 className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] leading-snug truncate">
         {data.label || data.name}
       </h4>
 
       {data.description && (
-        <p className="text-[11px] text-neutral-500 line-clamp-1 mt-0.5">
+        <p className="text-[11px] text-[#636366] dark:text-[#8e8e93] line-clamp-1 mt-0.5 leading-relaxed">
           {data.description}
         </p>
       )}
@@ -68,25 +63,27 @@ function CustomEntityNode({ data, selected }) {
       {data.traits && data.traits.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {data.traits.slice(0, 2).map((t, idx) => (
-            <span key={idx} className="text-[9px] px-1.5 py-0.2 rounded-sm bg-neutral-100 text-neutral-600">
+            <span key={idx} className="text-[9.5px] font-mono-cap px-1.5 py-0.2 rounded-sm bg-[#1c1c1e]/5 dark:bg-white/10 text-[#636366] dark:text-[#8e8e93]">
               {t}
             </span>
           ))}
           {data.traits.length > 2 && (
-            <span className="text-[9px] text-neutral-400">+{data.traits.length - 2}</span>
+            <span className="text-[9.5px] text-[#8e8e93] font-mono-cap">+{data.traits.length - 2}</span>
           )}
         </div>
       )}
 
-      <div className="mt-2.5 pt-2 border-t border-neutral-100 flex items-center justify-between text-[10px] text-neutral-400">
-        <span className="flex items-center space-x-1 text-blue-600 font-medium">
-          <Quote className="w-2.5 h-2.5" />
+      <div className="mt-2.5 pt-2 border-t border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between text-[10px] text-[#8e8e93] font-mono-cap">
+        <span className="flex items-center space-x-1 text-[#1c1c1e] dark:text-[#f5f5f7] font-medium">
+          <Quote className="w-2.5 h-2.5 text-[#8e8e93]" />
           <span>{data.fact_count || 0} facts</span>
         </span>
-        <span>Click to inspect &rarr;</span>
+        <span className="hover:underline flex items-center space-x-0.5 text-[#1c1c1e] dark:text-white">
+          <span>Inspect &rarr;</span>
+        </span>
       </div>
 
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-neutral-400" />
+      <Handle type="source" position={Position.Bottom} className="w-2.5 h-2.5 bg-[#8e8e93] dark:bg-[#636366] border-2 border-white dark:border-[#1c1c1e]" />
     </div>
   );
 }
@@ -96,6 +93,8 @@ const nodeTypes = { custom: CustomEntityNode };
 export default function KnowledgeGraph() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const cachedGraph = getCached(`graph:${projectId}`);
   const cachedProj = getCached(`project:${projectId}`);
@@ -221,20 +220,20 @@ export default function KnowledgeGraph() {
   ];
 
   return (
-    <div className="h-screen flex flex-col bg-[#fbfbf9] overflow-hidden">
+    <div className="h-screen flex flex-col bg-[#f6f6f4] dark:bg-[#161618] text-[#1c1c1e] dark:text-[#f5f5f7] overflow-hidden font-sans select-none transition-colors duration-200">
       <Navbar currentProject={project} />
 
       {/* Control Bar: Search & Type Filter Tabs */}
-      <div className="bg-white border-b border-neutral-200/80 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 z-10">
+      <div className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 z-10 shadow-2xs">
         <div className="flex items-center space-x-2">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#8e8e93] absolute left-2.5 top-2.5" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search narrative graph..."
-              className="pl-8 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-hidden focus:border-blue-500 w-52 sm:w-64"
+              className="pl-8 pr-3 py-1.5 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 w-52 sm:w-64"
             />
           </div>
 
@@ -243,10 +242,10 @@ export default function KnowledgeGraph() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTypeFilter(tab.id)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-xs font-mono-cap transition-colors cursor-pointer ${
                   activeTypeFilter === tab.id
-                    ? 'bg-neutral-900 text-white shadow-2xs'
-                    : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'
+                    ? 'bg-[#1c1c1e] text-white dark:bg-white dark:text-[#1c1c1e] shadow-2xs font-medium'
+                    : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5'
                 }`}
               >
                 {tab.label}
@@ -255,7 +254,7 @@ export default function KnowledgeGraph() {
           </div>
         </div>
 
-        <div className="text-xs text-neutral-400 flex items-center space-x-3">
+        <div className="text-xs font-mono-cap text-[#8e8e93] flex items-center space-x-3">
           <span>{nodes.length} entities visualized</span>
           <span>&bull;</span>
           <span>{edges.length} connections</span>
@@ -263,7 +262,7 @@ export default function KnowledgeGraph() {
       </div>
 
       {/* React Flow Canvas */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -275,24 +274,30 @@ export default function KnowledgeGraph() {
           fitViewOptions={{ padding: 0.3 }}
           attributionPosition="bottom-left"
         >
-          <Background color="#e5e5e0" gap={20} size={1} />
-          <Controls className="bg-white! border-neutral-200! shadow-xs!" />
+          <Background
+            variant="lines"
+            gap={28}
+            size={1}
+            color={isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(28, 28, 30, 0.035)'}
+          />
+          <Controls className="bg-[#fcfcfb]! dark:bg-[#1c1c1e]! border-[#1c1c1e]/10! dark:border-white/10! rounded-lg shadow-2xs! overflow-hidden text-[#1c1c1e] dark:text-[#f5f5f7]" />
           <MiniMap
-            nodeColor={(n) => n.data?.bgColor || '#f3f4f6'}
-            className="border border-neutral-200/80 rounded-lg overflow-hidden"
+            nodeColor={() => (isDark ? '#48484a' : '#c7c7cc')}
+            maskColor={isDark ? 'rgba(22, 22, 24, 0.75)' : 'rgba(246, 246, 244, 0.75)'}
+            className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg overflow-hidden shadow-2xs"
           />
         </ReactFlow>
 
         {/* Slide-over Entity Inspector Drawer */}
         {drawerOpen && selectedEntity && (
-          <aside className="absolute top-0 right-0 h-full w-80 sm:w-96 bg-white border-l border-neutral-200/80 shadow-lg z-20 flex flex-col text-left">
+          <aside className="absolute top-0 right-0 h-full w-80 sm:w-96 bg-[#fcfcfb] dark:bg-[#1c1c1e] border-l border-[#1c1c1e]/10 dark:border-white/10 shadow-xl z-20 flex flex-col text-left animate-in slide-in-from-right duration-200">
             {/* Drawer Header */}
-            <div className="p-4 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/60">
+            <div className="p-4 border-b border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between bg-[#f6f6f4]/60 dark:bg-[#161618]/60">
               <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 capitalize">
+                <span className="text-[9.5px] font-mono-cap px-2 py-0.5 rounded-full bg-[#1c1c1e]/5 dark:bg-white/10 text-[#636366] dark:text-[#8e8e93] uppercase tracking-wider">
                   {selectedEntity.entity_type}
                 </span>
-                <span className="text-xs text-neutral-400">
+                <span className="text-[10px] text-[#8e8e93] font-mono-cap">
                   Seen Ch {selectedEntity.first_appearance_chapter || 1}
                 </span>
               </div>
@@ -300,14 +305,14 @@ export default function KnowledgeGraph() {
               <div className="flex items-center space-x-1">
                 <button
                   onClick={handleOpenEdit}
-                  className="p-1 text-neutral-500 hover:text-neutral-900 rounded-md hover:bg-neutral-200 transition-colors"
+                  className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] rounded-md hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
                   title="Edit Entity"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="p-1 text-neutral-400 hover:text-neutral-900 rounded-md hover:bg-neutral-100 transition-colors"
+                  className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded-md hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -317,17 +322,17 @@ export default function KnowledgeGraph() {
             {/* Drawer Content */}
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               <div>
-                <h3 className="text-lg font-bold text-neutral-900 mb-1">
+                <h3 className="text-base font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] mb-1">
                   {selectedEntity.name}
                 </h3>
-                <p className="text-xs text-neutral-600 leading-relaxed">
+                <p className="text-xs text-[#636366] dark:text-[#8e8e93] leading-relaxed">
                   {selectedEntity.description || 'No description established yet.'}
                 </p>
               </div>
 
               {/* Traits */}
               <div>
-                <h4 className="text-xs font-semibold text-neutral-700 mb-2">
+                <h4 className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] mb-2">
                   Recognized Canon Traits
                 </h4>
                 {selectedEntity.traits && selectedEntity.traits.length > 0 ? (
@@ -335,21 +340,21 @@ export default function KnowledgeGraph() {
                     {selectedEntity.traits.map((trait, idx) => (
                       <span
                         key={idx}
-                        className="text-xs font-medium px-2.5 py-1 rounded-md bg-neutral-100 text-neutral-800 border border-neutral-200"
+                        className="text-xs font-medium px-2.5 py-1 rounded-md bg-[#1c1c1e]/5 dark:bg-white/10 text-[#1c1c1e] dark:text-[#f5f5f7] border border-[#1c1c1e]/10 dark:border-white/10"
                       >
                         {trait}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-neutral-400">No explicit traits extracted.</span>
+                  <span className="text-xs text-[#8e8e93]">No explicit traits extracted.</span>
                 )}
               </div>
 
               {/* Established Story Facts */}
               <div>
-                <h4 className="text-xs font-semibold text-neutral-700 mb-2 flex items-center space-x-1.5">
-                  <Quote className="w-3.5 h-3.5 text-blue-600" />
+                <h4 className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] mb-2 flex items-center space-x-1.5">
+                  <Quote className="w-3 h-3 text-[#8e8e93]" />
                   <span>Established Canon Facts ({selectedEntity.facts ? selectedEntity.facts.length : 0})</span>
                 </h4>
 
@@ -358,24 +363,24 @@ export default function KnowledgeGraph() {
                     {selectedEntity.facts.map((fact) => (
                       <div
                         key={fact.id}
-                        className="bg-neutral-50/70 rounded-lg p-3 border border-neutral-200/70"
+                        className="bg-[#f6f6f4] dark:bg-[#161618] rounded-xl p-3 border border-[#1c1c1e]/10 dark:border-white/10"
                       >
-                        <p className="text-xs font-medium text-neutral-900 mb-1">
+                        <p className="text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] mb-1">
                           {fact.fact}
                         </p>
                         {fact.source_quote && (
-                          <p className="text-[11px] text-neutral-600 italic bg-white p-2 rounded border border-neutral-100 mt-1 leading-snug">
+                          <p className="text-[11px] text-[#636366] dark:text-[#8e8e93] italic bg-white dark:bg-[#222224] p-2 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10 mt-1 leading-snug">
                             "{fact.source_quote}"
                           </p>
                         )}
-                        <span className="text-[10px] text-neutral-400 block mt-1.5">
+                        <span className="text-[9.5px] font-mono-cap text-[#8e8e93] block mt-1.5">
                           Chapter {fact.source_chapter_number || '?'} &bull; Canon Fact
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-neutral-400">No recorded facts for this node.</span>
+                  <span className="text-xs text-[#8e8e93]">No recorded facts for this node.</span>
                 )}
               </div>
             </div>
@@ -385,18 +390,18 @@ export default function KnowledgeGraph() {
 
       {/* Edit Entity Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 bg-neutral-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 p-6 max-w-md w-full text-left">
-            <h3 className="text-base font-bold text-neutral-900 mb-1">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#fcfcfb] dark:bg-[#1c1c1e] rounded-2xl shadow-2xl border border-[#1c1c1e]/10 dark:border-white/10 p-6 max-w-md w-full text-left">
+            <h3 className="text-sm font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] mb-1">
               Edit Canon Entity
             </h3>
-            <p className="text-xs text-neutral-500 mb-4">
+            <p className="text-xs text-[#636366] dark:text-[#8e8e93] mb-4">
               Modify the entity's traits or description. Changes persist into narrative memory and future continuity checks.
             </p>
 
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                <label className="block text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] mb-1">
                   Entity Name
                 </label>
                 <input
@@ -404,24 +409,24 @@ export default function KnowledgeGraph() {
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full text-xs p-2.5 border border-neutral-300 rounded-lg focus:outline-hidden focus:border-blue-500"
+                  className="w-full text-xs p-2.5 bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                <label className="block text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] mb-1">
                   Description
                 </label>
                 <textarea
                   rows={3}
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
-                  className="w-full text-xs p-2.5 border border-neutral-300 rounded-lg focus:outline-hidden focus:border-blue-500"
+                  className="w-full text-xs p-2.5 bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                <label className="block text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] mb-1">
                   Traits (Comma separated)
                 </label>
                 <input
@@ -429,7 +434,7 @@ export default function KnowledgeGraph() {
                   value={editTraitsStr}
                   onChange={(e) => setEditTraitsStr(e.target.value)}
                   placeholder="e.g. brave, lost left arm, royal archivist"
-                  className="w-full text-xs p-2.5 border border-neutral-300 rounded-lg focus:outline-hidden focus:border-blue-500"
+                  className="w-full text-xs p-2.5 bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
                 />
               </div>
 
@@ -437,14 +442,14 @@ export default function KnowledgeGraph() {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-3.5 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg"
+                  className="btn btn-outline btn-sm text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="px-4 py-2 text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg shadow-xs disabled:opacity-50"
+                  className="btn btn-solid btn-sm text-xs shadow-2xs disabled:opacity-50"
                 >
                   {savingEdit ? 'Saving...' : 'Update Canon'}
                 </button>

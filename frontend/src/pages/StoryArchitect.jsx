@@ -53,6 +53,7 @@ import {
 import Navbar from '../components/Navbar';
 import ImportExportModal from '../components/ImportExportModal';
 import EntityMatchingDrawer from '../components/EntityMatchingDrawer';
+import { useTheme } from '../context/ThemeContext';
 import {
   projectService,
   entityService,
@@ -62,14 +63,14 @@ import {
   setCached
 } from '../services/api';
 
-// Custom Node Component for Story Architect
+// Custom Node Component for Story Architect in Graphite Monochrome
 function ArchitectNode({ data, selected }) {
   const canonColors = {
-    draft: 'bg-neutral-100 text-neutral-600 border-neutral-300',
-    planned: 'bg-blue-50 text-blue-700 border-blue-200',
-    established: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    retired: 'bg-neutral-200 text-neutral-500 border-neutral-300 line-through',
-  }[data.canon_status || 'draft'] || 'bg-neutral-100 text-neutral-600 border-neutral-200';
+    draft: 'bg-[#1c1c1e]/5 dark:bg-white/5 text-[#8e8e93] border-[#1c1c1e]/10 dark:border-white/10',
+    planned: 'bg-[#1c1c1e]/10 dark:bg-white/10 text-[#48484a] dark:text-[#c7c7cc] border-[#1c1c1e]/20 dark:border-white/20',
+    established: 'bg-[#1c1c1e] text-white dark:bg-white dark:text-[#1c1c1e] border-[#1c1c1e] dark:border-white font-medium',
+    retired: 'bg-transparent text-[#8e8e93] border-[#1c1c1e]/10 dark:border-white/10 line-through',
+  }[data.canon_status || 'draft'] || 'bg-[#1c1c1e]/5 text-[#8e8e93] border-[#1c1c1e]/10 dark:border-white/10';
 
   const protIcons = {
     1: Unlock,
@@ -79,58 +80,49 @@ function ArchitectNode({ data, selected }) {
   };
   const ProtIcon = protIcons[data.protection_level || 1] || Shield;
 
-  const typeBg = {
-    character: 'border-l-blue-500',
-    family: 'border-l-indigo-500',
-    location: 'border-l-emerald-500',
-    faction: 'border-l-purple-500',
-    plot: 'border-l-amber-500',
-    event: 'border-l-rose-500',
-  }[data.entity_type] || 'border-l-neutral-400';
-
   return (
     <div
-      className={`bg-white dark:bg-neutral-900 rounded-xl border p-3.5 shadow-xs transition-all w-56 text-left select-none border-l-4 ${typeBg} ${
-        selected ? 'ring-2 ring-blue-500 shadow-md' : 'hover:border-neutral-300 dark:hover:border-neutral-700'
-      } ${data.isSearchMatch ? 'ring-2 ring-amber-400 bg-amber-50/20' : 'border-neutral-200 dark:border-neutral-800'}`}
+      className={`bg-[#fcfcfb] dark:bg-[#1c1c1e] rounded-xl border p-3.5 shadow-2xs transition-all w-60 text-left select-none border-l-2 border-l-[#1c1c1e] dark:border-l-white ${
+        selected ? 'ring-2 ring-[#1c1c1e] dark:ring-white shadow-md' : 'hover:border-[#1c1c1e]/25 dark:hover:border-white/25'
+      } ${data.isSearchMatch ? 'ring-2 ring-[#8e8e93] bg-[#f6f6f4] dark:bg-[#222224]' : 'border-[#1c1c1e]/10 dark:border-white/10'}`}
     >
-      <Handle type="target" position={Position.Top} className="w-2.5 h-2.5 bg-neutral-400" />
+      <Handle type="target" position={Position.Top} className="w-2.5 h-2.5 bg-[#8e8e93] dark:bg-[#636366] border-2 border-white dark:border-[#1c1c1e]" />
 
       {/* Top Badges Row */}
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">
+        <span className="text-[9.5px] font-mono-cap px-2 py-0.5 rounded-full bg-[#1c1c1e]/5 dark:bg-white/10 text-[#636366] dark:text-[#8e8e93] uppercase tracking-wider">
           {data.entity_type || 'Entity'}
         </span>
         <div className="flex items-center space-x-1">
-          <span className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-full border ${canonColors} capitalize`}>
+          <span className={`text-[9px] font-mono-cap px-1.5 py-0.2 rounded-full border ${canonColors} capitalize`}>
             {data.canon_status || 'draft'}
           </span>
           <span title={`Protection Level ${data.protection_level || 1}`}>
-            <ProtIcon className="w-3 h-3 text-neutral-400" />
+            <ProtIcon className="w-3 h-3 text-[#8e8e93]" />
           </span>
         </div>
       </div>
 
       {/* Name & Summary */}
-      <h4 className="text-xs font-bold text-neutral-900 dark:text-white leading-snug truncate">
+      <h4 className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] leading-snug truncate">
         {data.label || data.name}
       </h4>
       {data.description && (
-        <p className="text-[11px] text-neutral-500 line-clamp-2 mt-0.5 leading-relaxed">
+        <p className="text-[11px] text-[#636366] dark:text-[#8e8e93] line-clamp-2 mt-0.5 leading-relaxed">
           {data.description}
         </p>
       )}
 
       {/* Footer Details */}
-      <div className="mt-2.5 pt-2 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[10px] text-neutral-400">
+      <div className="mt-2.5 pt-2 border-t border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between text-[10px] text-[#8e8e93] font-mono-cap">
         <span>Ch {data.first_appearance || 1}</span>
-        <span className="text-blue-600 dark:text-blue-400 font-semibold flex items-center space-x-1">
+        <span className="text-[#1c1c1e] dark:text-white font-medium flex items-center space-x-0.5 hover:underline">
           <span>Profile</span>
           <ChevronRight className="w-2.5 h-2.5" />
         </span>
       </div>
 
-      <Handle type="source" position={Position.Bottom} className="w-2.5 h-2.5 bg-neutral-400" />
+      <Handle type="source" position={Position.Bottom} className="w-2.5 h-2.5 bg-[#8e8e93] dark:bg-[#636366] border-2 border-white dark:border-[#1c1c1e]" />
     </div>
   );
 }
@@ -140,6 +132,8 @@ const nodeTypes = { architectNode: ArchitectNode };
 export default function StoryArchitect() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Core Data
   const [project, setProject] = useState(null);
@@ -470,8 +464,8 @@ export default function StoryArchitect() {
               target: pendingConnection.target,
               ...createdRel,
             },
-            style: { stroke: '#3b82f6', strokeWidth: 1.5 },
-            markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' },
+            style: { stroke: isDark ? '#8e8e93' : '#3a3a3c', strokeWidth: 1.5 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: isDark ? '#8e8e93' : '#3a3a3c' },
           },
           eds
         )
@@ -590,23 +584,23 @@ export default function StoryArchitect() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#fbfbf9] dark:bg-neutral-950 overflow-hidden font-sans select-none">
+    <div className="h-screen w-screen flex flex-col bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden font-sans select-none text-[#1c1c1e] dark:text-[#f5f5f7] transition-colors duration-200">
       <Navbar currentProject={project} />
 
       {/* Story Architect Sub-Header / Control Ribbon */}
-      <div className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 py-2 flex items-center justify-between z-20 shadow-2xs">
+      <div className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 px-4 py-2 flex items-center justify-between z-20 shadow-2xs">
         {/* Left: View Mode Tabs & Canvases */}
         <div className="flex items-center space-x-3 overflow-x-auto">
           {/* Canvases Tabs */}
-          <div className="flex items-center space-x-1 border-r border-neutral-200 dark:border-neutral-800 pr-3">
+          <div className="flex items-center space-x-1 border-r border-[#1c1c1e]/10 dark:border-white/10 pr-3">
             {canvases.map((c) => (
               <button
                 key={c.id}
                 onClick={() => handleSelectCanvas(c)}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   activeCanvas?.id === c.id
-                    ? 'bg-neutral-900 text-white dark:bg-neutral-800 dark:text-neutral-100 shadow-2xs'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-850'
+                    ? 'bg-[#1c1c1e] text-white dark:bg-white dark:text-[#1c1c1e] shadow-2xs'
+                    : 'text-[#636366] dark:text-[#8e8e93] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
                 }`}
               >
                 {c.name || c.title || 'Canvas'}
@@ -614,7 +608,7 @@ export default function StoryArchitect() {
             ))}
             <button
               onClick={() => setShowNewCanvasModal(true)}
-              className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded-md hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 cursor-pointer"
               title="Add Canvas"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -626,14 +620,14 @@ export default function StoryArchitect() {
                     setRenameCanvasTitle(activeCanvas.name || activeCanvas.title || '');
                     setShowRenameCanvasModal(true);
                   }}
-                  className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded"
+                  className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
                   title="Rename active canvas"
                 >
                   <Edit2 className="w-3 h-3" />
                 </button>
                 <button
                   onClick={handleDuplicateCanvas}
-                  className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded"
+                  className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
                   title="Duplicate active canvas"
                 >
                   <Copy className="w-3 h-3" />
@@ -641,7 +635,7 @@ export default function StoryArchitect() {
                 {canvases.length > 1 && (
                   <button
                     onClick={handleDeleteCanvas}
-                    className="p-1 text-neutral-400 hover:text-red-600 rounded"
+                    className="p-1 text-[#8e8e93] hover:text-red-500 rounded cursor-pointer"
                     title="Delete active canvas (entities preserved)"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -652,41 +646,49 @@ export default function StoryArchitect() {
           </div>
 
           {/* 4 Dedicated View Modes */}
-          <div className="flex items-center bg-neutral-100 dark:bg-neutral-800 p-0.5 rounded-lg border border-neutral-200 dark:border-neutral-700">
+          <div className="flex items-center bg-[#f6f6f4] dark:bg-[#161618] p-0.5 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10">
             <button
               onClick={() => handleViewModeChange('graph')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                viewMode === 'graph' ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-2xs' : 'text-neutral-500'
+              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                viewMode === 'graph'
+                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs'
+                  : 'text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
               }`}
             >
-              <GitFork className="w-3 h-3 text-blue-500" />
+              <GitFork className="w-3 h-3 text-[#8e8e93]" />
               <span>Relationship</span>
             </button>
             <button
               onClick={() => handleViewModeChange('family')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                viewMode === 'family' ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-2xs' : 'text-neutral-500'
+              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                viewMode === 'family'
+                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs'
+                  : 'text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
               }`}
             >
-              <Crown className="w-3 h-3 text-indigo-500" />
+              <Crown className="w-3 h-3 text-[#8e8e93]" />
               <span>Family Tree</span>
             </button>
             <button
               onClick={() => handleViewModeChange('plot')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                viewMode === 'plot' ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-2xs' : 'text-neutral-500'
+              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                viewMode === 'plot'
+                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs'
+                  : 'text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
               }`}
             >
-              <Layers className="w-3 h-3 text-amber-500" />
+              <Layers className="w-3 h-3 text-[#8e8e93]" />
               <span>Plot Structure</span>
             </button>
             <button
               onClick={() => handleViewModeChange('timeline')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                viewMode === 'timeline' ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-2xs' : 'text-neutral-500'
+              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                viewMode === 'timeline'
+                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs'
+                  : 'text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
               }`}
             >
-              <Eye className="w-3 h-3 text-emerald-500" />
+              <Eye className="w-3 h-3 text-[#8e8e93]" />
               <span>Timeline</span>
             </button>
           </div>
@@ -696,64 +698,64 @@ export default function StoryArchitect() {
         <div className="flex items-center space-x-2">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="w-3 h-3 text-neutral-400 absolute left-2.5 top-2" />
+            <Search className="w-3 h-3 text-[#8e8e93] absolute left-2.5 top-2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search nodes..."
-              className="w-28 lg:w-40 text-xs pl-7 pr-2 py-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-700 dark:text-neutral-200 focus:outline-none focus:border-blue-500"
+              className="w-28 lg:w-40 text-xs pl-7 pr-2 py-1 bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
             />
           </div>
 
           {/* Save status badge */}
           {saveStatus !== 'idle' && (
-            <div className="flex items-center space-x-1 text-[11px] font-medium px-2 py-1 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
-              {saveStatus === 'saving' && <span className="text-neutral-500 animate-pulse">Saving...</span>}
+            <div className="flex items-center space-x-1 text-[11px] font-mono-cap px-2 py-1 rounded-md bg-[#1c1c1e]/5 dark:bg-white/5 border border-[#1c1c1e]/10 dark:border-white/10">
+              {saveStatus === 'saving' && <span className="text-[#8e8e93] animate-pulse">Saving...</span>}
               {saveStatus === 'saved' && (
-                <span className="text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
+                <span className="text-[#1c1c1e] dark:text-white flex items-center space-x-1 font-semibold">
                   <CheckCircle2 className="w-3 h-3" />
                   <span>Saved</span>
                 </span>
               )}
-              {saveStatus === 'failed' && <span className="text-red-500">Save failed</span>}
+              {saveStatus === 'failed' && <span className="text-red-500 font-semibold">Save failed</span>}
             </div>
           )}
           {/* Matching Queue Button */}
           {matchingCandidatesCount > 0 && (
             <button
               onClick={() => setShowMatchingDrawer(true)}
-              className="flex items-center space-x-1.5 px-2.5 py-1 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-semibold hover:bg-purple-100 transition-colors animate-pulse"
+              className="flex items-center space-x-1.5 px-2.5 py-1 bg-[#fcfcfb] dark:bg-[#222224] border border-[#1c1c1e]/20 dark:border-white/20 text-[#1c1c1e] dark:text-white rounded-lg text-xs font-semibold hover:border-[#1c1c1e]/40 dark:hover:border-white/40 transition-colors shadow-2xs cursor-pointer"
               title="Review pending AI entity matches"
             >
-              <GitMerge className="w-3.5 h-3.5" />
+              <GitMerge className="w-3.5 h-3.5 text-[#8e8e93]" />
               <span>Review Matches ({matchingCandidatesCount})</span>
             </button>
           )}
 
           <button
             onClick={() => setShowImportExportModal(true)}
-            className="flex items-center space-x-1 px-2.5 py-1 text-xs font-medium bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100"
+            className="btn btn-outline btn-sm text-[11.5px]"
             title="Universal JSON & CSV import/export"
           >
-            <Archive className="w-3.5 h-3.5 text-amber-600" />
+            <Archive className="w-3.5 h-3.5 text-[#8e8e93]" />
             <span>Vault</span>
           </button>
 
           <button
             onClick={handleSaveLayout}
-            className="flex items-center space-x-1 px-2.5 py-1 text-xs font-medium bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-100"
+            className="btn btn-outline btn-sm text-[11.5px]"
             title="Persist node coordinates for this canvas"
           >
-            <Save className="w-3.5 h-3.5 text-neutral-500" />
+            <Save className="w-3.5 h-3.5 text-[#8e8e93]" />
             <span>Save Layout</span>
           </button>
 
           <button
             onClick={() => setShowNewEntityModal(true)}
-            className="flex items-center space-x-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors"
+            className="btn btn-solid btn-sm text-[11.5px] shadow-2xs"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5 mr-1" />
             <span>New Entity</span>
           </button>
         </div>
@@ -763,18 +765,18 @@ export default function StoryArchitect() {
       <div className="flex-1 flex relative overflow-hidden">
         {/* Left: Collapsible Nested Group Hierarchy Sidebar */}
         <div
-          className={`border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 transition-all duration-300 flex flex-col z-10 ${
+          className={`border-r border-[#1c1c1e]/10 dark:border-white/10 bg-[#fcfcfb] dark:bg-[#1c1c1e] transition-all duration-300 flex flex-col z-10 ${
             isGroupTreeOpen ? 'w-64' : 'w-0 opacity-0 pointer-events-none'
           }`}
         >
-          <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-neutral-500">
-              <FolderTree className="w-3.5 h-3.5 text-blue-600" />
+          <div className="p-3 border-b border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between bg-[#f6f6f4]/60 dark:bg-[#161618]/60">
+            <div className="flex items-center space-x-2 text-[10.5px] font-mono-cap uppercase tracking-wider text-[#8e8e93]">
+              <FolderTree className="w-3.5 h-3.5" />
               <span>World Hierarchy</span>
             </div>
             <button
               onClick={() => setShowNewGroupModal(true)}
-              className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded"
+              className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
               title="Add World Group"
             >
               <FolderPlus className="w-3.5 h-3.5" />
@@ -782,24 +784,24 @@ export default function StoryArchitect() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-1">
-            <div className="text-[11px] font-semibold text-neutral-400 px-2 py-1">Universe Root</div>
+            <div className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] px-2 py-1">Universe Root</div>
             {groups.length === 0 ? (
-              <div className="py-8 text-center text-xs text-neutral-400">
+              <div className="py-8 text-center text-xs text-[#8e8e93]">
                 No groups defined. Click + above to organize your universe (e.g. Realms, Kingdoms, Factions).
               </div>
             ) : (
               groups.map((g) => (
                 <div
                   key={g.id}
-                  className="group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors"
                 >
                   <div className="flex items-center space-x-2 truncate">
-                    <ChevronRight className="w-3 h-3 text-neutral-400" />
+                    <ChevronRight className="w-3 h-3 text-[#8e8e93]" />
                     <span className="truncate">{g.name}</span>
                   </div>
                   <button
                     onClick={() => handleDeleteGroup(g.id)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 text-neutral-400 hover:text-red-600 transition-opacity"
+                    className="opacity-0 group-hover:opacity-100 p-0.5 text-[#8e8e93] hover:text-red-500 transition-opacity cursor-pointer"
                     title="Delete group (children reparented safely)"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -811,11 +813,11 @@ export default function StoryArchitect() {
         </div>
 
         {/* Center: React Flow Canvas */}
-        <div className="flex-1 h-full relative">
+        <div className="flex-1 h-full relative bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden">
           {/* Toggle sidebar button */}
           <button
             onClick={() => setIsGroupTreeOpen(!isGroupTreeOpen)}
-            className="absolute top-3 left-3 z-20 p-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-xs text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50"
+            className="absolute top-3 left-3 z-20 p-2 bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg shadow-2xs text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white cursor-pointer"
             title={isGroupTreeOpen ? 'Collapse Hierarchy' : 'Expand Hierarchy'}
           >
             <FolderTree className="w-4 h-4" />
@@ -836,18 +838,24 @@ export default function StoryArchitect() {
             minZoom={0.2}
             maxZoom={2}
           >
-            <Background gap={18} size={1} color="#cbd5e1" />
-            <Controls className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-xs" />
+            <Background
+              variant="lines"
+              gap={28}
+              size={1}
+              color={isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(28, 28, 30, 0.035)'}
+            />
+            <Controls className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg shadow-2xs overflow-hidden" />
             <MiniMap
-              nodeColor={() => '#93c5fd'}
-              className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden shadow-xs"
+              nodeColor={() => (isDark ? '#48484a' : '#c7c7cc')}
+              maskColor={isDark ? 'rgba(22, 22, 24, 0.75)' : 'rgba(246, 246, 244, 0.75)'}
+              className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg overflow-hidden shadow-2xs"
             />
           </ReactFlow>
 
           {/* Context Menu for Node Actions */}
           {contextMenu && (
             <div
-              className="fixed z-50 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-xl py-1 text-xs text-neutral-700 dark:text-neutral-200 min-w-[170px]"
+              className="fixed z-50 bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-xl shadow-xl py-1 text-xs text-[#1c1c1e] dark:text-[#f5f5f7] min-w-[170px]"
               style={{ top: contextMenu.y, left: contextMenu.x }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -858,20 +866,20 @@ export default function StoryArchitect() {
                   setIsPropertiesDrawerOpen(true);
                   setContextMenu(null);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center space-x-2"
+                className="w-full text-left px-3 py-1.5 hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 flex items-center space-x-2 cursor-pointer"
               >
-                <Sliders className="w-3.5 h-3.5 text-blue-500" />
+                <Sliders className="w-3.5 h-3.5 text-[#8e8e93]" />
                 <span>Quick Properties</span>
               </button>
               <Link
                 to={`/entity/${projectId}/${contextMenu.node.id}`}
-                className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center space-x-2"
+                className="w-full text-left px-3 py-1.5 hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 flex items-center space-x-2 cursor-pointer"
                 onClick={() => setContextMenu(null)}
               >
-                <ExternalLink className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Full Profile & Vault</span>
+                <ExternalLink className="w-3.5 h-3.5 text-[#8e8e93]" />
+                <span>Full Profile &amp; Vault</span>
               </Link>
-              <div className="border-t border-neutral-100 dark:border-neutral-800 my-1" />
+              <div className="border-t border-[#1c1c1e]/10 dark:border-white/10 my-1" />
               <button
                 onClick={async () => {
                   if (contextMenu.node.data?.protection_level >= 3) {
@@ -885,7 +893,7 @@ export default function StoryArchitect() {
                   }
                   setContextMenu(null);
                 }}
-                className="w-full text-left px-3 py-1.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 flex items-center space-x-2"
+                className="w-full text-left px-3 py-1.5 hover:bg-red-500/10 text-red-600 dark:text-red-400 flex items-center space-x-2 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Entity</span>
@@ -896,18 +904,18 @@ export default function StoryArchitect() {
 
         {/* Right: Quick Properties Drawer (Collapsible) */}
         {isPropertiesDrawerOpen && selectedEntity && (
-          <div className="w-80 border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col z-20 shadow-xl animate-in slide-in-from-right duration-200">
+          <div className="w-80 border-l border-[#1c1c1e]/10 dark:border-white/10 bg-[#fcfcfb] dark:bg-[#1c1c1e] flex flex-col z-20 shadow-xl animate-in slide-in-from-right duration-200">
             {/* Drawer Header */}
-            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-850">
+            <div className="p-4 border-b border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between bg-[#f6f6f4]/60 dark:bg-[#161618]/60">
               <div className="flex items-center space-x-2">
-                <Sliders className="w-4 h-4 text-blue-600" />
-                <h4 className="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wider">
+                <Sliders className="w-4 h-4 text-[#8e8e93]" />
+                <h4 className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] font-mono-cap uppercase tracking-wider">
                   Quick Properties
                 </h4>
               </div>
               <button
                 onClick={() => setIsPropertiesDrawerOpen(false)}
-                className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded"
+                className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -916,7 +924,7 @@ export default function StoryArchitect() {
             {/* Entity Quick Fields */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
+                <label className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] block mb-1">
                   Entity Name
                 </label>
                 <input
@@ -924,12 +932,12 @@ export default function StoryArchitect() {
                   value={selectedEntity.name || ''}
                   onChange={(e) => setSelectedEntity({ ...selectedEntity, name: e.target.value })}
                   onBlur={() => handleUpdateSelectedEntity({ name: selectedEntity.name })}
-                  className="w-full px-3 py-1.5 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg font-bold text-neutral-900 dark:text-white"
+                  className="w-full px-3 py-1.5 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
+                <label className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] block mb-1">
                   Canon Status
                 </label>
                 <select
@@ -938,7 +946,7 @@ export default function StoryArchitect() {
                     setSelectedEntity({ ...selectedEntity, canon_status: e.target.value });
                     handleUpdateSelectedEntity({ canon_status: e.target.value });
                   }}
-                  className="w-full px-3 py-1.5 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-800 dark:text-neutral-200"
+                  className="w-full px-3 py-1.5 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
                 >
                   <option value="draft">Draft</option>
                   <option value="planned">Planned</option>
@@ -948,7 +956,7 @@ export default function StoryArchitect() {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
+                <label className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] block mb-1">
                   Canon Protection Level
                 </label>
                 <select
@@ -958,7 +966,7 @@ export default function StoryArchitect() {
                     setSelectedEntity({ ...selectedEntity, protection_level: lvl });
                     handleUpdateSelectedEntity({ protection_level: lvl });
                   }}
-                  className="w-full px-3 py-1.5 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-800 dark:text-neutral-200"
+                  className="w-full px-3 py-1.5 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
                 >
                   <option value={1}>Level 1: Unlocked</option>
                   <option value={2}>Level 2: Protected</option>
@@ -968,7 +976,7 @@ export default function StoryArchitect() {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
+                <label className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] block mb-1">
                   Description
                 </label>
                 <textarea
@@ -976,7 +984,7 @@ export default function StoryArchitect() {
                   value={selectedEntity.description || ''}
                   onChange={(e) => setSelectedEntity({ ...selectedEntity, description: e.target.value })}
                   onBlur={() => handleUpdateSelectedEntity({ description: selectedEntity.description })}
-                  className="w-full p-2.5 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg leading-relaxed text-neutral-800 dark:text-neutral-200"
+                  className="w-full p-2.5 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg leading-relaxed text-[#1c1c1e] dark:text-[#f5f5f7] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
                 />
               </div>
 
@@ -984,10 +992,10 @@ export default function StoryArchitect() {
               <div className="pt-2">
                 <Link
                   to={`/entity/${projectId}/${selectedEntity.id}`}
-                  className="w-full flex items-center justify-center space-x-1.5 px-4 py-2 bg-neutral-900 text-white rounded-lg text-xs font-semibold hover:bg-neutral-800 transition-colors shadow-2xs"
+                  className="btn btn-solid btn-md w-full shadow-2xs"
                 >
                   <span>Open Full Universal Profile</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <ExternalLink className="w-3.5 h-3.5 ml-1" />
                 </Link>
               </div>
             </div>
@@ -1006,11 +1014,11 @@ export default function StoryArchitect() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
             <form
               onSubmit={handleConfirmConnection}
-              className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4"
+              className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4"
             >
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-neutral-900 dark:text-white flex items-center space-x-2">
-                  <Share2 className="w-4 h-4 text-blue-600" />
+                <h4 className="text-sm font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] flex items-center space-x-2">
+                  <Share2 className="w-4 h-4 text-[#8e8e93]" />
                   <span>Define Connection</span>
                 </h4>
                 <button
@@ -1019,31 +1027,31 @@ export default function StoryArchitect() {
                     setPendingConnection(null);
                     setConnectionError(null);
                   }}
-                  className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded"
+                  className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Source -> Target Indicator */}
-              <div className="p-2.5 rounded-lg bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-xs flex items-center justify-between">
-                <span className="font-semibold text-neutral-800 dark:text-neutral-200 truncate max-w-[120px]" title={srcName}>
+              <div className="p-2.5 rounded-lg bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 text-xs flex items-center justify-between">
+                <span className="font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] truncate max-w-[120px]" title={srcName}>
                   {srcName}
                 </span>
-                <span className="text-neutral-400 font-bold px-2">&rarr;</span>
-                <span className="font-semibold text-neutral-800 dark:text-neutral-200 truncate max-w-[120px]" title={tgtName}>
+                <span className="text-[#8e8e93] font-bold px-2">&rarr;</span>
+                <span className="font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] truncate max-w-[120px]" title={tgtName}>
                   {tgtName}
                 </span>
               </div>
 
               {connectionError && (
-                <div className="p-2.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-700 dark:text-red-300">
+                <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-600 dark:text-red-400">
                   {connectionError}
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">
+                <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">
                   Relationship Type *
                 </label>
                 <input
@@ -1053,7 +1061,7 @@ export default function StoryArchitect() {
                   placeholder="e.g. Ally, Mentor, Parent, Ruler, Enemy, Located In"
                   value={relLabel}
                   onChange={(e) => setRelLabel(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-neutral-900 dark:text-white"
+                  className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 text-[#1c1c1e] dark:text-[#f5f5f7]"
                 />
               </div>
 
@@ -1065,14 +1073,14 @@ export default function StoryArchitect() {
                     setConnectionError(null);
                   }}
                   disabled={connectingRel}
-                  className="px-3 py-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 rounded-lg"
+                  className="btn btn-outline btn-sm text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={connectingRel || !relLabel.trim()}
-                  className="px-4 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="btn btn-solid btn-sm text-xs disabled:opacity-50"
                 >
                   {connectingRel ? 'Connecting...' : 'Connect Nodes'}
                 </button>
@@ -1087,38 +1095,38 @@ export default function StoryArchitect() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <form
             onSubmit={handleCreateEntity}
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4"
+            className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Create New Entity</h4>
+              <h4 className="text-sm font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">Create New Entity</h4>
               <button
                 type="button"
                 onClick={() => setShowNewEntityModal(false)}
-                className="p-1 text-neutral-400 hover:text-neutral-700"
+                className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Name *</label>
+              <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">Name *</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. King Alden, Dragon Peak, Shadow Syndicate"
                 value={newEntityName}
                 onChange={(e) => setNewEntityName(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none"
+                className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 text-[#1c1c1e] dark:text-[#f5f5f7]"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Category</label>
+                <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">Category</label>
                 <select
                   value={newEntityType}
                   onChange={(e) => setNewEntityType(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none capitalize"
+                  className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden capitalize text-[#1c1c1e] dark:text-[#f5f5f7]"
                 >
                   <option value="character">Character</option>
                   <option value="family">Family / Dynasty</option>
@@ -1130,11 +1138,11 @@ export default function StoryArchitect() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Canon Status</label>
+                <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">Canon Status</label>
                 <select
                   value={newEntityCanon}
                   onChange={(e) => setNewEntityCanon(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none"
+                  className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden text-[#1c1c1e] dark:text-[#f5f5f7]"
                 >
                   <option value="draft">Draft</option>
                   <option value="planned">Planned</option>
@@ -1145,13 +1153,13 @@ export default function StoryArchitect() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Description</label>
+              <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">Description</label>
               <textarea
                 rows={3}
                 placeholder="Brief role and lore..."
                 value={newEntityDesc}
                 onChange={(e) => setNewEntityDesc(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none"
+                className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 text-[#1c1c1e] dark:text-[#f5f5f7]"
               />
             </div>
 
@@ -1159,13 +1167,13 @@ export default function StoryArchitect() {
               <button
                 type="button"
                 onClick={() => setShowNewEntityModal(false)}
-                className="px-3 py-1.5 text-xs text-neutral-600 rounded-lg"
+                className="btn btn-outline btn-sm text-xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="btn btn-solid btn-sm text-xs shadow-2xs"
               >
                 Create Node
               </button>
@@ -1179,37 +1187,37 @@ export default function StoryArchitect() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <form
             onSubmit={handleCreateGroup}
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"
+            className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Add World Group</h4>
+              <h4 className="text-sm font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">Add World Group</h4>
               <button
                 type="button"
                 onClick={() => setShowNewGroupModal(false)}
-                className="p-1 text-neutral-400 hover:text-neutral-700"
+                className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Group Name *</label>
+              <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">Group Name *</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. Northern Realms, High Council"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none"
+                className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 text-[#1c1c1e] dark:text-[#f5f5f7]"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Parent Group (Optional)</label>
+              <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">Parent Group (Optional)</label>
               <select
                 value={newGroupParentId}
                 onChange={(e) => setNewGroupParentId(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none"
+                className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden text-[#1c1c1e] dark:text-[#f5f5f7]"
               >
                 <option value="">Root Universe Level</option>
                 {groups.map((g) => (
@@ -1222,13 +1230,13 @@ export default function StoryArchitect() {
               <button
                 type="button"
                 onClick={() => setShowNewGroupModal(false)}
-                className="px-3 py-1.5 text-xs text-neutral-600 rounded-lg"
+                className="btn btn-outline btn-sm text-xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="btn btn-solid btn-sm text-xs shadow-2xs"
               >
                 Create Group
               </button>
@@ -1242,28 +1250,28 @@ export default function StoryArchitect() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
           <form
             onSubmit={handleCreateCanvas}
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"
+            className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white">New Independent Canvas</h4>
+              <h4 className="text-sm font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">New Independent Canvas</h4>
               <button
                 type="button"
                 onClick={() => setShowNewCanvasModal(false)}
-                className="p-1 text-neutral-400 hover:text-neutral-700"
+                className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Canvas Title *</label>
+              <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">Canvas Title *</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. Act 2 Battle Plan, Magic System Web"
                 value={newCanvasTitle}
                 onChange={(e) => setNewCanvasTitle(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none"
+                className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 text-[#1c1c1e] dark:text-[#f5f5f7]"
               />
             </div>
 
@@ -1271,13 +1279,13 @@ export default function StoryArchitect() {
               <button
                 type="button"
                 onClick={() => setShowNewCanvasModal(false)}
-                className="px-3 py-1.5 text-xs text-neutral-600 rounded-lg"
+                className="btn btn-outline btn-sm text-xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 text-xs font-semibold bg-neutral-900 text-white rounded-lg hover:bg-neutral-800"
+                className="btn btn-solid btn-sm text-xs shadow-2xs"
               >
                 Create Canvas
               </button>
@@ -1295,27 +1303,27 @@ export default function StoryArchitect() {
               handleRenameCanvas(renameCanvasTitle);
               setShowRenameCanvasModal(false);
             }}
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"
+            className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white">Rename Canvas</h4>
+              <h4 className="text-sm font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">Rename Canvas</h4>
               <button
                 type="button"
                 onClick={() => setShowRenameCanvasModal(false)}
-                className="p-1 text-neutral-400 hover:text-neutral-700"
+                className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">Canvas Name</label>
+              <label className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] block mb-1">Canvas Name</label>
               <input
                 type="text"
                 required
                 value={renameCanvasTitle}
                 onChange={(e) => setRenameCanvasTitle(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none"
+                className="w-full px-3 py-2 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 text-[#1c1c1e] dark:text-[#f5f5f7]"
               />
             </div>
 
@@ -1323,13 +1331,13 @@ export default function StoryArchitect() {
               <button
                 type="button"
                 onClick={() => setShowRenameCanvasModal(false)}
-                className="px-3 py-1.5 text-xs text-neutral-600 rounded-lg"
+                className="btn btn-outline btn-sm text-xs"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 text-xs font-semibold bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800"
+                className="btn btn-solid btn-sm text-xs shadow-2xs"
               >
                 Save
               </button>

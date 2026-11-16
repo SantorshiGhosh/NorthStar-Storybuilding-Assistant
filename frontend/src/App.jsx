@@ -27,17 +27,17 @@ const AttachmentVault = lazy(() => import('./pages/AttachmentVault'));
 
 function PageSkeleton() {
   return (
-    <div className="min-h-screen bg-[#fbfbf9] dark:bg-neutral-950 flex flex-col animate-pulse">
-      <div className="h-14 bg-white dark:bg-neutral-900 border-b border-neutral-200/80 dark:border-neutral-800 px-6 flex items-center justify-between">
-        <div className="w-36 h-4 bg-neutral-200 dark:bg-neutral-700 rounded-md" />
-        <div className="w-24 h-4 bg-neutral-100 dark:bg-neutral-800 rounded-md" />
+    <div className="min-h-screen bg-[#f8f8fa] dark:bg-[#161618] flex flex-col animate-pulse transition-colors duration-200">
+      <div className="h-14 bg-white dark:bg-[#1c1c1e] border-b border-[#e5e5ea] dark:border-[#2c2c2e] px-6 flex items-center justify-between">
+        <div className="w-36 h-4 bg-[#e5e5ea] dark:bg-[#2c2c2e] rounded-md" />
+        <div className="w-24 h-4 bg-[#f2f2f7] dark:bg-[#222224] rounded-md" />
       </div>
       <div className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
-        <div className="w-48 h-6 bg-neutral-200 dark:bg-neutral-700 rounded-md" />
+        <div className="w-48 h-6 bg-[#e5e5ea] dark:bg-[#2c2c2e] rounded-md" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="h-44 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-xs" />
-          <div className="h-44 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-xs" />
-          <div className="h-44 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-xs" />
+          <div className="h-44 bg-white dark:bg-[#1c1c1e] rounded-xl border border-[#e5e5ea] dark:border-[#2c2c2e] p-5 shadow-xs" />
+          <div className="h-44 bg-white dark:bg-[#1c1c1e] rounded-xl border border-[#e5e5ea] dark:border-[#2c2c2e] p-5 shadow-xs" />
+          <div className="h-44 bg-white dark:bg-[#1c1c1e] rounded-xl border border-[#e5e5ea] dark:border-[#2c2c2e] p-5 shadow-xs" />
         </div>
       </div>
     </div>
