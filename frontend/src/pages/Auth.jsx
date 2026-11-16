@@ -7,7 +7,13 @@ import { useAuth } from '../context/AuthContext';
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, register, guestLogin } = useAuth();
+  const { user, login, register, guestLogin } = useAuth();
+
+  React.useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -85,7 +91,7 @@ export default function Auth() {
       <header className="sticky top-0 z-50 h-[68px] bg-[#faf6ef]/85 dark:bg-[#0d1117]/85 backdrop-blur-md border-b border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
         <div className="max-w-[1240px] mx-auto px-6 sm:px-8 h-full flex items-center justify-between">
           {/* 1. Left: Brand Lockup with NorthStar Logo & Name */}
-          <Link to="/" className="flex items-center space-x-2.5 group">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-[#7b2d3b] text-[#faf6ef] flex items-center justify-center shadow-xs group-hover:bg-[#5e1f2b] transition-colors">
               <ShieldCheck className="w-4 h-4" />
             </div>

@@ -94,24 +94,14 @@ def list_projects(
             member_project_subquery = db.query(models.ProjectMember.project_id).filter(
                 models.ProjectMember.user_id == current_user.id
             )
-            if current_user.email == "guest.author@storybible.ai":
-                query = query.filter(
-                    or_(
-                        models.Project.user_id == current_user.id,
-                        models.Project.id.in_(member_project_subquery),
-                        models.Project.is_demo == True
-                    )
+            query = query.filter(
+                or_(
+                    models.Project.user_id == current_user.id,
+                    models.Project.id.in_(member_project_subquery)
                 )
-            else:
-                query = query.filter(
-                    or_(
-                        models.Project.user_id == current_user.id,
-                        models.Project.id.in_(member_project_subquery)
-                    )
-                )
+            )
     else:
-        # Unauthenticated: only demo projects
-        query = query.filter(models.Project.is_demo == True)
+        return []
 
     projects = query.order_by(models.Project.updated_at.desc()).all()
     if not projects:

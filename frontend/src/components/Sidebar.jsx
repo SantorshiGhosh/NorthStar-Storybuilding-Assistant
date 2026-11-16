@@ -6,7 +6,8 @@ import {
   ChevronRight,
   Sparkles,
   Layers,
-  PanelLeftClose
+  PanelLeftClose,
+  X
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -58,9 +59,10 @@ export default function Sidebar({
             <button
               onClick={onClose}
               className="p-1 rounded-md text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-              title="Collapse Manuscript Sidebar"
+              title="Close Manuscript Sidebar"
             >
-              <PanelLeftClose className="w-4 h-4" />
+              <X className="w-4 h-4 md:hidden" />
+              <PanelLeftClose className="hidden md:inline w-4 h-4" />
             </button>
           )}
         </div>

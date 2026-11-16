@@ -68,11 +68,11 @@ export default function Editor({
   const charCount = editor.getText().length;
 
   return (
-    <div className="flex flex-col h-full bg-[#fcfcfb] dark:bg-[#1c1c1e] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 shadow-2xs overflow-hidden transition-colors duration-200">
+    <div className="flex flex-col h-full bg-[#fcfcfb] dark:bg-[#1c1c1e] sm:rounded-xl border-x sm:border border-[#1c1c1e]/10 dark:border-white/10 shadow-2xs overflow-hidden transition-colors duration-200">
       {/* Editor Top Toolbar */}
-      <div className="flex flex-wrap items-center justify-between border-b border-[#1c1c1e]/10 dark:border-white/10 px-4 py-2.5 bg-[#f6f6f4]/60 dark:bg-[#161618]/60 gap-2">
+      <div className="flex items-center justify-between border-b border-[#1c1c1e]/10 dark:border-white/10 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#f6f6f4]/60 dark:bg-[#161618]/60 gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar shrink-0">
         {/* Formatting Buttons */}
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-0.5 shrink-0">
           <button
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
@@ -95,7 +95,7 @@ export default function Editor({
           >
             <Italic className="w-3.5 h-3.5" />
           </button>
-          <div className="w-px h-3.5 bg-[#1c1c1e]/10 dark:bg-white/10 mx-1" />
+          <div className="w-px h-3.5 bg-[#1c1c1e]/10 dark:border-white/10 mx-1 shrink-0" />
           <button
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             className={`p-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
@@ -143,14 +143,15 @@ export default function Editor({
         </div>
 
         {/* Word Count & Action Buttons */}
-        <div className="flex items-center space-x-3">
-          <span className="text-[11px] text-[#8e8e93] font-mono-cap">
-            {wordCount} words &bull; {charCount} chars
+        <div className="flex items-center space-x-1.5 sm:space-x-2.5 shrink-0 ml-auto">
+          <span className="text-[10px] sm:text-[11px] text-[#8e8e93] font-mono-cap whitespace-nowrap">
+            <span className="sm:hidden">{wordCount}w &bull; {charCount}c</span>
+            <span className="hidden sm:inline">{wordCount} words &bull; {charCount} chars</span>
           </span>
 
           <button
             onClick={handleManualSave}
-            className={`btn btn-sm text-[12px] ${
+            className={`btn btn-sm text-[12px] px-2 sm:px-3 ${
               savedStatus
                 ? 'btn-soft'
                 : 'btn-outline'
@@ -159,7 +160,7 @@ export default function Editor({
             {savedStatus ? (
               <>
                 <Check className="w-3.5 h-3.5 text-[#1c1c1e] dark:text-white" />
-                <span>Saved</span>
+                <span className="hidden sm:inline">Saved</span>
               </>
             ) : (
               <>
@@ -172,17 +173,18 @@ export default function Editor({
           <button
             onClick={() => onAnalyze && onAnalyze(editor.getText())}
             disabled={analyzing}
-            className="btn btn-solid btn-sm text-[12px] shadow-2xs"
+            className="btn btn-solid btn-sm text-[12px] px-2.5 sm:px-3 shadow-2xs"
             title="Check this chapter against established narrative memory"
           >
             <Sparkles className={`w-3.5 h-3.5 mr-1 ${analyzing ? 'animate-spin' : ''}`} />
-            <span>{analyzing ? 'Guardian Analyzing...' : 'Analyze Chapter'}</span>
+            <span className="hidden sm:inline">{analyzing ? 'Guardian Analyzing...' : 'Analyze Chapter'}</span>
+            <span className="sm:hidden">{analyzing ? '...' : 'Analyze'}</span>
           </button>
 
           {onCollapse && (
             <button
               onClick={onCollapse}
-              className="p-1 rounded-md text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors ml-1 cursor-pointer"
+              className="hidden md:inline-flex p-1 rounded-md text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors ml-1 cursor-pointer"
               title="Collapse Editor Panel"
             >
               <Minimize2 className="w-3.5 h-3.5" />
@@ -192,9 +194,9 @@ export default function Editor({
       </div>
 
       {/* Editor Writing Canvas */}
-      <div className="flex-1 p-6 sm:p-10 overflow-y-auto max-w-4xl mx-auto w-full text-left">
+      <div className="flex-1 px-4 py-4 sm:p-10 overflow-y-auto max-w-4xl mx-auto w-full text-left">
         {chapterTitle && (
-          <h2 className="text-2xl font-bold tracking-tight text-[#1c1c1e] dark:text-[#f5f5f7] mb-6 pb-2 border-b border-[#1c1c1e]/10 dark:border-white/10">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1c1c1e] dark:text-[#f5f5f7] mb-4 sm:mb-6 pb-2 border-b border-[#1c1c1e]/10 dark:border-white/10">
             {chapterTitle}
           </h2>
         )}

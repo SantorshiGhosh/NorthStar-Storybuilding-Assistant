@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Compass,
@@ -10,7 +10,9 @@ import {
   FolderOpen,
   Feather,
   LogOut,
-  Paperclip
+  Paperclip,
+  Menu,
+  X
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +21,12 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Automatically close mobile menu whenever navigation occurs
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const isDashboard = isDashboardProp ?? (location.pathname === '/dashboard');
   const projectId = currentProject?.id;
@@ -77,7 +85,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                   document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
-              className="btn btn-solid btn-sm text-[13px] shadow-2xs cursor-pointer"
+              className="hidden sm:inline-flex btn btn-solid btn-sm text-[13px] shadow-2xs cursor-pointer"
             >
               <span>My Projects</span>
               <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
@@ -143,7 +151,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
         {/* Left Section: Brand, Project Breadcrumb, and Environment Switcher */}
         <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
           {/* 1. NorthStar logo and branding */}
-          <Link to="/" className="flex items-center space-x-2 group shrink-0">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2 group shrink-0">
             <div className="h-7 w-7 rounded-[7px] bg-[#1c1c1e] dark:bg-[#f5f5f7] text-white dark:text-[#1c1c1e] flex items-center justify-center font-bold text-sm tracking-tighter shadow-2xs transition-colors shrink-0">
               N
             </div>
@@ -172,7 +180,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
               <>
                 <ChevronRight className="w-3 h-3 text-[#8e8e93] shrink-0" />
                 <span
-                  className="text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] bg-[#1c1c1e]/5 dark:bg-white/5 border border-[#1c1c1e]/10 dark:border-white/10 px-2 py-0.5 rounded-md whitespace-nowrap min-w-[36px] max-w-[150px] truncate shrink-0"
+                  className="text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] bg-[#1c1c1e]/5 dark:bg-white/5 border border-[#1c1c1e]/10 dark:border-white/10 px-2 py-0.5 rounded-md whitespace-nowrap min-w-[36px] max-w-[90px] sm:max-w-[150px] truncate shrink-0"
                   title={currentProject.name}
                 >
                   {currentProject.name}
@@ -181,9 +189,9 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
             )}
           </div>
 
-          {/* 4 & 5. Story Architect and Manuscript Workspace switcher */}
+          {/* 4 & 5. Story Architect and Manuscript Workspace switcher - DESKTOP ONLY */}
           {projectId && (
-            <div className="flex items-center bg-[#1c1c1e]/5 dark:bg-white/5 p-0.5 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
+            <div className="hidden sm:flex items-center bg-[#1c1c1e]/5 dark:bg-white/5 p-0.5 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
               <Link
                 to={`/architect/${projectId}`}
                 className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all shrink-0 ${
@@ -213,7 +221,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
           )}
         </div>
 
-        {/* 6, 7, 8, 9, 10. Navigation Links */}
+        {/* 6, 7, 8, 9, 10. Navigation Links (Desktop xl+) */}
         <nav className="hidden xl:flex items-center space-x-0.5 shrink">
           {navItems.map((item) => {
             if (!item.path) return null;
@@ -248,23 +256,23 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
           {/* Theme toggle */}
           <ThemeToggle className="h-8 w-8 shrink-0" />
 
-          {/* Projects */}
+          {/* Projects - Desktop only */}
           <Link
             to="/dashboard"
-            className="btn btn-solid btn-sm text-[13px] shadow-2xs shrink-0"
+            className="hidden sm:inline-flex btn btn-solid btn-sm text-[13px] shadow-2xs shrink-0"
           >
             <span>Projects</span>
             <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
           </Link>
 
-          {/* Profile / Username and Sign Out */}
+          {/* Profile / Username and Sign Out - Desktop only */}
           {user ? (
-            <div className="flex items-center space-x-2 pl-2.5 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
+            <div className="hidden sm:flex items-center space-x-2 pl-2.5 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
               <div className="h-6 w-6 rounded-full bg-[#1c1c1e]/10 dark:bg-white/10 flex items-center justify-center text-[#1c1c1e] dark:text-[#f5f5f7] shrink-0 font-medium text-[11px] select-none">
                 {authorName.charAt(0).toUpperCase()}
               </div>
               <span
-                className="hidden sm:inline-block text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] whitespace-nowrap shrink-0"
+                className="inline-block text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] whitespace-nowrap shrink-0"
                 title={user.email || authorName}
               >
                 {authorName}
@@ -280,13 +288,152 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
           ) : (
             <Link
               to="/auth"
-              className="text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] hover:underline pl-2 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0 whitespace-nowrap"
+              className="hidden sm:inline-block text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] hover:underline pl-2 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0 whitespace-nowrap"
             >
               Sign In
             </Link>
           )}
+
+          {/* Mobile Menu Hamburger Trigger (< sm) */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="sm:hidden h-8 w-8 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-center text-[#1c1c1e] dark:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors cursor-pointer shrink-0"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Drawer Navigation (visible on < sm screens when toggled) */}
+      {mobileMenuOpen && (
+        <div className="sm:hidden fixed inset-x-0 top-16 bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 shadow-2xl z-50 p-4 space-y-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          {/* Workspace Mode Switcher */}
+          {projectId && (
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] block">
+                Workspace Mode
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  to={`/architect/${projectId}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                    location.pathname.startsWith('/architect')
+                      ? 'bg-white dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] border-[#1c1c1e]/20 dark:border-white/20 shadow-2xs font-semibold'
+                      : 'border-[#1c1c1e]/10 dark:border-white/10 text-[#636366] dark:text-[#8e8e93]'
+                  }`}
+                >
+                  <Compass className="w-4 h-4 text-[#1c1c1e] dark:text-[#f5f5f7] shrink-0" />
+                  <span>Story Architect</span>
+                </Link>
+                <Link
+                  to={`/workspace/${projectId}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center space-x-2 p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                    location.pathname.startsWith('/workspace')
+                      ? 'bg-white dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] border-[#1c1c1e]/20 dark:border-white/20 shadow-2xs font-semibold'
+                      : 'border-[#1c1c1e]/10 dark:border-white/10 text-[#636366] dark:text-[#8e8e93]'
+                  }`}
+                >
+                  <Feather className="w-4 h-4 text-[#1c1c1e] dark:text-[#f5f5f7] shrink-0" />
+                  <span>Manuscript</span>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Quick World & Narrative Views */}
+          {projectId && (
+            <div className="space-y-1.5 pt-2 border-t border-[#1c1c1e]/10 dark:border-white/10">
+              <span className="text-[10px] font-mono-cap uppercase tracking-wider text-[#8e8e93] block">
+                Narrative Continuum
+              </span>
+              <div className="grid grid-cols-1 gap-1">
+                {navItems.map((item) => {
+                  if (!item.path) return null;
+                  const Icon = item.icon;
+                  const isActive = location.pathname.startsWith(item.path.split('/')[1]);
+
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        isActive
+                          ? 'bg-white dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] border border-[#1c1c1e]/10 dark:border-white/10 font-semibold'
+                          : 'text-[#636366] dark:text-[#8e8e93] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        <Icon className="w-4 h-4 text-[#8e8e93]" />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge > 0 && (
+                        <span className="px-2 py-0.5 text-[10px] font-mono-cap bg-[#1c1c1e]/10 dark:bg-white/10 text-[#1c1c1e] dark:text-[#f5f5f7] rounded-full border border-[#1c1c1e]/10 dark:border-white/10">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Projects Button */}
+          <div className="pt-2 border-t border-[#1c1c1e]/10 dark:border-white/10">
+            <Link
+              to="/dashboard"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full btn btn-solid btn-md flex items-center justify-center space-x-2 text-xs shadow-2xs"
+            >
+              <FolderOpen className="w-4 h-4" />
+              <span>All Projects Dashboard</span>
+            </Link>
+          </div>
+
+          {/* User Profile & Sign Out in Mobile Menu */}
+          <div className="pt-3 border-t border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between">
+            {user ? (
+              <>
+                <div className="flex items-center space-x-2.5">
+                  <div className="h-7 w-7 rounded-full bg-[#1c1c1e]/10 dark:bg-white/10 flex items-center justify-center text-[#1c1c1e] dark:text-[#f5f5f7] font-semibold text-xs select-none">
+                    {authorName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <span className="block text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7]">
+                      {authorName}
+                    </span>
+                    <span className="block text-[10px] text-[#8e8e93] truncate max-w-[170px]">
+                      {user.email || 'Author session'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleSignOut();
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 text-xs font-medium transition-colors flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/auth"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full btn btn-outline btn-md text-xs text-center"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

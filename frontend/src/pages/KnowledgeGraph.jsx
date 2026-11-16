@@ -280,17 +280,17 @@ export default function KnowledgeGraph() {
             size={1}
             color={isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(28, 28, 30, 0.035)'}
           />
-          <Controls className="bg-[#fcfcfb]! dark:bg-[#1c1c1e]! border-[#1c1c1e]/10! dark:border-white/10! rounded-lg shadow-2xs! overflow-hidden text-[#1c1c1e] dark:text-[#f5f5f7]" />
+          <Controls className="bg-[#fcfcfb]! dark:bg-[#1c1c1e]! border-[#1c1c1e]/10! dark:border-white/10! rounded-lg shadow-2xs! overflow-hidden text-[#1c1c1e] dark:text-[#f5f5f7] bottom-3 left-3" />
           <MiniMap
             nodeColor={() => (isDark ? '#48484a' : '#c7c7cc')}
             maskColor={isDark ? 'rgba(22, 22, 24, 0.75)' : 'rgba(246, 246, 244, 0.75)'}
-            className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg overflow-hidden shadow-2xs"
+            className="hidden md:block bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg overflow-hidden shadow-2xs"
           />
         </ReactFlow>
 
         {/* Slide-over Entity Inspector Drawer */}
         {drawerOpen && selectedEntity && (
-          <aside className="absolute top-0 right-0 h-full w-80 sm:w-96 bg-[#fcfcfb] dark:bg-[#1c1c1e] border-l border-[#1c1c1e]/10 dark:border-white/10 shadow-xl z-20 flex flex-col text-left animate-in slide-in-from-right duration-200">
+          <aside className="absolute top-0 right-0 h-full w-full sm:w-96 bg-[#fcfcfb] dark:bg-[#1c1c1e] border-l border-[#1c1c1e]/10 dark:border-white/10 shadow-xl z-20 flex flex-col text-left animate-in slide-in-from-right duration-200">
             {/* Drawer Header */}
             <div className="p-4 border-b border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between bg-[#f6f6f4]/60 dark:bg-[#161618]/60">
               <div className="flex items-center space-x-2">

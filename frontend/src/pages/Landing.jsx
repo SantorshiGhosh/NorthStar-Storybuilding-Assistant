@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
   BookOpen,
@@ -12,35 +12,17 @@ import {
 } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
 import OrbitalCards from '../components/OrbitalCards/OrbitalCards';
-import { projectService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Landing() {
-  const navigate = useNavigate();
-  const [seeding, setSeeding] = useState(false);
-
-  const handleQuickDemo = async () => {
-    try {
-      setSeeding(true);
-      const res = await projectService.seedDemo();
-      if (res.project_id) {
-        navigate(`/workspace/${res.project_id}`);
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (e) {
-      console.error(e);
-      navigate('/dashboard');
-    } finally {
-      setSeeding(false);
-    }
-  };
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#faf6ef] dark:bg-[#0d1117] text-[#1c1815] dark:text-[#f0f6fc] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
       {/* Top Header */}
       <header className="border-b border-[#1c1815]/10 dark:border-[#30363d] bg-[#faf6ef]/90 dark:bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2.5 group">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-[#7b2d3b] text-[#faf6ef] flex items-center justify-center shadow-xs group-hover:bg-[#5e1f2b] transition-colors">
               <ShieldCheck className="w-4 h-4" />
             </div>
@@ -50,20 +32,22 @@ export default function Landing() {
           </Link>
 
           <div className="flex items-center space-x-3">
-            <ThemeToggle />
-            <Link
-              to="/auth"
-              className="text-xs font-medium text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] px-3 py-1.5 transition-colors"
-            >
-              Sign In
-            </Link>
-            <button
-              onClick={handleQuickDemo}
-              disabled={seeding}
-              className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] transition-all shadow-xs disabled:opacity-50 cursor-pointer"
-            >
-              {seeding ? 'Loading Story...' : 'Launch Demo Workspace'}
-            </button>
+            <ThemeToggle className="h-8 w-8" />
+            {user ? (
+              <Link
+                to="/dashboard"
+                className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] transition-all shadow-xs"
+              >
+                Workspace
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                className="text-xs font-medium text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] px-3 py-1.5 transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -93,21 +77,31 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={handleQuickDemo}
-              disabled={seeding}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm hover:shadow-md transition-all cursor-pointer"
-            >
-              <span>{seeding ? 'Preparing Demo...' : 'Explore Demo Story ("The Last Kingdom")'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <Link
-              to="/dashboard"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/70 dark:bg-[#161b22] hover:bg-[#fffdf9] dark:hover:bg-[#21262d] text-[#1c1815] dark:text-[#f0f6fc] text-sm font-medium border border-[#1c1815]/15 dark:border-[#30363d] shadow-2xs transition-all flex items-center justify-center"
-            >
-              Go to Workspace Dashboard
-            </Link>
+            {user ? (
+              <Link
+                to="/dashboard"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm hover:shadow-md transition-all cursor-pointer"
+              >
+                <span>Open Workspace</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Link>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+                <Link
+                  to="/auth"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                >
+                  <span>Get Started</span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+                <Link
+                  to="/auth"
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#fffdfa] dark:bg-[#161b22] hover:bg-[#fbf9f4] dark:hover:bg-[#21262d] text-[#1c1815] dark:text-[#f0f6fc] text-sm font-medium border border-[#1c1815]/15 dark:border-[#30363d] shadow-2xs transition-all flex items-center justify-center"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Differentiator Subhead */}
@@ -116,7 +110,7 @@ export default function Landing() {
           </p>
         </section>
 
-        {/* 3. Live Scenario Preview Card (Notion-style, Editorial Palette) */}
+        {/* 3. Live Scenario Preview Card */}
         <section className="max-w-4xl mx-auto px-6 pb-20">
           <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-2xl border border-[#1c1815]/10 dark:border-[#30363d] shadow-lg shadow-[#1c1815]/5 dark:shadow-black/20 p-6 sm:p-8 text-left transition-colors duration-200">
             <div className="flex items-center justify-between border-b border-[#1c1815]/10 dark:border-[#30363d] pb-4 mb-6">
@@ -134,7 +128,7 @@ export default function Landing() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-[#fbf9f4] dark:bg-[#0d1117] rounded-xl p-4 border border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
+              <div className="bg-[#faf6ef] dark:bg-[#0d1117] rounded-xl p-4 border border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
                 <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 mb-1 flex items-center space-x-1.5">
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Chapter 2 &mdash; Established Canon</span>
@@ -162,7 +156,9 @@ export default function Landing() {
               </p>
               <div className="text-[11px] text-[#1c1815]/50 dark:text-[#6e7681] pt-1 flex items-center space-x-4">
                 <span>&bull; Suggestion: Clarify whether Arin has received a prosthetic or adjust action to right hand.</span>
-                <span className="text-[#7b2d3b] dark:text-[#fca5a5] font-medium cursor-pointer">Author control: Resolve / Mark Intentional</span>
+                <span className="text-[#7b2d3b] dark:text-[#fca5a5] font-medium cursor-pointer">
+                  Author control: Resolve / Mark Intentional
+                </span>
               </div>
             </div>
           </div>

@@ -182,7 +182,14 @@ def login(data: s_models.UserLogin, response: Response, db: Session = Depends(ge
     )
 
 @router.post("/logout")
-def logout(response: Response):
+def logout(
+    response: Response,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    user = get_optional_user(request, db)
+    if user and auth_service.is_guest_user(user):
+        auth_service.cleanup_guest_user(db, user)
     clear_auth_cookie(response)
     return {"status": "ok", "message": "Signed out successfully."}
 
@@ -193,7 +200,7 @@ def get_current_user_profile(user: models.User = Depends(get_current_user)):
 @router.post("/guest", response_model=s_models.AuthResponse)
 def guest_login(response: Response, db: Session = Depends(get_db)):
     """One-click instant author access for quick testing without manual registration."""
-    guest_user = auth_service.get_or_create_guest_user(db)
+    guest_user = auth_service.create_guest_user(db)
     token = auth_service.create_access_token({"sub": str(guest_user.id), "email": guest_user.email})
     set_auth_cookie(response, token)
     return s_models.AuthResponse(

@@ -107,29 +107,29 @@ export default function CharacterProfiles() {
   );
 
   return (
-    <div className="min-h-screen bg-[#fbfbf9] flex flex-col">
+    <div className="min-h-screen bg-[#f6f6f4] dark:bg-[#161618] text-[#1c1c1e] dark:text-[#f5f5f7] flex flex-col font-sans transition-colors duration-200">
       <Navbar currentProject={project} />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col">
         {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-neutral-200/80 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-[#1c1c1e]/10 dark:border-white/10 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">
-              Character Dossiers & Canon Memory
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1c1e] dark:text-[#f5f5f7] tracking-tight">
+              Character Dossiers &amp; Canon Memory
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-500 mt-1">
+            <p className="text-xs sm:text-sm text-[#636366] dark:text-[#8e8e93] mt-1">
               Verified physical states, recurring traits, source passages, and character intelligence.
             </p>
           </div>
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#8e8e93] absolute left-2.5 top-2.5" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search characters..."
-              className="pl-8 pr-3 py-1.5 text-xs bg-white border border-neutral-200 rounded-lg focus:outline-hidden focus:border-blue-500 w-full sm:w-64 shadow-2xs"
+              className="pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-[#222224] border border-[#1c1c1e]/15 dark:border-white/15 text-[#1c1c1e] dark:text-[#f5f5f7] rounded-lg focus:outline-hidden focus:border-[#1c1c1e] dark:focus:border-white w-full sm:w-64 shadow-2xs transition-colors"
             />
           </div>
         </div>

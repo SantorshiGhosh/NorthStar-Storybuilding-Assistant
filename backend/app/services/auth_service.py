@@ -188,34 +188,82 @@ class AuthService:
         return user
 
     @classmethod
-    def get_or_create_guest_user(cls, db: Session) -> models.User:
-        """Get or initialize a demo guest user for instant frictionless testing."""
-        guest_email = "guest.author@storybible.ai"
-        user = cls.get_user_by_email(db, guest_email)
-        if not user:
-            user = models.User(
-                id=models.gen_uuid(),
-                email=guest_email,
-                hashed_password=cls.hash_password("GuestDemoPassword123!"),
-                full_name="Guest Author",
-                is_active=True,
-                is_superuser=False
-            )
-            try:
+    def is_guest_user(cls, user: Optional[models.User]) -> bool:
+        """Determines if a user account is an ephemeral one-time guest account."""
+        if not user or not user.email:
+            return False
+        clean_email = user.email.strip().lower()
+        return clean_email.startswith("guest_") or clean_email.startswith("guest.") or clean_email == "guest.author@storybible.ai"
+
+    @classmethod
+    def create_guest_user(cls, db: Session) -> models.User:
+        """Create a unique one-time ephemeral guest user for instant frictionless testing."""
+        guest_id = models.gen_uuid()
+        short_id = guest_id.replace("-", "")[:8]
+        guest_email = f"guest_{short_id}@storybible.ai"
+
+        user = models.User(
+            id=guest_id,
+            email=guest_email,
+            hashed_password=cls.hash_password("GuestDemoPassword123!"),
+            full_name="Guest Author",
+            is_active=True,
+            is_superuser=False
+        )
+        try:
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        except Exception as e:
+            err_str = str(e).lower()
+            if any(term in err_str for term in ["is_superuser", "undefinedcolumn", "no such column", "users."]):
+                logger.warning(f"[AuthService] Detected missing column during guest user creation ({e}). Self-healing...")
+                cls._heal_users_table(db)
                 db.add(user)
                 db.commit()
                 db.refresh(user)
-            except Exception as e:
-                err_str = str(e).lower()
-                if any(term in err_str for term in ["is_superuser", "undefinedcolumn", "no such column", "users."]):
-                    logger.warning(f"[AuthService] Detected missing column during guest user creation ({e}). Self-healing...")
-                    cls._heal_users_table(db)
-                    db.add(user)
-                    db.commit()
-                    db.refresh(user)
-                else:
-                    db.rollback()
-                    raise e
+            else:
+                db.rollback()
+                raise e
         return user
+
+    @classmethod
+    def get_or_create_guest_user(cls, db: Session) -> models.User:
+        """Backwards-compatible alias for creating a one-time guest user."""
+        return cls.create_guest_user(db)
+
+    @classmethod
+    def cleanup_guest_user(cls, db: Session, user: models.User):
+        """
+        Permanently deletes a one-time guest author session and all work created by them.
+        Deletes vector embeddings, projects, chapters, entities, manuscripts, and the guest account itself.
+        """
+        if not user or not cls.is_guest_user(user):
+            return
+
+        user_id_str = str(user.id)
+        try:
+            # Query all projects owned by this guest
+            guest_projects = db.query(models.Project).filter(models.Project.user_id == user.id).all()
+            from app.services.vector_service import vector_service
+
+            for proj in guest_projects:
+                proj_id_str = str(proj.id)
+                try:
+                    vector_service.clear_project(proj_id_str)
+                except Exception as ex:
+                    logger.warning(f"[GuestCleanup] Error clearing vector store for project {proj_id_str}: {ex}")
+                db.delete(proj)
+
+            # Delete project memberships
+            db.query(models.ProjectMember).filter(models.ProjectMember.user_id == user.id).delete(synchronize_session=False)
+
+            # Delete the guest user record
+            db.delete(user)
+            db.commit()
+            logger.info(f"[GuestCleanup] Successfully deleted one-time guest user {user.email} (ID: {user_id_str}) and purged all project data.")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"[GuestCleanup] Failed to clean up guest user data ({user_id_str}): {e}")
 
 auth_service = AuthService()

@@ -180,24 +180,6 @@ export default function Dashboard() {
     }
   };
 
-  const [seeding, setSeeding] = useState(false);
-
-  const handleSeedDemo = async () => {
-    try {
-      setSeeding(true);
-      const res = await projectService.seedDemo();
-      if (res.project_id) {
-        navigate(`/workspace/${res.project_id}`);
-      } else {
-        fetchProjects();
-      }
-    } catch (e) {
-      console.error(e);
-      fetchProjects();
-    } finally {
-      setSeeding(false);
-    }
-  };
 
   const handleDeleteProject = async (id, e) => {
     e.stopPropagation();
@@ -229,7 +211,7 @@ export default function Dashboard() {
         {/* Soft paper gradient fading over the grid */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#f6f6f4]/40 to-[#f6f6f4] dark:via-[#161618]/40 dark:to-[#161618] pointer-events-none" />
 
-        <div className="relative max-w-[1180px] mx-auto px-6 lg:px-8 pt-14 pb-12 sm:pt-20 sm:pb-16 lg:pt-24 lg:pb-20">
+        <div className="relative max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-10 sm:pt-20 sm:pb-16 lg:pt-24 lg:pb-20">
           <div className="max-w-3xl text-left">
             {/* Eyebrow pill */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[#1c1c1e]/10 dark:border-white/10 bg-[#fcfcfb] dark:bg-[#1c1c1e] px-3 py-1 shadow-2xs mb-6">
@@ -300,7 +282,7 @@ export default function Dashboard() {
       {/* ========================================================
           MY PROJECTS MAIN WORKSPACE (FULL WIDTH CENTERED)
           ======================================================== */}
-      <main id="projects" className="flex-1 max-w-[1180px] w-full mx-auto px-6 lg:px-8 py-12 lg:py-16 text-left scroll-mt-6">
+      <main id="projects" className="flex-1 max-w-[1180px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 text-left scroll-mt-6">
         <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between pb-3 mb-6 border-b border-[#1c1c1e]/10 dark:border-white/10 gap-2">
           <div>
             <h2 className="text-2xl sm:text-[27px] font-semibold tracking-[-0.03em] text-[#1c1c1e] dark:text-[#f5f5f7]">
@@ -352,7 +334,7 @@ export default function Dashboard() {
               No story projects yet
             </h3>
             <p className="text-xs text-[#636366] dark:text-[#8e8e93] mb-6 leading-relaxed">
-              Start by creating a new narrative container, or load the official demo manuscript to examine cross-chapter continuity.
+              Start by creating a new story project to begin writing chapters and tracking canon continuity.
             </p>
             <div className="flex flex-col gap-2.5">
               <button
@@ -360,13 +342,6 @@ export default function Dashboard() {
                 className="btn btn-solid btn-md w-full"
               >
                 Create Story Project
-              </button>
-              <button
-                onClick={handleSeedDemo}
-                disabled={seeding}
-                className="btn btn-outline btn-md w-full"
-              >
-                {seeding ? 'Loading Demo...' : 'Load Demo Story ("The Last Kingdom")'}
               </button>
             </div>
           </div>

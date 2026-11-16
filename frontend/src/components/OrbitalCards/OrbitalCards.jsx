@@ -86,9 +86,9 @@ export default function OrbitalCards({
 
   const vars = {
     "--orbital-cards-scroll": `${scrollLength}vh`,
-    "--orbital-cards-bg": background,
-    "--orbital-cards-card": card,
-    "--orbital-cards-ink": ink,
+    ...(background ? { "--orbital-cards-bg": background } : {}),
+    ...(card ? { "--orbital-cards-card": card } : {}),
+    ...(ink ? { "--orbital-cards-ink": ink } : {}),
     "--orbital-cards-headline-font-size-value": headlineFont.fontSize,
     ...fontVars("headline", headlineFont),
     ...fontVars("eyebrow", eyebrowFont),

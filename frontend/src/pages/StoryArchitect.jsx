@@ -191,10 +191,21 @@ export default function StoryArchitect() {
   const [relLabel, setRelLabel] = useState('Ally');
   const [connectingRel, setConnectingRel] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
+  const [rfInstance, setRfInstance] = useState(null);
 
   useEffect(() => {
     loadInitialData();
   }, [projectId]);
+
+  // Auto-fit nodes to screen whenever ReactFlow mounts, canvas switches, or nodes are loaded
+  useEffect(() => {
+    if (rfInstance && nodes.length > 0) {
+      const timer = setTimeout(() => {
+        rfInstance.fitView({ padding: 0.18, duration: 350 });
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+  }, [rfInstance, activeCanvas?.id, viewMode, nodes.length]);
 
   const loadInitialData = async () => {
     try {
@@ -584,20 +595,20 @@ export default function StoryArchitect() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden font-sans select-none text-[#1c1c1e] dark:text-[#f5f5f7] transition-colors duration-200">
+    <div className="h-screen w-full flex flex-col bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden font-sans select-none text-[#1c1c1e] dark:text-[#f5f5f7] transition-colors duration-200">
       <Navbar currentProject={project} />
 
       {/* Story Architect Sub-Header / Control Ribbon */}
-      <div className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 px-4 py-2 flex items-center justify-between z-20 shadow-2xs">
+      <div className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 px-3 sm:px-4 py-1.5 sm:py-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2 z-20 shadow-2xs shrink-0">
         {/* Left: View Mode Tabs & Canvases */}
-        <div className="flex items-center space-x-3 overflow-x-auto">
+        <div className="flex items-center space-x-2 sm:space-x-3 overflow-x-auto no-scrollbar py-0.5">
           {/* Canvases Tabs */}
-          <div className="flex items-center space-x-1 border-r border-[#1c1c1e]/10 dark:border-white/10 pr-3">
+          <div className="flex items-center space-x-1 border-r border-[#1c1c1e]/10 dark:border-white/10 pr-2 sm:pr-3 shrink-0">
             {canvases.map((c) => (
               <button
                 key={c.id}
                 onClick={() => handleSelectCanvas(c)}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                   activeCanvas?.id === c.id
                     ? 'bg-[#1c1c1e] text-white dark:bg-white dark:text-[#1c1c1e] shadow-2xs'
                     : 'text-[#636366] dark:text-[#8e8e93] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
@@ -608,13 +619,13 @@ export default function StoryArchitect() {
             ))}
             <button
               onClick={() => setShowNewCanvasModal(true)}
-              className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded-md hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 cursor-pointer"
+              className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded-md hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 cursor-pointer shrink-0"
               title="Add Canvas"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
             {activeCanvas && (
-              <div className="flex items-center space-x-0.5 pl-1">
+              <div className="flex items-center space-x-0.5 pl-1 shrink-0">
                 <button
                   onClick={() => {
                     setRenameCanvasTitle(activeCanvas.name || activeCanvas.title || '');
@@ -646,12 +657,12 @@ export default function StoryArchitect() {
           </div>
 
           {/* 4 Dedicated View Modes */}
-          <div className="flex items-center bg-[#f6f6f4] dark:bg-[#161618] p-0.5 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10">
+          <div className="flex items-center bg-[#f6f6f4] dark:bg-[#161618] p-0.5 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
             <button
               onClick={() => handleViewModeChange('graph')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 viewMode === 'graph'
-                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs'
+                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs font-semibold'
                   : 'text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
               }`}
             >
@@ -660,9 +671,9 @@ export default function StoryArchitect() {
             </button>
             <button
               onClick={() => handleViewModeChange('family')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 viewMode === 'family'
-                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs'
+                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs font-semibold'
                   : 'text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
               }`}
             >
@@ -671,9 +682,9 @@ export default function StoryArchitect() {
             </button>
             <button
               onClick={() => handleViewModeChange('plot')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 viewMode === 'plot'
-                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs'
+                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs font-semibold'
                   : 'text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
               }`}
             >
@@ -682,9 +693,9 @@ export default function StoryArchitect() {
             </button>
             <button
               onClick={() => handleViewModeChange('timeline')}
-              className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 viewMode === 'timeline'
-                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs'
+                  ? 'bg-[#fcfcfb] dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs font-semibold'
                   : 'text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
               }`}
             >
@@ -694,23 +705,23 @@ export default function StoryArchitect() {
           </div>
         </div>
 
-        {/* Right Action Tools: Search, Save Status, Matching Queue, Import/Export, + Node */}
-        <div className="flex items-center space-x-2">
+        {/* Right Action Tools */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0 overflow-x-auto no-scrollbar py-0.5">
           {/* Search Bar */}
-          <div className="relative">
+          <div className="relative flex-1 sm:flex-none">
             <Search className="w-3 h-3 text-[#8e8e93] absolute left-2.5 top-2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search nodes..."
-              className="w-28 lg:w-40 text-xs pl-7 pr-2 py-1 bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
+              placeholder="Search..."
+              className="w-24 sm:w-28 lg:w-40 text-xs pl-7 pr-2 py-1 bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30"
             />
           </div>
 
           {/* Save status badge */}
           {saveStatus !== 'idle' && (
-            <div className="flex items-center space-x-1 text-[11px] font-mono-cap px-2 py-1 rounded-md bg-[#1c1c1e]/5 dark:bg-white/5 border border-[#1c1c1e]/10 dark:border-white/10">
+            <div className="flex items-center space-x-1 text-[11px] font-mono-cap px-2 py-1 rounded-md bg-[#1c1c1e]/5 dark:bg-white/5 border border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
               {saveStatus === 'saving' && <span className="text-[#8e8e93] animate-pulse">Saving...</span>}
               {saveStatus === 'saved' && (
                 <span className="text-[#1c1c1e] dark:text-white flex items-center space-x-1 font-semibold">
@@ -721,52 +732,73 @@ export default function StoryArchitect() {
               {saveStatus === 'failed' && <span className="text-red-500 font-semibold">Save failed</span>}
             </div>
           )}
+
           {/* Matching Queue Button */}
           {matchingCandidatesCount > 0 && (
             <button
               onClick={() => setShowMatchingDrawer(true)}
-              className="flex items-center space-x-1.5 px-2.5 py-1 bg-[#fcfcfb] dark:bg-[#222224] border border-[#1c1c1e]/20 dark:border-white/20 text-[#1c1c1e] dark:text-white rounded-lg text-xs font-semibold hover:border-[#1c1c1e]/40 dark:hover:border-white/40 transition-colors shadow-2xs cursor-pointer"
+              className="flex items-center space-x-1.5 px-2 sm:px-2.5 py-1 bg-[#fcfcfb] dark:bg-[#222224] border border-[#1c1c1e]/20 dark:border-white/20 text-[#1c1c1e] dark:text-white rounded-lg text-xs font-semibold hover:border-[#1c1c1e]/40 dark:hover:border-white/40 transition-colors shadow-2xs cursor-pointer shrink-0"
               title="Review pending AI entity matches"
             >
               <GitMerge className="w-3.5 h-3.5 text-[#8e8e93]" />
-              <span>Review Matches ({matchingCandidatesCount})</span>
+              <span className="hidden sm:inline">Matches ({matchingCandidatesCount})</span>
+              <span className="sm:hidden">({matchingCandidatesCount})</span>
             </button>
           )}
 
           <button
             onClick={() => setShowImportExportModal(true)}
-            className="btn btn-outline btn-sm text-[11.5px]"
+            className="btn btn-outline btn-sm text-[11.5px] px-2 sm:px-3 shrink-0"
             title="Universal JSON & CSV import/export"
           >
-            <Archive className="w-3.5 h-3.5 text-[#8e8e93]" />
-            <span>Vault</span>
+            <Archive className="w-3.5 h-3.5 sm:mr-1 text-[#8e8e93]" />
+            <span className="hidden sm:inline">Vault</span>
           </button>
 
           <button
             onClick={handleSaveLayout}
-            className="btn btn-outline btn-sm text-[11.5px]"
+            className="btn btn-outline btn-sm text-[11.5px] px-2 sm:px-3 shrink-0"
             title="Persist node coordinates for this canvas"
           >
-            <Save className="w-3.5 h-3.5 text-[#8e8e93]" />
-            <span>Save Layout</span>
+            <Save className="w-3.5 h-3.5 sm:mr-1 text-[#8e8e93]" />
+            <span className="hidden sm:inline">Save Layout</span>
+          </button>
+
+          {/* Fit View Button on Mobile & Desktop */}
+          <button
+            onClick={() => rfInstance?.fitView({ padding: 0.18, duration: 400 })}
+            className="btn btn-outline btn-sm text-[11.5px] px-2 sm:px-3 shrink-0"
+            title="Frame all nodes to screen"
+          >
+            <Maximize2 className="w-3.5 h-3.5 sm:mr-1 text-[#8e8e93]" />
+            <span className="hidden md:inline">Fit View</span>
           </button>
 
           <button
             onClick={() => setShowNewEntityModal(true)}
-            className="btn btn-solid btn-sm text-[11.5px] shadow-2xs"
+            className="btn btn-solid btn-sm text-[11.5px] px-2.5 sm:px-3 shadow-2xs shrink-0"
           >
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            <span>New Entity</span>
+            <Plus className="w-3.5 h-3.5 sm:mr-1" />
+            <span className="hidden sm:inline">New Entity</span>
+            <span className="sm:hidden">Entity</span>
           </button>
         </div>
       </div>
 
       {/* Main Workspace Body */}
       <div className="flex-1 flex relative overflow-hidden">
+        {/* Mobile Backdrop for Hierarchy Sidebar */}
+        {isGroupTreeOpen && (
+          <div
+            onClick={() => setIsGroupTreeOpen(false)}
+            className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-30 transition-opacity"
+          />
+        )}
+
         {/* Left: Collapsible Nested Group Hierarchy Sidebar */}
         <div
-          className={`border-r border-[#1c1c1e]/10 dark:border-white/10 bg-[#fcfcfb] dark:bg-[#1c1c1e] transition-all duration-300 flex flex-col z-10 ${
-            isGroupTreeOpen ? 'w-64' : 'w-0 opacity-0 pointer-events-none'
+          className={`fixed md:relative inset-y-0 left-0 z-40 md:z-10 border-r border-[#1c1c1e]/10 dark:border-white/10 bg-[#fcfcfb] dark:bg-[#1c1c1e] shadow-2xl md:shadow-none transition-all duration-300 flex flex-col ${
+            isGroupTreeOpen ? 'w-72 sm:w-80 md:w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-0 md:opacity-0 md:pointer-events-none'
           }`}
         >
           <div className="p-3 border-b border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between bg-[#f6f6f4]/60 dark:bg-[#161618]/60">
@@ -774,13 +806,22 @@ export default function StoryArchitect() {
               <FolderTree className="w-3.5 h-3.5" />
               <span>World Hierarchy</span>
             </div>
-            <button
-              onClick={() => setShowNewGroupModal(true)}
-              className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
-              title="Add World Group"
-            >
-              <FolderPlus className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setShowNewGroupModal(true)}
+                className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
+                title="Add World Group"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setIsGroupTreeOpen(false)}
+                className="md:hidden p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-white rounded cursor-pointer"
+                title="Close Hierarchy"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-1">
@@ -834,9 +875,15 @@ export default function StoryArchitect() {
             onPaneClick={onPaneClick}
             onDoubleClick={onPaneDoubleClick}
             nodeTypes={nodeTypes}
+            onInit={setRfInstance}
             fitView
+            fitViewOptions={{ padding: 0.18, minZoom: 0.25, maxZoom: 1.5 }}
             minZoom={0.2}
             maxZoom={2}
+            panOnScroll={false}
+            zoomOnPinch={true}
+            panOnDrag={true}
+            preventScrolling={false}
           >
             <Background
               variant="lines"
@@ -844,11 +891,11 @@ export default function StoryArchitect() {
               size={1}
               color={isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(28, 28, 30, 0.035)'}
             />
-            <Controls className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg shadow-2xs overflow-hidden" />
+            <Controls className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg shadow-2xs overflow-hidden bottom-3 left-3" />
             <MiniMap
               nodeColor={() => (isDark ? '#48484a' : '#c7c7cc')}
               maskColor={isDark ? 'rgba(22, 22, 24, 0.75)' : 'rgba(246, 246, 244, 0.75)'}
-              className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg overflow-hidden shadow-2xs"
+              className="hidden md:block bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg overflow-hidden shadow-2xs"
             />
           </ReactFlow>
 

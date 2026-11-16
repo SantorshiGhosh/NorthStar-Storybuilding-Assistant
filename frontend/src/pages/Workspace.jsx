@@ -38,20 +38,21 @@ const PANELS_STORAGE_KEY = 'northstar_workspace_panels';
 
 // Helper to load persisted panel states from localStorage
 const getSavedPanelState = () => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   try {
     const saved = localStorage.getItem(PANELS_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
-        left: typeof parsed.left === 'boolean' ? parsed.left : true,
+        left: isMobile ? false : (typeof parsed.left === 'boolean' ? parsed.left : true),
         center: typeof parsed.center === 'boolean' ? parsed.center : true,
-        right: typeof parsed.right === 'boolean' ? parsed.right : true,
+        right: isMobile ? false : (typeof parsed.right === 'boolean' ? parsed.right : true),
       };
     }
   } catch (e) {
     console.warn('Failed to parse saved panel state:', e);
   }
-  return { left: true, center: true, right: true };
+  return { left: !isMobile, center: true, right: !isMobile };
 };
 
 export default function Workspace() {
@@ -156,6 +157,9 @@ export default function Workspace() {
   // Handle chapter selection
   const handleSelectChapter = async (chapId) => {
     setSelectedChapterId(chapId);
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsLeftOpen(false);
+    }
     try {
       const chData = await chapterService.getChapter(chapId);
       setCurrentChapter(chData);
@@ -171,6 +175,9 @@ export default function Workspace() {
       setChapters([...chapters, created]);
       setSelectedChapterId(created.id);
       setCurrentChapter(created);
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        setIsLeftOpen(false);
+      }
     } catch (err) {
       console.error('Failed to add chapter:', err);
     }
@@ -339,14 +346,22 @@ export default function Workspace() {
 
       {/* 3-Column Workspace Layout */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* ========================================================= */}
+        {/* Mobile Backdrop for Left Chapter Drawer */}
+        {isLeftOpen && (
+          <div
+            onClick={() => setIsLeftOpen(false)}
+            className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-40 transition-opacity"
+          />
+        )}
+
         {/* COLUMN 1: LEFT CHAPTER TREE & OUTLINE */}
-        {/* ========================================================= */}
         <div
-          className={`h-full transition-all duration-300 ease-in-out overflow-hidden flex flex-col shrink-0 ${
+          className={`h-full transition-all duration-300 ease-in-out flex flex-col shrink-0 ${
+            'fixed md:relative inset-y-0 left-0 z-50 md:z-auto bg-[#fcfcfb] dark:bg-[#1c1c1e] shadow-2xl md:shadow-none'
+          } ${
             isLeftOpen
-              ? (!isCenterOpen && !isRightOpen ? 'flex-1 w-full min-w-0 opacity-100' : 'w-64 lg:w-72 opacity-100')
-              : 'w-0 min-w-0 opacity-0 pointer-events-none border-none'
+              ? 'w-72 sm:w-80 md:w-64 lg:w-72 translate-x-0 opacity-100'
+              : '-translate-x-full md:translate-x-0 md:w-0 md:min-w-0 md:opacity-0 md:pointer-events-none md:overflow-hidden'
           }`}
         >
           <div className="w-full h-full flex flex-col">
@@ -361,12 +376,12 @@ export default function Workspace() {
           </div>
         </div>
 
-        {/* Collapsed Left Edge Slider Handle */}
+        {/* Collapsed Left Edge Slider Handle - DESKTOP ONLY */}
         {!isLeftOpen && (
           <button
             onClick={() => setIsLeftOpen(true)}
             title={`Expand Manuscript Panel (${chapters.length} chapters)`}
-            className="group relative flex flex-col items-center justify-start pt-3 w-8 shrink-0 h-full bg-[#fcfcfb] dark:bg-[#1c1c1e] hover:bg-[#f6f6f4] dark:hover:bg-[#222224] border-r border-[#1c1c1e]/10 dark:border-white/10 text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-all select-none cursor-pointer z-10 shadow-2xs"
+            className="hidden md:flex group relative flex flex-col items-center justify-start pt-3 w-8 shrink-0 h-full bg-[#fcfcfb] dark:bg-[#1c1c1e] hover:bg-[#f6f6f4] dark:hover:bg-[#222224] border-r border-[#1c1c1e]/10 dark:border-white/10 text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-all select-none cursor-pointer z-10 shadow-2xs"
           >
             <div className="w-6 h-6 rounded-md flex items-center justify-center text-[#8e8e93] group-hover:text-[#1c1c1e] dark:group-hover:text-white transition-colors mb-3">
               <PanelLeftOpen className="w-3.5 h-3.5" />
@@ -386,10 +401,38 @@ export default function Workspace() {
         <section
           className={`h-full transition-all duration-300 ease-in-out flex flex-col overflow-hidden relative ${
             isCenterOpen
-              ? 'flex-1 min-w-0 opacity-100 p-3.5 sm:p-4'
+              ? 'flex-1 min-w-0 opacity-100 p-0 sm:p-3 md:p-4'
               : 'w-0 flex-none min-w-0 opacity-0 pointer-events-none p-0 overflow-hidden'
           }`}
         >
+          {/* Mobile Quick Action Strip (Toggles for Chapters & Guardian) */}
+          <div className="md:hidden flex items-center justify-between px-3 py-2 bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 gap-2 shrink-0">
+            <button
+              onClick={() => setIsLeftOpen(true)}
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-[#1c1c1e]/10 dark:border-white/10 bg-[#f6f6f4] dark:bg-[#222224] text-xs font-medium text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs cursor-pointer truncate max-w-[55%]"
+            >
+              <PanelLeft className="w-3.5 h-3.5 text-[#8e8e93] shrink-0" />
+              <span className="truncate">{currentChapter?.title || 'Chapters'}</span>
+              <span className="text-[10px] text-[#8e8e93] font-mono shrink-0">({chapters.length})</span>
+            </button>
+
+            <button
+              onClick={() => setIsRightOpen(true)}
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium shadow-2xs cursor-pointer shrink-0 ${
+                unresolvedCount > 0
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300'
+                  : 'bg-[#f6f6f4] dark:bg-[#222224] border-[#1c1c1e]/10 dark:border-white/10 text-[#1c1c1e] dark:text-[#f5f5f7]'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              <span>AI Guardian</span>
+              {unresolvedCount > 0 && (
+                <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-amber-500 text-white shrink-0">
+                  {unresolvedCount}
+                </span>
+              )}
+            </button>
+          </div>
           {/* Entity Matching Queue Alert Banner */}
           {matchingCandidatesCount > 0 && (
             <div className="mb-3 px-4 py-2.5 bg-[#fcfcfb] dark:bg-[#1c1c1e] border border-[#1c1c1e]/10 dark:border-white/10 rounded-xl flex items-center justify-between text-xs text-[#1c1c1e] dark:text-[#f5f5f7] shadow-2xs">
@@ -526,14 +569,24 @@ export default function Workspace() {
           </div>
         )}
 
+        {/* Mobile Backdrop for Right Guardian Drawer */}
+        {isRightOpen && (
+          <div
+            onClick={() => setIsRightOpen(false)}
+            className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-40 transition-opacity"
+          />
+        )}
+
         {/* ========================================================= */}
         {/* COLUMN 3: RIGHT AI GUARDIAN PANEL */}
         {/* ========================================================= */}
         <div
-          className={`h-full transition-all duration-300 ease-in-out overflow-hidden flex flex-col shrink-0 ${
+          className={`h-full transition-all duration-300 ease-in-out flex flex-col shrink-0 ${
+            'fixed md:relative inset-y-0 right-0 z-50 md:z-auto bg-[#fcfcfb] dark:bg-[#1c1c1e] shadow-2xl md:shadow-none'
+          } ${
             isRightOpen
-              ? (!isCenterOpen ? 'flex-1 w-full min-w-0 opacity-100' : 'w-80 lg:w-96 opacity-100')
-              : 'w-0 min-w-0 opacity-0 pointer-events-none border-none'
+              ? 'w-80 sm:w-96 max-w-[90vw] translate-x-0 opacity-100'
+              : 'translate-x-full md:translate-x-0 md:w-0 md:min-w-0 md:opacity-0 md:pointer-events-none md:overflow-hidden'
           }`}
         >
           <aside className="w-full h-full bg-[#fcfcfb] dark:bg-[#1c1c1e] border-l border-[#1c1c1e]/10 dark:border-white/10 flex flex-col overflow-hidden text-left shadow-2xs transition-colors duration-200">
@@ -564,10 +617,11 @@ export default function Workspace() {
                 </button>
                 <button
                   onClick={() => setIsRightOpen(false)}
-                  title="Collapse Guardian Panel"
+                  title="Close Guardian Panel"
                   className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 rounded-md transition-colors cursor-pointer"
                 >
-                  <PanelRightClose className="w-4 h-4" />
+                  <X className="w-4 h-4 md:hidden" />
+                  <PanelRightClose className="hidden md:inline w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -636,12 +690,12 @@ export default function Workspace() {
           </aside>
         </div>
 
-        {/* Collapsed Right Edge Slider Handle */}
+        {/* Collapsed Right Edge Slider Handle - DESKTOP ONLY */}
         {!isRightOpen && (
           <button
             onClick={() => setIsRightOpen(true)}
             title={`Expand AI Continuity Guardian (${unresolvedCount} unresolved)`}
-            className="group relative flex flex-col items-center justify-start pt-3 w-9 shrink-0 h-full bg-[#fcfcfb] dark:bg-[#1c1c1e] hover:bg-[#f6f6f4] dark:hover:bg-[#222224] border-l border-[#1c1c1e]/10 dark:border-white/10 text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-all select-none cursor-pointer z-10 shadow-2xs"
+            className="hidden md:flex group relative flex flex-col items-center justify-start pt-3 w-9 shrink-0 h-full bg-[#fcfcfb] dark:bg-[#1c1c1e] hover:bg-[#f6f6f4] dark:hover:bg-[#222224] border-l border-[#1c1c1e]/10 dark:border-white/10 text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-all select-none cursor-pointer z-10 shadow-2xs"
           >
             <div className="w-6 h-6 rounded-md flex items-center justify-center text-white bg-[#1c1c1e] dark:bg-white dark:text-[#1c1c1e] transition-colors mb-3 relative shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5" />
