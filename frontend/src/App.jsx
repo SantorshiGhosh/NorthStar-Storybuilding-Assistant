@@ -112,7 +112,7 @@ export default function App() {
                 <Route
                   path="/orbital-cards"
                   element={
-                    <div className="min-h-screen bg-white flex justify-center">
+                    <div className="min-h-screen bg-[#faf6ef] flex justify-center">
                       <OrbitalCards />
                     </div>
                   }

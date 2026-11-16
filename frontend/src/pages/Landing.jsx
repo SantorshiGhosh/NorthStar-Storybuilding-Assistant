@@ -36,31 +36,31 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0d1117] text-neutral-900 dark:text-neutral-100 flex flex-col selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-[#faf6ef] dark:bg-[#0d1117] text-[#1c1815] dark:text-[#f0f6fc] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
       {/* Top Header */}
-      <header className="border-b border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-[#1c1815]/10 dark:border-[#30363d] bg-[#faf6ef]/90 dark:bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-neutral-900 text-white flex items-center justify-center shadow-xs">
+          <Link to="/" className="flex items-center space-x-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-[#7b2d3b] text-[#faf6ef] flex items-center justify-center shadow-xs group-hover:bg-[#5e1f2b] transition-colors">
               <ShieldCheck className="w-4 h-4" />
             </div>
-            <span className="font-semibold text-neutral-900 dark:text-neutral-100 text-base tracking-tight">
+            <span className="font-fraunces font-medium text-[#1c1815] dark:text-[#f0f6fc] text-[19px] tracking-tight">
               NorthStar
             </span>
-          </div>
+          </Link>
 
           <div className="flex items-center space-x-3">
             <ThemeToggle />
             <Link
               to="/auth"
-              className="text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white px-3 py-1.5 transition-colors"
+              className="text-xs font-medium text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] px-3 py-1.5 transition-colors"
             >
               Sign In
             </Link>
             <button
               onClick={handleQuickDemo}
               disabled={seeding}
-              className="text-xs font-semibold px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-xs disabled:opacity-50"
+              className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] transition-all shadow-xs disabled:opacity-50 cursor-pointer"
             >
               {seeding ? 'Loading Story...' : 'Launch Demo Workspace'}
             </button>
@@ -68,27 +68,27 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="flex-1 bg-white dark:bg-[#0d1117]">
+      <main className="flex-1 bg-[#faf6ef] dark:bg-[#0d1117] transition-colors duration-200">
         {/* 1. First Impression: Dynamic Orbital Cards (Narrative Guardian Showcase) */}
-        <section className="w-full bg-white dark:bg-[#0d1117] flex justify-center">
+        <section className="w-full bg-[#faf6ef] dark:bg-[#0d1117] flex justify-center transition-colors duration-200">
           <OrbitalCards />
         </section>
 
         {/* 2. Hero Section with Call to Actions */}
         <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-medium mb-8">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Continuity Guardian for Novelists & Screenwriters</span>
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 border border-[#7b2d3b]/25 dark:border-[#7b2d3b]/40 text-[#7b2d3b] dark:text-[#fca5a5] text-xs font-medium mb-8">
+            <Sparkles className="w-3.5 h-3.5 text-[#7b2d3b] dark:text-[#fca5a5]" />
+            <span>AI Continuity Guardian for Novelists &amp; Screenwriters</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-neutral-900 leading-[1.15] mb-6">
+          <h1 className="text-4xl sm:text-6xl font-light tracking-tight text-[#1c1815] dark:text-[#f0f6fc] leading-[1.15] mb-6 font-fraunces">
             Your story remembers <br />
-            <span className="text-blue-600 underline decoration-blue-200 decoration-wavy underline-offset-8">
+            <span className="text-[#7b2d3b] dark:text-[#f87171] italic underline decoration-[#7b2d3b]/30 dark:decoration-[#f87171]/40 decoration-wavy underline-offset-8">
               everything.
             </span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed mb-10">
+          <p className="text-lg sm:text-xl text-[#1c1815]/75 dark:text-[#8b949e] max-w-2xl mx-auto leading-relaxed mb-10">
             Most AI tools try to write the next sentence. NorthStar remembers every single sentence you have written before—protecting your manuscript from continuity contradictions with verifiable canon evidence.
           </p>
 
@@ -96,7 +96,7 @@ export default function Landing() {
             <button
               onClick={handleQuickDemo}
               disabled={seeding}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm transition-all"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#7b2d3b] hover:bg-[#5e1f2b] text-[#faf6ef] text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm hover:shadow-md transition-all cursor-pointer"
             >
               <span>{seeding ? 'Preparing Demo...' : 'Explore Demo Story ("The Last Kingdom")'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -104,65 +104,65 @@ export default function Landing() {
 
             <Link
               to="/dashboard"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-neutral-50 text-neutral-800 text-sm font-medium border border-neutral-300 shadow-2xs transition-all flex items-center justify-center"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/70 dark:bg-[#161b22] hover:bg-[#fffdf9] dark:hover:bg-[#21262d] text-[#1c1815] dark:text-[#f0f6fc] text-sm font-medium border border-[#1c1815]/15 dark:border-[#30363d] shadow-2xs transition-all flex items-center justify-center"
             >
               Go to Workspace Dashboard
             </Link>
           </div>
 
           {/* Differentiator Subhead */}
-          <p className="text-xs text-neutral-400 mt-4">
+          <p className="text-xs text-[#1c1815]/50 dark:text-[#6e7681] mt-4">
             Author Sovereignty Guaranteed: The AI never modifies or rewrites your manuscript.
           </p>
         </section>
 
-        {/* 3. Live Scenario Preview Card (Notion-style) */}
+        {/* 3. Live Scenario Preview Card (Notion-style, Editorial Palette) */}
         <section className="max-w-4xl mx-auto px-6 pb-20">
-          <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-md p-6 sm:p-8 text-left">
-            <div className="flex items-center justify-between border-b border-neutral-100 pb-4 mb-6">
+          <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-2xl border border-[#1c1815]/10 dark:border-[#30363d] shadow-lg shadow-[#1c1815]/5 dark:shadow-black/20 p-6 sm:p-8 text-left transition-colors duration-200">
+            <div className="flex items-center justify-between border-b border-[#1c1815]/10 dark:border-[#30363d] pb-4 mb-6">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span className="text-xs text-neutral-400 ml-2 font-mono">
+                <span className="text-xs text-[#1c1815]/50 dark:text-[#6e7681] ml-2 font-mono">
                   Continuity Guardian &bull; Live Canon Memory
                 </span>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 text-[#7b2d3b] dark:text-[#fca5a5] border border-[#7b2d3b]/25 dark:border-[#7b2d3b]/40">
                 1 Contradiction Detected
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-emerald-50/50 rounded-xl p-4 border border-emerald-200/60">
-                <div className="text-xs font-semibold text-emerald-800 mb-1 flex items-center space-x-1.5">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="bg-[#fbf9f4] dark:bg-[#0d1117] rounded-xl p-4 border border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
+                <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 mb-1 flex items-center space-x-1.5">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Chapter 2 &mdash; Established Canon</span>
                 </div>
-                <p className="text-xs sm:text-sm text-neutral-800 italic leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#1c1815]/85 dark:text-[#c9d1d9] italic leading-relaxed">
                   "Arin lost his left arm during the battle at Blackstone when a jagged shadowblade severed the limb beneath the shoulder."
                 </p>
               </div>
 
-              <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-200/60">
-                <div className="text-xs font-semibold text-amber-800 mb-1 flex items-center space-x-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              <div className="bg-[#fdf8f4] dark:bg-[#2b1114]/40 rounded-xl p-4 border border-[#7b2d3b]/20 dark:border-[#671e24] transition-colors duration-200">
+                <div className="text-xs font-semibold text-[#7b2d3b] dark:text-[#f85149] mb-1 flex items-center space-x-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-[#7b2d3b] dark:text-[#f85149]" />
                   <span>Chapter 4 &mdash; New Conflicting Passage</span>
                 </div>
-                <p className="text-xs sm:text-sm text-neutral-800 italic leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#1c1815]/85 dark:text-[#c9d1d9] italic leading-relaxed">
                   "Arin lifted his left hand to adjust his iron gauntlet, gripping his sword hilt firmly with both hands as he signaled forward."
                 </p>
               </div>
             </div>
 
-            <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200/70 text-xs text-neutral-700 space-y-2">
-              <div className="font-semibold text-neutral-900">AI Guardian Verdict:</div>
+            <div className="bg-[#f3ece0]/70 dark:bg-[#0d1117]/80 rounded-xl p-4 border border-[#1c1815]/10 dark:border-[#30363d] text-xs text-[#1c1815]/80 dark:text-[#8b949e] space-y-2 transition-colors duration-200">
+              <div className="font-semibold text-[#1c1815] dark:text-[#f0f6fc]">AI Guardian Verdict:</div>
               <p>
                 Arin is depicted using his left hand/arm, directly contradicting Chapter 2 where his left arm was severed.
               </p>
-              <div className="text-[11px] text-neutral-500 pt-1 flex items-center space-x-4">
+              <div className="text-[11px] text-[#1c1815]/50 dark:text-[#6e7681] pt-1 flex items-center space-x-4">
                 <span>&bull; Suggestion: Clarify whether Arin has received a prosthetic or adjust action to right hand.</span>
-                <span className="text-blue-600 font-medium">Author control: Resolve / Mark Intentional</span>
+                <span className="text-[#7b2d3b] dark:text-[#fca5a5] font-medium cursor-pointer">Author control: Resolve / Mark Intentional</span>
               </div>
             </div>
           </div>
@@ -171,47 +171,47 @@ export default function Landing() {
         {/* 4. Feature Grid */}
         <section className="max-w-6xl mx-auto px-6 pb-24">
           <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-3">
+            <h2 className="text-2xl sm:text-3xl font-light text-[#1c1815] dark:text-[#f0f6fc] mb-3 font-fraunces">
               Purpose-built for large, complex story worlds
             </h2>
-            <p className="text-neutral-500 text-sm max-w-xl mx-auto">
+            <p className="text-[#1c1815]/65 dark:text-[#8b949e] text-sm max-w-xl mx-auto">
               Everything you need to safeguard canon across multi-chapter novels, sequels, and cinematic scripts.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="bg-white rounded-xl border border-neutral-200/80 p-6 shadow-xs">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+            <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
+              <div className="w-10 h-10 rounded-lg bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 text-[#7b2d3b] dark:text-[#fca5a5] flex items-center justify-center mb-4">
                 <BookOpen className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-semibold text-neutral-900 mb-2">
+              <h3 className="text-base font-semibold text-[#1c1815] dark:text-[#f0f6fc] mb-2 font-fraunces">
                 Multi-Format Ingestion
               </h3>
-              <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#1c1815]/75 dark:text-[#8b949e] leading-relaxed">
                 Accepts DOCX, Markdown, plain text, and PDF. Automatically divides chapters into passages with stable citation offsets.
               </p>
             </div>
 
-            <div className="bg-white rounded-xl border border-neutral-200/80 p-6 shadow-xs">
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+            <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
+              <div className="w-10 h-10 rounded-lg bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 text-[#7b2d3b] dark:text-[#fca5a5] flex items-center justify-center mb-4">
                 <GitFork className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-semibold text-neutral-900 mb-2">
+              <h3 className="text-base font-semibold text-[#1c1815] dark:text-[#f0f6fc] mb-2 font-fraunces">
                 Interactive Knowledge Graph
               </h3>
-              <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#1c1815]/75 dark:text-[#8b949e] leading-relaxed">
                 Explore your narrative as a living network of characters, locations, factions, and world rules powered by NetworkX and React Flow.
               </p>
             </div>
 
-            <div className="bg-white rounded-xl border border-neutral-200/80 p-6 shadow-xs">
-              <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
+            <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
+              <div className="w-10 h-10 rounded-lg bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 text-[#7b2d3b] dark:text-[#fca5a5] flex items-center justify-center mb-4">
                 <Lock className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-semibold text-neutral-900 mb-2">
+              <h3 className="text-base font-semibold text-[#1c1815] dark:text-[#f0f6fc] mb-2 font-fraunces">
                 Confidential Vault Storage
               </h3>
-              <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#1c1815]/75 dark:text-[#8b949e] leading-relaxed">
                 Your manuscripts are protected with authenticated AES-256-GCM encryption and isolated by project, ensuring creative privacy.
               </p>
             </div>
@@ -220,8 +220,8 @@ export default function Landing() {
       </main>
 
       {/* Minimal Footer */}
-      <footer className="border-t border-neutral-200/80 py-8 bg-white text-xs text-neutral-500 text-center">
-        <p>NorthStar &mdash; AI Continuity Guardian &bull; Built for Novelists & Screenwriters</p>
+      <footer className="border-t border-[#1c1815]/10 dark:border-[#30363d] py-8 bg-[#faf6ef] dark:bg-[#0d1117] text-xs text-[#1c1815]/50 dark:text-[#6e7681] text-center transition-colors duration-200">
+        <p>NorthStar &mdash; AI Continuity Guardian &bull; Built for Novelists &amp; Screenwriters</p>
       </footer>
     </div>
   );

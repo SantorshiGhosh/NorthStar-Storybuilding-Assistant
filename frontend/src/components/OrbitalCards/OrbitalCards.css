@@ -1,11 +1,11 @@
 @font-face { font-family: "Geist"; font-weight: 100 900; font-display: swap; src: url("/fonts/geist-latin.woff2") format("woff2"); }
 /* No overflow on the root: clipping the scroll track would stop the sticky stage from pinning. */
 .velox-orbital-cards {
-  --orbital-cards-bg: #ffffff;
-  --orbital-cards-card: #ffffff;
-  --orbital-cards-ink: #0a0a0a;
-  --orbital-cards-muted: #64748b;
-  --orbital-cards-line: #e2e8f0;
+  --orbital-cards-bg: #faf6ef;
+  --orbital-cards-card: #fffdfa;
+  --orbital-cards-ink: #1c1815;
+  --orbital-cards-muted: #6e6761;
+  --orbital-cards-line: rgba(28, 24, 21, 0.12);
   container-type: inline-size;
   position: relative;
   width: 100%;
@@ -14,6 +14,7 @@
   background: var(--orbital-cards-bg);
   color: var(--orbital-cards-ink);
   font: 400 16px/1.5 "Geist", system-ui, sans-serif;
+  transition: background-color 350ms cubic-bezier(0.4, 0, 0.2, 1), color 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .velox-orbital-cards *, .velox-orbital-cards *::before, .velox-orbital-cards *::after { box-sizing: border-box; }
 
@@ -25,6 +26,7 @@
   width: 100%;
   max-width: 100%;
   overflow: clip;
+  transition: background-color 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Center container: shifted slightly above center (40%) to balance with foreground cards and center the scene */
@@ -53,7 +55,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   line-height: 1.2;
-  color: #2563eb;
+  color: #7b2d3b;
 }
 
 /* Balanced headline with comfortable line height and breathing room */
@@ -83,17 +85,18 @@
   border: 1px solid var(--orbital-cards-line);
   border-radius: 14px;
   background: var(--orbital-cards-card);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 20px -2px rgba(28, 24, 21, 0.06), 0 2px 6px -1px rgba(28, 24, 21, 0.03);
   opacity: 0;
   will-change: transform, opacity, filter;
   backface-visibility: hidden;
+  transition: background-color 350ms cubic-bezier(0.4, 0, 0.2, 1), border-color 350ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .velox-orbital-cards__icon {
   flex: 0 0 auto;
   width: 28px;
   height: 28px;
-  color: #2563eb;
+  color: #7b2d3b;
   margin-top: 1px;
 }
 .velox-orbital-cards__icon svg { display: block; width: 28px; height: 28px; }
@@ -150,20 +153,20 @@
 
 /* Scoped dark mode theme continuity */
 :where(.dark) .velox-orbital-cards {
-  --orbital-cards-bg: var(--surface-card, #161b22);
-  --orbital-cards-card: #1c212c;
-  --orbital-cards-ink: var(--text-primary, #f0f6fc);
-  --orbital-cards-muted: #94a3b8;
-  --orbital-cards-line: #334155;
+  --orbital-cards-bg: #0d1117;
+  --orbital-cards-card: #161b22;
+  --orbital-cards-ink: #f0f6fc;
+  --orbital-cards-muted: #8b949e;
+  --orbital-cards-line: #30363d;
 }
 :where(.dark) .velox-orbital-cards__icon {
-  color: #60a5fa;
+  color: #f43f5e;
 }
 :where(.dark) .velox-orbital-cards__eyebrow {
-  color: #60a5fa;
+  color: #f43f5e;
 }
 :where(.dark) .velox-orbital-cards__card {
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.55);
 }
 
 /* Scoped resets for any global styles leaking in */

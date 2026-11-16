@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ShieldCheck, Eye, EyeOff, Check, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 
 export default function Auth() {
@@ -79,16 +80,16 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf6ef] text-[#1c1815] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef]">
+    <div className="min-h-screen bg-[#faf6ef] dark:bg-[#0d1117] text-[#1c1815] dark:text-[#f0f6fc] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
       {/* Sticky Translucent Header */}
-      <header className="sticky top-0 z-50 h-[68px] bg-[#faf6ef]/85 backdrop-blur-md border-b border-[#1c1815]/10">
+      <header className="sticky top-0 z-50 h-[68px] bg-[#faf6ef]/85 dark:bg-[#0d1117]/85 backdrop-blur-md border-b border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
         <div className="max-w-[1240px] mx-auto px-6 sm:px-8 h-full flex items-center justify-between">
           {/* 1. Left: Brand Lockup with NorthStar Logo & Name */}
           <Link to="/" className="flex items-center space-x-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-[#7b2d3b] text-[#faf6ef] flex items-center justify-center shadow-xs group-hover:bg-[#5e1f2b] transition-colors">
               <ShieldCheck className="w-4 h-4" />
             </div>
-            <span className="font-fraunces text-[19px] font-medium text-[#1c1815] tracking-tight">
+            <span className="font-fraunces text-[19px] font-medium text-[#1c1815] dark:text-[#f0f6fc] tracking-tight">
               NorthStar
             </span>
           </Link>
@@ -97,27 +98,28 @@ export default function Auth() {
           <nav className="hidden md:flex items-center space-x-8">
             <Link
               to="/"
-              className="font-inter text-sm text-[#1c1815]/70 hover:text-[#1c1815] transition-colors editorial-link-underline pb-0.5"
+              className="font-inter text-sm text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#1c1815] dark:hover:text-[#f0f6fc] transition-colors editorial-link-underline pb-0.5"
             >
               Home
             </Link>
             <a
               href="/#features"
-              className="font-inter text-sm text-[#1c1815]/70 hover:text-[#1c1815] transition-colors editorial-link-underline pb-0.5"
+              className="font-inter text-sm text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#1c1815] dark:hover:text-[#f0f6fc] transition-colors editorial-link-underline pb-0.5"
             >
               About
             </a>
             <a
               href="mailto:support@northstar.fiction"
-              className="font-inter text-sm text-[#1c1815]/70 hover:text-[#1c1815] transition-colors editorial-link-underline pb-0.5"
+              className="font-inter text-sm text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#1c1815] dark:hover:text-[#f0f6fc] transition-colors editorial-link-underline pb-0.5"
             >
               Help &amp; Support
             </a>
           </nav>
 
-          {/* Right: Pill CTA */}
-          <div className="flex items-center">
-            <span className="hidden sm:inline text-xs text-[#1c1815]/50 font-inter mr-3">
+          {/* Right: ThemeToggle + Pill CTA */}
+          <div className="flex items-center space-x-3">
+            <ThemeToggle />
+            <span className="hidden sm:inline text-xs text-[#1c1815]/50 dark:text-[#6e7681] font-inter">
               {isSignUp ? 'Already a member?' : 'New here?'}
             </span>
             <button
@@ -126,7 +128,7 @@ export default function Auth() {
                 setIsSignUp(!isSignUp);
                 setError('');
               }}
-              className="rounded-full px-4 py-1.5 text-xs font-inter font-medium text-[#7b2d3b] border border-[#7b2d3b]/30 hover:border-[#7b2d3b] hover:bg-[#7b2d3b]/5 transition-all"
+              className="rounded-full px-4 py-1.5 text-xs font-inter font-medium text-[#7b2d3b] dark:text-[#fca5a5] border border-[#7b2d3b]/30 dark:border-[#7b2d3b]/50 hover:border-[#7b2d3b] hover:bg-[#7b2d3b]/10 transition-all cursor-pointer"
             >
               {isSignUp ? 'Sign in' : 'Create account'}
             </button>
@@ -136,53 +138,53 @@ export default function Auth() {
 
       {/* Main Full-Bleed Two-Column Viewport Split */}
       <main className="flex-1 flex items-center justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-68px)]">
-        <div className="w-full max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] border border-[#1c1815]/10 rounded-[24px] lg:rounded-[28px] overflow-hidden shadow-xl shadow-[#1c1815]/5">
+        <div className="w-full max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] border border-[#1c1815]/10 dark:border-[#30363d] rounded-[24px] lg:rounded-[28px] overflow-hidden shadow-xl shadow-[#1c1815]/5 dark:shadow-black/25">
           {/* 3. Left Column: Editorial Greeting Panel (Matched to NorthStar Story Canon Theme) */}
-          <div className="order-2 lg:order-1 bg-[#f3ece0] relative overflow-hidden p-8 sm:p-12 lg:p-14 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-[#1c1815]/10 min-h-[520px] lg:min-h-[640px]">
+          <div className="order-2 lg:order-1 bg-[#f3ece0] dark:bg-[#161b22] relative overflow-hidden p-8 sm:p-12 lg:p-14 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-[#1c1815]/10 dark:border-[#30363d] min-h-[520px] lg:min-h-[640px] transition-colors duration-200">
             {/* Layered radial-gradient burgundy tints */}
             <div className="absolute inset-0 editorial-radial-tints pointer-events-none" />
             {/* Multiply dot-grain texture */}
-            <div className="absolute inset-0 editorial-grain pointer-events-none" />
+            <div className="absolute inset-0 editorial-grain pointer-events-none opacity-40 dark:opacity-20" />
 
             {/* Content Container */}
             <div className="relative z-10 flex flex-col justify-between h-full space-y-10">
               {/* Top Block: Kicker with rule line */}
               <div className="flex items-center">
-                <span className="w-8 h-[2px] bg-[#7b2d3b] mr-3 inline-block" />
-                <span className="font-inter text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7b2d3b]">
+                <span className="w-8 h-[2px] bg-[#7b2d3b] dark:bg-[#f87171] mr-3 inline-block" />
+                <span className="font-inter text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7b2d3b] dark:text-[#fca5a5]">
                   AI Continuity Guardian
                 </span>
               </div>
 
               {/* Middle Block: Volume eyebrow + Oversized Fraunces headline + Story Canon Subtext */}
               <div className="max-w-[32ch]">
-                <p className="font-inter text-[11px] font-medium uppercase tracking-wider text-[#1c1815]/60 mb-3">
+                <p className="font-inter text-[11px] font-medium uppercase tracking-wider text-[#1c1815]/60 dark:text-[#8b949e] mb-3">
                   Canon Intelligence · Edition 2026
                 </p>
-                <h1 className="font-fraunces text-4xl sm:text-5xl lg:text-[clamp(2.6rem,6.2vw,4.6rem)] font-light text-[#1c1815] leading-[0.96] tracking-[-0.02em]">
+                <h1 className="font-fraunces text-4xl sm:text-5xl lg:text-[clamp(2.6rem,6.2vw,4.6rem)] font-light text-[#1c1815] dark:text-[#f0f6fc] leading-[0.96] tracking-[-0.02em]">
                   Welcome <br />
-                  <span className="italic text-[#7b2d3b] font-normal">back.</span>
+                  <span className="italic text-[#7b2d3b] dark:text-[#f87171] font-normal">back.</span>
                 </h1>
-                <p className="font-fraunces text-[clamp(1.15rem,2vw,1.45rem)] text-[#1c1815]/80 font-light mt-5 leading-relaxed">
+                <p className="font-fraunces text-[clamp(1.15rem,2vw,1.45rem)] text-[#1c1815]/80 dark:text-[#8b949e] font-light mt-5 leading-relaxed">
                   Your persistent narrative memory for complex story worlds, physical character states, and multi-draft continuity.
                 </p>
               </div>
 
               {/* Bottom Block: Fading rule, blockquote with swash quote, author testimonial */}
               <div>
-                <div className="w-full h-[1px] bg-gradient-to-r from-[#1c1815]/20 via-[#1c1815]/10 to-transparent mb-6" />
+                <div className="w-full h-[1px] bg-gradient-to-r from-[#1c1815]/20 dark:from-white/20 via-[#1c1815]/10 dark:via-white/10 to-transparent mb-6" />
                 <figure className="space-y-4">
-                  <blockquote className="font-fraunces text-sm sm:text-base text-[#1c1815]/85 font-light leading-relaxed relative pl-6">
-                    <span className="absolute left-0 -top-2 font-fraunces text-3xl text-[#7b2d3b] select-none swash-quote">
+                  <blockquote className="font-fraunces text-sm sm:text-base text-[#1c1815]/85 dark:text-[#c9d1d9] font-light leading-relaxed relative pl-6">
+                    <span className="absolute left-0 -top-2 font-fraunces text-3xl text-[#7b2d3b] dark:text-[#f87171] select-none swash-quote">
                       “
                     </span>
                     NorthStar caught a timeline paradox and a character injury discrepancy between Chapter 4 and Chapter 32 that human passes missed. Total creative certainty.
                   </blockquote>
                   <figcaption className="flex items-center space-x-3 pt-1">
-                    <div className="w-9 h-9 rounded-full bg-[#7b2d3b]/15 text-[#7b2d3b] flex items-center justify-center font-fraunces italic font-medium text-sm">
+                    <div className="w-9 h-9 rounded-full bg-[#7b2d3b]/15 dark:bg-[#7b2d3b]/30 text-[#7b2d3b] dark:text-[#fca5a5] flex items-center justify-center font-fraunces italic font-medium text-sm">
                       E
                     </div>
-                    <span className="font-inter text-xs text-[#1c1815]/75">
+                    <span className="font-inter text-xs text-[#1c1815]/75 dark:text-[#8b949e]">
                       Elena Vance · Fantasy Novelist &amp; Worldbuilder
                     </span>
                   </figcaption>
@@ -192,27 +194,27 @@ export default function Auth() {
           </div>
 
           {/* Right Column: Sign-in Form (Desktop: Right, Mobile: Top order-1) */}
-          <div className="order-1 lg:order-2 bg-[#faf6ef] p-8 sm:p-12 lg:p-14 flex items-center justify-center relative">
+          <div className="order-1 lg:order-2 bg-[#faf6ef] dark:bg-[#0d1117] p-8 sm:p-12 lg:p-14 flex items-center justify-center relative transition-colors duration-200">
             <div className="w-full max-w-[400px] mx-auto">
               {/* Header Row: Stacked label + Heading + Tabular Index Numeral */}
               <div className="flex items-start justify-between mb-8">
                 <div>
-                  <span className="block font-inter text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b2d3b] mb-1">
+                  <span className="block font-inter text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b2d3b] dark:text-[#fca5a5] mb-1">
                     {isSignUp ? 'Member registration' : 'Member sign in'}
                   </span>
-                  <h2 className="font-fraunces text-3xl sm:text-[2rem] font-normal text-[#1c1815] tracking-tight leading-tight">
+                  <h2 className="font-fraunces text-3xl sm:text-[2rem] font-normal text-[#1c1815] dark:text-[#f0f6fc] tracking-tight leading-tight">
                     {isSignUp ? 'Create account' : 'Sign in'}
                   </h2>
                 </div>
-                <span className="tabular-nums-serif text-4xl font-light text-[#7b2d3b]/25 select-none pt-1">
+                <span className="tabular-nums-serif text-4xl font-light text-[#7b2d3b]/25 dark:text-[#f87171]/25 select-none pt-1">
                   {isSignUp ? '02' : '01'}
                 </span>
               </div>
 
               {/* Error Alert */}
               {error && (
-                <div className="mb-5 p-3 rounded-xl bg-[#7b2d3b]/10 border border-[#7b2d3b]/20 flex items-start space-x-2.5 text-[#5e1f2b] text-xs">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#7b2d3b]" />
+                <div className="mb-5 p-3 rounded-xl bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 border border-[#7b2d3b]/20 dark:border-[#7b2d3b]/40 flex items-start space-x-2.5 text-[#5e1f2b] dark:text-[#fca5a5] text-xs">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#7b2d3b] dark:text-[#f87171]" />
                   <span>{error}</span>
                 </div>
               )}
@@ -221,7 +223,7 @@ export default function Auth() {
               <button
                 type="button"
                 onClick={handleGoogleSSO}
-                className="w-full py-3 px-4 bg-white/60 hover:bg-[#fffdf9] border border-[#1c1815]/15 hover:border-[#1c1815]/30 rounded-xl flex items-center justify-center space-x-3 text-xs sm:text-sm font-inter font-medium text-[#1c1815] transition-all shadow-2xs group cursor-default"
+                className="w-full py-3 px-4 bg-white/60 dark:bg-[#161b22] hover:bg-[#fffdf9] dark:hover:bg-[#21262d] border border-[#1c1815]/15 dark:border-[#30363d] rounded-xl flex items-center justify-center space-x-3 text-xs sm:text-sm font-inter font-medium text-[#1c1815] dark:text-[#f0f6fc] transition-all shadow-2xs group cursor-default"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
@@ -246,18 +248,18 @@ export default function Auth() {
 
               {/* 'or with email' Divider */}
               <div className="flex items-center my-6">
-                <div className="flex-1 border-t border-[#1c1815]/12" />
-                <span className="px-3 font-inter text-[10px] font-semibold tracking-[0.15em] uppercase text-[#1c1815]/45">
+                <div className="flex-1 border-t border-[#1c1815]/12 dark:border-[#30363d]" />
+                <span className="px-3 font-inter text-[10px] font-semibold tracking-[0.15em] uppercase text-[#1c1815]/45 dark:text-[#8b949e]">
                   or with email
                 </span>
-                <div className="flex-1 border-t border-[#1c1815]/12" />
+                <div className="flex-1 border-t border-[#1c1815]/12 dark:border-[#30363d]" />
               </div>
 
               {/* 5. Form: Email Login + Password */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {isSignUp && (
                   <div>
-                    <label className="block text-xs font-inter font-medium text-[#1c1815]/80 mb-1.5">
+                    <label className="block text-xs font-inter font-medium text-[#1c1815]/80 dark:text-[#c9d1d9] mb-1.5">
                       Full Name
                     </label>
                     <input
@@ -265,13 +267,13 @@ export default function Auth() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="J.R.R. Tolkien"
-                      className="w-full rounded-xl bg-white/60 border border-[#1c1815]/15 px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] placeholder:text-[#1c1815]/35 focus:bg-[#fffdf9] focus:border-[#7b2d3b] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
+                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-[#fffdf9] dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-inter font-medium text-[#1c1815]/80 mb-1.5">
+                  <label className="block text-xs font-inter font-medium text-[#1c1815]/80 dark:text-[#c9d1d9] mb-1.5">
                     Email address
                   </label>
                   <input
@@ -280,17 +282,17 @@ export default function Auth() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="author@novel.com"
-                    className="w-full rounded-xl bg-white/60 border border-[#1c1815]/15 px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] placeholder:text-[#1c1815]/35 focus:bg-[#fffdf9] focus:border-[#7b2d3b] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
+                    className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-[#fffdf9] dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-inter font-medium text-[#1c1815]/80">
+                    <label className="text-xs font-inter font-medium text-[#1c1815]/80 dark:text-[#c9d1d9]">
                       Password
                     </label>
                     {!isSignUp && (
-                      <span className="text-xs text-[#7b2d3b] hover:text-[#5e1f2b] font-inter font-medium cursor-pointer editorial-link-underline">
+                      <span className="text-xs text-[#7b2d3b] dark:text-[#fca5a5] hover:text-[#5e1f2b] dark:hover:text-white font-inter font-medium cursor-pointer editorial-link-underline">
                         Forgot?
                       </span>
                     )}
@@ -302,12 +304,12 @@ export default function Auth() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full rounded-xl bg-white/60 border border-[#1c1815]/15 pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-[#1c1815] placeholder:text-[#1c1815]/35 focus:bg-[#fffdf9] focus:border-[#7b2d3b] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
+                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-[#fffdf9] dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1c1815]/40 hover:text-[#1c1815] transition-colors p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1c1815]/40 dark:text-[#6e7681] hover:text-[#1c1815] dark:hover:text-[#f0f6fc] transition-colors p-1"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -317,7 +319,7 @@ export default function Auth() {
 
                 {isSignUp && (
                   <div>
-                    <label className="block text-xs font-inter font-medium text-[#1c1815]/80 mb-1.5">
+                    <label className="block text-xs font-inter font-medium text-[#1c1815]/80 dark:text-[#c9d1d9] mb-1.5">
                       Confirm Password
                     </label>
                     <input
@@ -326,7 +328,7 @@ export default function Auth() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full rounded-xl bg-white/60 border border-[#1c1815]/15 px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] placeholder:text-[#1c1815]/35 focus:bg-[#fffdf9] focus:border-[#7b2d3b] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
+                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-[#fffdf9] dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
                     />
                   </div>
                 )}
@@ -340,15 +342,15 @@ export default function Auth() {
                     onClick={() => setRememberMe(!rememberMe)}
                     className={`w-[18px] h-[18px] rounded-[5px] flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                       rememberMe
-                        ? 'bg-[#7b2d3b] border border-[#7b2d3b]'
-                        : 'bg-white/60 border border-[#7b2d3b]/40 hover:border-[#7b2d3b]'
+                        ? 'bg-[#7b2d3b] dark:bg-[#f87171] border border-[#7b2d3b] dark:border-[#f87171]'
+                        : 'bg-white/60 dark:bg-[#161b22] border border-[#7b2d3b]/40 dark:border-[#30363d] hover:border-[#7b2d3b]'
                     }`}
                   >
-                    {rememberMe && <Check className="w-3 h-3 text-[#faf6ef] stroke-[3]" />}
+                    {rememberMe && <Check className="w-3 h-3 text-[#faf6ef] dark:text-[#0d1117] stroke-[3]" />}
                   </button>
                   <label
                     onClick={() => setRememberMe(!rememberMe)}
-                    className="font-inter text-xs text-[#1c1815]/75 cursor-pointer select-none"
+                    className="font-inter text-xs text-[#1c1815]/75 dark:text-[#8b949e] cursor-pointer select-none"
                   >
                     Keep me signed in for 30 days
                   </label>
@@ -369,16 +371,16 @@ export default function Auth() {
                   type="button"
                   onClick={handleGuestAccess}
                   disabled={submitting}
-                  className="w-full py-2.5 px-4 rounded-xl border border-[#7b2d3b]/25 hover:border-[#7b2d3b]/60 bg-white/40 hover:bg-white/75 text-[#7b2d3b] font-inter text-xs font-medium transition-all flex items-center justify-center space-x-1.5 mt-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 px-4 rounded-xl border border-[#7b2d3b]/25 dark:border-[#7b2d3b]/50 hover:border-[#7b2d3b] bg-white/40 dark:bg-[#161b22] hover:bg-white/75 dark:hover:bg-[#21262d] text-[#7b2d3b] dark:text-[#fca5a5] font-inter text-xs font-medium transition-all flex items-center justify-center space-x-1.5 mt-2 cursor-pointer disabled:opacity-50"
                 >
                   <span>Instant Guest Author Access</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#7b2d3b]" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#7b2d3b] dark:text-[#fca5a5]" />
                 </button>
               </form>
 
               {/* Bottom Sign up / Sign in Toggle */}
               <div className="mt-6 text-center">
-                <span className="font-inter text-xs text-[#1c1815]/70">
+                <span className="font-inter text-xs text-[#1c1815]/70 dark:text-[#8b949e]">
                   {isSignUp ? 'Already have an author account? ' : "Don't have an author account? "}
                   <button
                     type="button"
@@ -386,7 +388,7 @@ export default function Auth() {
                       setIsSignUp(!isSignUp);
                       setError('');
                     }}
-                    className="text-[#7b2d3b] hover:text-[#5e1f2b] font-semibold editorial-link-underline cursor-pointer"
+                    className="text-[#7b2d3b] dark:text-[#fca5a5] hover:text-[#5e1f2b] dark:hover:text-white font-semibold editorial-link-underline cursor-pointer"
                   >
                     {isSignUp ? 'Sign in' : 'Start writing free'}
                   </button>
@@ -394,13 +396,13 @@ export default function Auth() {
               </div>
 
               {/* Fine-Print Terms & Privacy */}
-              <p className="font-inter text-[11.5px] text-[#1c1815]/50 text-center mt-6 leading-relaxed">
+              <p className="font-inter text-[11.5px] text-[#1c1815]/50 dark:text-[#6e7681] text-center mt-6 leading-relaxed">
                 By continuing, you acknowledge NorthStar's{' '}
-                <span className="editorial-link-underline hover:text-[#1c1815] cursor-pointer">
+                <span className="editorial-link-underline hover:text-[#1c1815] dark:hover:text-[#f0f6fc] cursor-pointer">
                   Terms of Service
                 </span>{' '}
                 and{' '}
-                <span className="editorial-link-underline hover:text-[#1c1815] cursor-pointer">
+                <span className="editorial-link-underline hover:text-[#1c1815] dark:hover:text-[#f0f6fc] cursor-pointer">
                   Privacy Policy
                 </span>
                 .
@@ -410,7 +412,7 @@ export default function Auth() {
               <div className="text-center mt-5">
                 <Link
                   to="/"
-                  className="font-inter text-xs text-[#1c1815]/45 hover:text-[#7b2d3b] transition-colors"
+                  className="font-inter text-xs text-[#1c1815]/45 dark:text-[#6e7681] hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors"
                 >
                   &larr; Back to Landing Page
                 </Link>
