@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ShieldCheck, Eye, EyeOff, Check, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import TermsModal from '../components/TermsModal';
+import PrivacyModal from '../components/PrivacyModal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import useDocumentTitle from '../hooks/useDocumentTitle';
@@ -29,6 +31,7 @@ export default function Auth() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [activeModal, setActiveModal] = useState(null); // 'terms' | 'privacy' | null
 
   const redirectTarget = location.state?.from?.pathname || '/dashboard';
 
@@ -442,13 +445,21 @@ export default function Auth() {
               {/* Fine-Print Terms & Privacy */}
               <p className="font-inter text-[11.5px] text-[#1c1815]/50 dark:text-[#6e7681] text-center mt-6 leading-relaxed">
                 By continuing, you acknowledge NorthStar's{' '}
-                <span className="editorial-link-underline hover:text-[#1c1815] dark:hover:text-[#f0f6fc] cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal('terms')}
+                  className="editorial-link-underline hover:text-[#1c1815] dark:hover:text-[#f0f6fc] cursor-pointer font-medium bg-transparent border-none p-0 inline text-inherit"
+                >
                   Terms of Service
-                </span>{' '}
+                </button>{' '}
                 and{' '}
-                <span className="editorial-link-underline hover:text-[#1c1815] dark:hover:text-[#f0f6fc] cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal('privacy')}
+                  className="editorial-link-underline hover:text-[#1c1815] dark:hover:text-[#f0f6fc] cursor-pointer font-medium bg-transparent border-none p-0 inline text-inherit"
+                >
                   Privacy Policy
-                </span>
+                </button>
                 .
               </p>
 
@@ -465,6 +476,16 @@ export default function Auth() {
           </div>
         </div>
       </main>
+
+      {/* Terms of Service & Privacy Policy Modals */}
+      <TermsModal
+        isOpen={activeModal === 'terms'}
+        onClose={() => setActiveModal(null)}
+      />
+      <PrivacyModal
+        isOpen={activeModal === 'privacy'}
+        onClose={() => setActiveModal(null)}
+      />
     </div>
   );
 }
