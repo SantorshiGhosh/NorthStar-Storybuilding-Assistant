@@ -509,7 +509,7 @@ export default function HelpSupport() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf6ef] dark:bg-[#161618] text-[#1c1815] dark:text-[#f5f5f7] flex flex-col font-inter selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
+    <div className="min-h-screen bg-[#f6f6f4] dark:bg-[#161618] text-[#1c1815] dark:text-[#f5f5f7] flex flex-col font-inter selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
       {/* Top Application Navbar */}
       <Navbar isDashboard={true} />
 
@@ -562,7 +562,7 @@ export default function HelpSupport() {
       <section className="relative border-b border-[#1c1815]/10 dark:border-white/10 overflow-hidden bg-[#f6f6f4] dark:bg-[#161618]">
         {/* Subtle grid accent */}
         <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 bg-[radial-gradient(#1c1815_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#faf6ef]/40 to-[#faf6ef] dark:via-[#161618]/40 dark:to-[#161618] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#f6f6f4]/40 to-[#f6f6f4] dark:via-[#161618]/40 dark:to-[#161618] pointer-events-none" />
 
         <div className="relative max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-10 sm:pt-14 sm:pb-12">
           {/* Eyebrow badge */}

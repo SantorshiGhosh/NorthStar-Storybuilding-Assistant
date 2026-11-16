@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg-main: #fbfbf9;
+  --bg-main: #f6f6f4;
   --surface-card: #ffffff;
   --border-subtle: #eae9e4;
   --border-focus: #2563eb;

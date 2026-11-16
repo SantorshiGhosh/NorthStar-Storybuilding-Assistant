@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#fbfbf9] dark:bg-neutral-950 flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[#f6f6f4] dark:bg-neutral-950 flex flex-col items-center justify-center p-6">
         <div className="flex items-center space-x-3 text-xs text-neutral-500 font-mono animate-pulse">
           <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" />
           <span>Verifying secure author session...</span>

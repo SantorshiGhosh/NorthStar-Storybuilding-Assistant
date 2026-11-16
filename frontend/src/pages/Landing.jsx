@@ -24,9 +24,9 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#faf6ef] dark:bg-[#0d1117] text-[#1c1815] dark:text-[#f0f6fc] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
+    <div className="min-h-screen bg-[#f6f6f4] dark:bg-[#0d1117] text-[#1c1815] dark:text-[#f0f6fc] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
       {/* Top Header */}
-      <header className="border-b border-[#1c1815]/10 dark:border-[#30363d] bg-[#faf6ef]/90 dark:bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
+      <header className="border-b border-[#1c1815]/10 dark:border-[#30363d] bg-[#f6f6f4]/90 dark:bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-40 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-[#7b2d3b] text-[#faf6ef] flex items-center justify-center shadow-xs group-hover:bg-[#5e1f2b] transition-colors">
@@ -77,7 +77,7 @@ export default function Landing() {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="sm:hidden fixed inset-x-0 top-16 bg-[#faf6ef] dark:bg-[#161b22] border-b border-[#1c1815]/10 dark:border-[#30363d] shadow-xl p-4 space-y-3 z-50">
+          <div className="sm:hidden fixed inset-x-0 top-16 bg-[#fcfcfb] dark:bg-[#161b22] border-b border-[#1c1815]/10 dark:border-[#30363d] shadow-xl p-4 space-y-3 z-50">
             {user ? (
               <Link
                 to="/dashboard"
@@ -117,9 +117,9 @@ export default function Landing() {
         )}
       </header>
 
-      <main className="flex-1 bg-[#faf6ef] dark:bg-[#0d1117] transition-colors duration-200">
+      <main className="flex-1 bg-[#f6f6f4] dark:bg-[#0d1117] transition-colors duration-200">
         {/* 1. First Impression: Dynamic Orbital Cards (Narrative Guardian Showcase) */}
-        <section className="w-full bg-[#faf6ef] dark:bg-[#0d1117] relative transition-colors duration-200">
+        <section className="w-full bg-[#f6f6f4] dark:bg-[#0d1117] relative transition-colors duration-200">
           <OrbitalCards />
         </section>
 
@@ -161,7 +161,7 @@ export default function Landing() {
                 </Link>
                 <Link
                   to="/auth"
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#fffdfa] dark:bg-[#161b22] hover:bg-[#fbf9f4] dark:hover:bg-[#21262d] text-[#1c1815] dark:text-[#f0f6fc] text-sm font-medium border border-[#1c1815]/15 dark:border-[#30363d] shadow-2xs transition-all flex items-center justify-center"
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#fcfcfb] dark:bg-[#161b22] hover:bg-[#f6f6f4] dark:hover:bg-[#21262d] text-[#1c1815] dark:text-[#f0f6fc] text-sm font-medium border border-[#1c1815]/15 dark:border-[#30363d] shadow-2xs transition-all flex items-center justify-center"
                 >
                   Sign In
                 </Link>
@@ -177,7 +177,7 @@ export default function Landing() {
 
         {/* 3. Live Scenario Preview Card */}
         <section className="max-w-4xl mx-auto px-6 pb-20">
-          <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-2xl border border-[#1c1815]/10 dark:border-[#30363d] shadow-lg shadow-[#1c1815]/5 dark:shadow-black/20 p-6 sm:p-8 text-left transition-colors duration-200">
+          <div className="bg-[#fcfcfb] dark:bg-[#161b22] rounded-2xl border border-[#1c1815]/10 dark:border-[#30363d] shadow-lg shadow-[#1c1815]/5 dark:shadow-black/20 p-6 sm:p-8 text-left transition-colors duration-200">
             <div className="flex items-center justify-between border-b border-[#1c1815]/10 dark:border-[#30363d] pb-4 mb-6">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
@@ -193,7 +193,7 @@ export default function Landing() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-[#faf6ef] dark:bg-[#0d1117] rounded-xl p-4 border border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
+              <div className="bg-[#f6f6f4] dark:bg-[#0d1117] rounded-xl p-4 border border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
                 <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 mb-1 flex items-center space-x-1.5">
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Chapter 2 &mdash; Established Canon</span>
@@ -203,7 +203,7 @@ export default function Landing() {
                 </p>
               </div>
 
-              <div className="bg-[#fdf8f4] dark:bg-[#2b1114]/40 rounded-xl p-4 border border-[#7b2d3b]/20 dark:border-[#671e24] transition-colors duration-200">
+              <div className="bg-[#fcfcfb] dark:bg-[#2b1114]/40 rounded-xl p-4 border border-[#7b2d3b]/20 dark:border-[#671e24] transition-colors duration-200">
                 <div className="text-xs font-semibold text-[#7b2d3b] dark:text-[#f85149] mb-1 flex items-center space-x-1.5">
                   <AlertTriangle className="w-3.5 h-3.5 text-[#7b2d3b] dark:text-[#f85149]" />
                   <span>Chapter 4 &mdash; New Conflicting Passage</span>
@@ -214,7 +214,7 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="bg-[#f3ece0]/70 dark:bg-[#0d1117]/80 rounded-xl p-4 border border-[#1c1815]/10 dark:border-[#30363d] text-xs text-[#1c1815]/80 dark:text-[#8b949e] space-y-2 transition-colors duration-200">
+            <div className="bg-[#f6f6f4]/70 dark:bg-[#0d1117]/80 rounded-xl p-4 border border-[#1c1815]/10 dark:border-[#30363d] text-xs text-[#1c1815]/80 dark:text-[#8b949e] space-y-2 transition-colors duration-200">
               <div className="font-semibold text-[#1c1815] dark:text-[#f0f6fc]">AI Guardian Verdict:</div>
               <p>
                 Arin is depicted using his left hand/arm, directly contradicting Chapter 2 where his left arm was severed.
@@ -241,7 +241,7 @@ export default function Landing() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
+            <div className="bg-[#fcfcfb] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
               <div className="w-10 h-10 rounded-lg bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 text-[#7b2d3b] dark:text-[#fca5a5] flex items-center justify-center mb-4">
                 <BookOpen className="w-5 h-5" />
               </div>
@@ -253,7 +253,7 @@ export default function Landing() {
               </p>
             </div>
 
-            <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
+            <div className="bg-[#fcfcfb] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
               <div className="w-10 h-10 rounded-lg bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 text-[#7b2d3b] dark:text-[#fca5a5] flex items-center justify-center mb-4">
                 <GitFork className="w-5 h-5" />
               </div>
@@ -265,7 +265,7 @@ export default function Landing() {
               </p>
             </div>
 
-            <div className="bg-[#fffdfa] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
+            <div className="bg-[#fcfcfb] dark:bg-[#161b22] rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] p-6 shadow-xs transition-colors duration-200">
               <div className="w-10 h-10 rounded-lg bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 text-[#7b2d3b] dark:text-[#fca5a5] flex items-center justify-center mb-4">
                 <Lock className="w-5 h-5" />
               </div>
@@ -281,7 +281,7 @@ export default function Landing() {
       </main>
 
       {/* Comprehensive Responsive Footer */}
-      <footer className="border-t border-[#1c1815]/10 dark:border-[#30363d] py-12 bg-[#faf6ef] dark:bg-[#0d1117] text-xs text-[#1c1815]/60 dark:text-[#8b949e] transition-colors duration-200">
+      <footer className="border-t border-[#1c1815]/10 dark:border-[#30363d] py-12 bg-[#f6f6f4] dark:bg-[#0d1117] text-xs text-[#1c1815]/60 dark:text-[#8b949e] transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8 text-left">
           {/* Brand Col */}
           <div className="sm:col-span-2 space-y-3">

@@ -1,8 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { X, FileText, Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { X, FileText, Shield, ExternalLink } from 'lucide-react';
+import { animate, scroll, inView } from 'motion';
 
 export default function TermsModal({ isOpen, onClose }) {
   const modalRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -25,10 +29,56 @@ export default function TermsModal({ isOpen, onClose }) {
       modalRef.current?.focus();
     }, 50);
 
+    // Motion.dev scroll-linked animation on internal container
+    let stopScroll = () => {};
+    const cleanups = [];
+
+    const progressBar = progressBarRef.current;
+    const container = scrollContainerRef.current;
+
+    if (progressBar && container) {
+      container.scrollTop = 0;
+
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // 1. Motion.dev scroll progress indicator for container
+      stopScroll = scroll(
+        animate(
+          progressBar,
+          { scaleX: [0, 1] },
+          { ease: 'linear' }
+        ),
+        { container }
+      );
+
+      // 2. Motion.dev section transitions
+      if (!prefersReducedMotion) {
+        const sections = container.querySelectorAll('section');
+        sections.forEach((section) => {
+          const stopInView = inView(
+            section,
+            () => {
+              animate(
+                section,
+                { opacity: [0.4, 1], y: [14, 0] },
+                { duration: 0.45, ease: [0.16, 1, 0.3, 1] }
+              );
+            },
+            { root: container, margin: '0px 0px -40px 0px' }
+          );
+          cleanups.push(stopInView);
+        });
+      }
+    }
+
     return () => {
       document.body.style.overflow = originalStyle;
       window.removeEventListener('keydown', handleKeyDown);
       clearTimeout(timer);
+      stopScroll();
+      cleanups.forEach((c) => c());
     };
   }, [isOpen, onClose]);
 
@@ -46,10 +96,18 @@ export default function TermsModal({ isOpen, onClose }) {
         ref={modalRef}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-3xl max-h-[88vh] bg-[#faf6ef] dark:bg-[#161b22] text-[#1c1815] dark:text-[#f0f6fc] rounded-[24px] border border-[#1c1815]/10 dark:border-[#30363d] shadow-2xl flex flex-col overflow-hidden focus:outline-none transition-colors duration-200"
+        className="relative w-full max-w-3xl max-h-[88vh] bg-[#fcfcfb] dark:bg-[#161b22] text-[#1c1815] dark:text-[#f0f6fc] rounded-[24px] border border-[#1c1815]/10 dark:border-[#30363d] shadow-2xl flex flex-col overflow-hidden focus:outline-none transition-colors duration-200"
       >
+        {/* Motion.dev Scroll Progress Indicator */}
+        <div
+          ref={progressBarRef}
+          className="absolute top-0 left-0 right-0 h-[3.5px] bg-[#7b2d3b] dark:bg-[#fca5a5] z-[60] pointer-events-none"
+          style={{ transformOrigin: '0 50%', transform: 'scaleX(0)' }}
+          aria-hidden="true"
+        />
+
         {/* Fixed Header */}
-        <div className="px-6 sm:px-8 py-5 border-b border-[#1c1815]/10 dark:border-[#30363d] bg-[#f3ece0]/80 dark:bg-[#161b22]/90 backdrop-blur-xs flex items-center justify-between shrink-0">
+        <div className="px-6 sm:px-8 py-5 border-b border-[#1c1815]/10 dark:border-[#30363d] bg-[#f6f6f4]/80 dark:bg-[#161b22]/90 backdrop-blur-xs flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-[#7b2d3b]/10 dark:bg-[#7b2d3b]/25 text-[#7b2d3b] dark:text-[#fca5a5] flex items-center justify-center shrink-0">
               <FileText className="w-4 h-4" />
@@ -83,8 +141,11 @@ export default function TermsModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Scrollable Document Content */}
-        <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-7 font-inter text-xs sm:text-[13px] leading-relaxed text-[#1c1815]/80 dark:text-[#c9d1d9]">
+        {/* Scrollable Document Content with Smooth Scrolling */}
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-7 font-inter text-xs sm:text-[13px] leading-relaxed text-[#1c1815]/80 dark:text-[#c9d1d9] scroll-smooth"
+        >
           {/* Section 1 */}
           <section className="space-y-2">
             <h3 className="font-fraunces text-base sm:text-lg font-semibold text-[#1c1815] dark:text-[#f0f6fc]">
@@ -286,18 +347,27 @@ export default function TermsModal({ isOpen, onClose }) {
             <p>
               If you have any questions or feedback regarding these Terms, please contact our support team:
             </p>
-            <div className="bg-[#f3ece0] dark:bg-[#121214] p-3.5 rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] text-xs space-y-1">
-              <div><strong>Official Support Email:</strong> <a href="mailto:codebrew@gmail.com" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">codebrew@gmail.com</a></div>
-              <div><strong>Telephone Helpline:</strong> <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">9231456311</a></div>
+            <div className="bg-[#f6f6f4] dark:bg-[#121214] p-3.5 rounded-xl border border-[#1c1815]/10 dark:border-[#30363d] text-xs space-y-1">
+              <div><strong>Official Support Email:</strong> <a href="mailto:support@storybible.ai" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">support@storybible.ai</a></div>
+              <div><strong>Telephone Helpline:</strong> <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] underline font-medium">+1 (800) 555-0199</a></div>
             </div>
           </section>
         </div>
 
         {/* Fixed Footer */}
-        <div className="px-6 sm:px-8 py-4 border-t border-[#1c1815]/10 dark:border-[#30363d] bg-[#f3ece0]/60 dark:bg-[#161b22]/90 flex items-center justify-between shrink-0">
+        <div className="px-6 sm:px-8 py-4 border-t border-[#1c1815]/10 dark:border-[#30363d] bg-[#f6f6f4]/60 dark:bg-[#161b22]/90 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2 text-[11px] text-[#1c1815]/60 dark:text-[#8b949e]">
             <Shield className="w-3.5 h-3.5 text-[#7b2d3b] dark:text-[#fca5a5]" />
             <span>Author content sovereignty and copyright preserved</span>
+            <span className="hidden sm:inline">&bull;</span>
+            <Link
+              to="/terms"
+              onClick={onClose}
+              className="hidden sm:inline-flex items-center space-x-1 text-[#7b2d3b] dark:text-[#fca5a5] hover:underline"
+            >
+              <span>Open full page</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
           </div>
 
           <button

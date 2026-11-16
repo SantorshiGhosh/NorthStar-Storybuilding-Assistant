@@ -522,7 +522,7 @@ export default function EntityProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#fbfbf9] dark:bg-neutral-950 flex flex-col font-sans">
+      <div className="min-h-screen bg-[#f6f6f4] dark:bg-neutral-950 flex flex-col font-sans">
         <Navbar currentProject={project} />
         <div className="flex-1 flex items-center justify-center text-xs text-neutral-400">
           Loading comprehensive entity profile...
@@ -533,7 +533,7 @@ export default function EntityProfile() {
 
   if (!entity) {
     return (
-      <div className="min-h-screen bg-[#fbfbf9] dark:bg-neutral-950 flex flex-col font-sans">
+      <div className="min-h-screen bg-[#f6f6f4] dark:bg-neutral-950 flex flex-col font-sans">
         <Navbar currentProject={project} />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <AlertCircle className="w-10 h-10 text-amber-500 mb-2" />
@@ -618,7 +618,7 @@ export default function EntityProfile() {
   });
 
   return (
-    <div className="min-h-screen bg-[#fbfbf9] dark:bg-neutral-950 flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-[#f6f6f4] dark:bg-neutral-950 flex flex-col font-sans transition-colors">
       <Navbar currentProject={project} />
 
       <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">

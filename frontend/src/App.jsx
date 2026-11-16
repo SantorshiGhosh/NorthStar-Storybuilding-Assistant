@@ -26,6 +26,8 @@ const StoryArchitect = lazy(() => import('./pages/StoryArchitect'));
 const EntityProfile = lazy(() => import('./pages/EntityProfile'));
 const AttachmentVault = lazy(() => import('./pages/AttachmentVault'));
 const HelpSupport = lazy(() => import('./pages/HelpSupport'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageSkeleton() {
@@ -64,7 +66,7 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#fbfbf9] dark:bg-neutral-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="min-h-screen bg-[#f6f6f4] dark:bg-neutral-950 flex flex-col items-center justify-center p-6 text-center">
           <div className="bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 rounded-2xl p-8 max-w-lg shadow-sm">
             <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 flex items-center justify-center mx-auto mb-4 font-bold text-lg">
               !
@@ -115,10 +117,14 @@ export default function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/support" element={<HelpSupport />} />
                 <Route path="/help" element={<HelpSupport />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route
                   path="/orbital-cards"
                   element={
-                    <div className="min-h-screen bg-[#faf6ef] flex justify-center">
+                    <div className="min-h-screen bg-[#f6f6f4] flex justify-center">
                       <OrbitalCards />
                     </div>
                   }

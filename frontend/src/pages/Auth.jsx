@@ -122,9 +122,9 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf6ef] dark:bg-[#0d1117] text-[#1c1815] dark:text-[#f0f6fc] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
+    <div className="min-h-screen bg-[#f6f6f4] dark:bg-[#0d1117] text-[#1c1815] dark:text-[#f0f6fc] font-inter flex flex-col selection:bg-[#7b2d3b] selection:text-[#faf6ef] transition-colors duration-200">
       {/* Sticky Translucent Header */}
-      <header className="sticky top-0 z-50 h-[68px] bg-[#faf6ef]/85 dark:bg-[#0d1117]/85 backdrop-blur-md border-b border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
+      <header className="sticky top-0 z-50 h-[68px] bg-[#f6f6f4]/85 dark:bg-[#0d1117]/85 backdrop-blur-md border-b border-[#1c1815]/10 dark:border-[#30363d] transition-colors duration-200">
         <div className="max-w-[1240px] mx-auto px-6 sm:px-8 h-full flex items-center justify-between">
           {/* 1. Left: Brand Lockup with NorthStar Logo & Name */}
           <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2.5 group">
@@ -182,7 +182,7 @@ export default function Auth() {
       <main className="flex-1 flex items-center justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-68px)]">
         <div className="w-full max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] border border-[#1c1815]/10 dark:border-[#30363d] rounded-[24px] lg:rounded-[28px] overflow-hidden shadow-xl shadow-[#1c1815]/5 dark:shadow-black/25">
           {/* 3. Left Column: Editorial Greeting Panel (Matched to NorthStar Story Canon Theme) */}
-          <div className="order-2 lg:order-1 bg-[#f3ece0] dark:bg-[#161b22] relative overflow-hidden p-8 sm:p-12 lg:p-14 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-[#1c1815]/10 dark:border-[#30363d] min-h-[520px] lg:min-h-[640px] transition-colors duration-200">
+          <div className="order-2 lg:order-1 bg-[#f6f6f4] dark:bg-[#161b22] relative overflow-hidden p-8 sm:p-12 lg:p-14 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-[#1c1815]/10 dark:border-[#30363d] min-h-[520px] lg:min-h-[640px] transition-colors duration-200">
             {/* Layered radial-gradient burgundy tints */}
             <div className="absolute inset-0 editorial-radial-tints pointer-events-none" />
             {/* Multiply dot-grain texture */}
@@ -236,7 +236,7 @@ export default function Auth() {
           </div>
 
           {/* Right Column: Sign-in Form (Desktop: Right, Mobile: Top order-1) */}
-          <div className="order-1 lg:order-2 bg-[#faf6ef] dark:bg-[#0d1117] p-8 sm:p-12 lg:p-14 flex items-center justify-center relative transition-colors duration-200">
+          <div className="order-1 lg:order-2 bg-[#fcfcfb] dark:bg-[#0d1117] p-8 sm:p-12 lg:p-14 flex items-center justify-center relative transition-colors duration-200">
             <div className="w-full max-w-[400px] mx-auto">
               {/* Header Row: Stacked label + Heading + Tabular Index Numeral */}
               <div className="flex items-start justify-between mb-8">
@@ -266,7 +266,7 @@ export default function Auth() {
                 type="button"
                 onClick={handleGoogleSSO}
                 disabled={submitting || googleLoading}
-                className="w-full py-3 px-4 bg-white/60 dark:bg-[#161b22] hover:bg-[#fffdf9] dark:hover:bg-[#21262d] border border-[#1c1815]/15 dark:border-[#30363d] rounded-xl flex items-center justify-center space-x-3 text-xs sm:text-sm font-inter font-medium text-[#1c1815] dark:text-[#f0f6fc] transition-all shadow-2xs group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-white/60 dark:bg-[#161b22] hover:bg-[#f6f6f4] dark:hover:bg-[#21262d] border border-[#1c1815]/15 dark:border-[#30363d] rounded-xl flex items-center justify-center space-x-3 text-xs sm:text-sm font-inter font-medium text-[#1c1815] dark:text-[#f0f6fc] transition-all shadow-2xs group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {googleLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-[#7b2d3b] dark:text-[#fca5a5]" />
@@ -314,7 +314,7 @@ export default function Auth() {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="J.R.R. Tolkien"
-                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-[#fffdf9] dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
+                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-white dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
                     />
                   </div>
                 )}
@@ -329,7 +329,7 @@ export default function Auth() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="author@novel.com"
-                    className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-[#fffdf9] dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
+                    className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-white dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
                   />
                 </div>
 
@@ -351,7 +351,7 @@ export default function Auth() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-[#fffdf9] dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
+                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-white dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
                     />
                     <button
                       type="button"
@@ -375,7 +375,7 @@ export default function Auth() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-[#fffdf9] dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
+                      className="w-full rounded-xl bg-white/60 dark:bg-[#161b22] border border-[#1c1815]/15 dark:border-[#30363d] px-3.5 py-2.5 text-xs sm:text-sm text-[#1c1815] dark:text-[#f0f6fc] placeholder:text-[#1c1815]/35 dark:placeholder:text-[#6e7681] focus:bg-white dark:focus:bg-[#1c212c] focus:border-[#7b2d3b] dark:focus:border-[#f87171] focus:ring-4 focus:ring-[#7b2d3b]/10 focus:outline-hidden transition-all shadow-2xs font-inter"
                     />
                   </div>
                 )}
