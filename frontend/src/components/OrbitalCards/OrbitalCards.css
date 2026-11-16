@@ -1,0 +1,178 @@
+@font-face { font-family: "Geist"; font-weight: 100 900; font-display: swap; src: url("/fonts/geist-latin.woff2") format("woff2"); }
+/* No overflow on the root: clipping the scroll track would stop the sticky stage from pinning. */
+.velox-orbital-cards {
+  --orbital-cards-bg: #ffffff;
+  --orbital-cards-card: #ffffff;
+  --orbital-cards-ink: #0a0a0a;
+  --orbital-cards-muted: #64748b;
+  --orbital-cards-line: #e2e8f0;
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  max-width: 1440px;
+  height: var(--orbital-cards-scroll);
+  background: var(--orbital-cards-bg);
+  color: var(--orbital-cards-ink);
+  font: 400 16px/1.5 "Geist", system-ui, sans-serif;
+}
+.velox-orbital-cards *, .velox-orbital-cards *::before, .velox-orbital-cards *::after { box-sizing: border-box; }
+
+/* Full-bleed stage pinned comfortably below the header */
+.velox-orbital-cards__stage {
+  position: sticky;
+  top: 64px;
+  height: calc(100svh - 64px);
+  width: 100%;
+  max-width: 100%;
+  overflow: clip;
+}
+
+/* Center container: shifted slightly above center (40%) to balance with foreground cards and center the scene */
+.velox-orbital-cards__center {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  width: min(30cqw, 380px);
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+  will-change: transform, opacity;
+}
+
+.velox-orbital-cards__eyebrow {
+  margin: 0;
+  font-family: var(--orbital-cards-eyebrow-font), system-ui, sans-serif;
+  font-size: clamp(10.5px, 1cqw, 12px);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: #2563eb;
+}
+
+/* Balanced headline with comfortable line height and breathing room */
+.velox-orbital-cards__headline {
+  margin: 0;
+  font-family: var(--orbital-cards-headline-font), system-ui, sans-serif;
+  font-size: clamp(17px, 1.75cqw, 25px);
+  font-weight: 600;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--orbital-cards-ink);
+}
+
+/* Compact, elevated cards */
+.velox-orbital-cards__card {
+  --card-width: min(260px, 44cqw);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--card-width);
+  margin-left: calc(var(--card-width) / -2);
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 15px 17px;
+  border: 1px solid var(--orbital-cards-line);
+  border-radius: 14px;
+  background: var(--orbital-cards-card);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+}
+
+.velox-orbital-cards__icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  color: #2563eb;
+  margin-top: 1px;
+}
+.velox-orbital-cards__icon svg { display: block; width: 28px; height: 28px; }
+
+.velox-orbital-cards__body {
+  flex: 1 0 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.velox-orbital-cards__title {
+  margin: 0;
+  font-family: var(--orbital-cards-title-font), system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  color: var(--orbital-cards-ink);
+}
+
+.velox-orbital-cards__text {
+  margin: 0;
+  font-family: var(--orbital-cards-text-font), system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.45;
+  color: var(--orbital-cards-muted);
+}
+
+/* Responsive container query for mobile (< 560px) */
+@container (max-width: 560px) {
+  .velox-orbital-cards__card {
+    --card-width: min(290px, 80cqw);
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+  .velox-orbital-cards__center {
+    top: 50%;
+    width: 82cqw;
+    max-width: 88vw;
+  }
+  .velox-orbital-cards__headline {
+    font-size: clamp(20px, 4.5cqw, 26px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .velox-orbital-cards__card, .velox-orbital-cards__center { will-change: auto; }
+}
+
+/* Scoped dark mode theme continuity */
+:where(.dark) .velox-orbital-cards {
+  --orbital-cards-bg: var(--surface-card, #161b22);
+  --orbital-cards-card: #1c212c;
+  --orbital-cards-ink: var(--text-primary, #f0f6fc);
+  --orbital-cards-muted: #94a3b8;
+  --orbital-cards-line: #334155;
+}
+:where(.dark) .velox-orbital-cards__icon {
+  color: #60a5fa;
+}
+:where(.dark) .velox-orbital-cards__eyebrow {
+  color: #60a5fa;
+}
+:where(.dark) .velox-orbital-cards__card {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+}
+
+/* Scoped resets for any global styles leaking in */
+.velox-orbital-cards {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: auto;
+}
+.velox-orbital-cards h2,
+.velox-orbital-cards h3 {
+  color: inherit;
+}

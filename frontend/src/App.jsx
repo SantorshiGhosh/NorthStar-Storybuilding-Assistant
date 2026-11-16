@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import OrbitalCards from './components/OrbitalCards/OrbitalCards';
 
 // Route-level code splitting for heavy interactive workspaces
 const Workspace = lazy(() => import('./pages/Workspace'));
@@ -108,6 +109,14 @@ export default function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route
+                  path="/orbital-cards"
+                  element={
+                    <div className="min-h-screen bg-white flex justify-center">
+                      <OrbitalCards />
+                    </div>
+                  }
+                />
 
                 {/* Authenticated Protected Routes */}
                 <Route

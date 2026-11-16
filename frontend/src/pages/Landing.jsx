@@ -7,13 +7,11 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle,
-  FileText,
   AlertTriangle,
-  Lock,
-  Layers,
-  Feather
+  Lock
 } from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import OrbitalCards from '../components/OrbitalCards/OrbitalCards';
 import { projectService } from '../services/api';
 
 export default function Landing() {
@@ -38,15 +36,15 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbfbf9] text-neutral-900 flex flex-col selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-white dark:bg-[#0d1117] text-neutral-900 dark:text-neutral-100 flex flex-col selection:bg-blue-100 selection:text-blue-900">
       {/* Top Header */}
-      <header className="border-b border-neutral-200/80 bg-white/80 backdrop-blur-sm sticky top-0 z-30">
+      <header className="border-b border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-[#0d1117]/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-lg bg-neutral-900 text-white flex items-center justify-center shadow-xs">
               <ShieldCheck className="w-4 h-4" />
             </div>
-            <span className="font-semibold text-neutral-900 text-base tracking-tight">
+            <span className="font-semibold text-neutral-900 dark:text-neutral-100 text-base tracking-tight">
               NorthStar
             </span>
           </div>
@@ -55,7 +53,7 @@ export default function Landing() {
             <ThemeToggle />
             <Link
               to="/auth"
-              className="text-xs font-medium text-neutral-600 hover:text-neutral-900 px-3 py-1.5 transition-colors"
+              className="text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white px-3 py-1.5 transition-colors"
             >
               Sign In
             </Link>
@@ -70,8 +68,13 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="flex-1">
+      <main className="flex-1 bg-white dark:bg-[#0d1117]">
+        {/* 1. First Impression: Dynamic Orbital Cards (Narrative Guardian Showcase) */}
+        <section className="w-full bg-white dark:bg-[#0d1117] flex justify-center">
+          <OrbitalCards />
+        </section>
+
+        {/* 2. Hero Section with Call to Actions */}
         <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-medium mb-8">
             <Sparkles className="w-3.5 h-3.5" />
@@ -113,7 +116,7 @@ export default function Landing() {
           </p>
         </section>
 
-        {/* Live Scenario Preview Card (Notion-style) */}
+        {/* 3. Live Scenario Preview Card (Notion-style) */}
         <section className="max-w-4xl mx-auto px-6 pb-20">
           <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-md p-6 sm:p-8 text-left">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-4 mb-6">
@@ -165,7 +168,7 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Feature Grid */}
+        {/* 4. Feature Grid */}
         <section className="max-w-6xl mx-auto px-6 pb-24">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-3">
