@@ -588,3 +588,60 @@ class ProjectBundleOut(BaseModel):
     class Config:
         from_attributes = True
         extra = "ignore"
+
+# --- Help & Support ---
+class ContactSupportCreate(BaseModel):
+    full_name: str = Field(..., min_length=2, max_length=255, example="Jane Author")
+    email: str = Field(..., min_length=5, max_length=255, example="jane@example.com")
+    subject: str = Field(..., min_length=3, max_length=255, example="Continuity Analysis Question")
+    category: Optional[str] = Field(default="General Inquiry", max_length=100, example="Technical Issue")
+    description: Optional[str] = Field(default=None, max_length=5000, example="Detailed description of problem...")
+    message: Optional[str] = Field(default=None, max_length=5000, example="Hello NorthStar support team...")
+
+    class Config:
+        extra = "ignore"
+
+class SupportQueryOut(BaseModel):
+    id: IdType
+    user_id: Optional[IdType] = None
+    full_name: str
+    email: str
+    subject: str
+    category: str = "General Inquiry"
+    description: str
+    status: str = "Pending"
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'user_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
+class SupportMessageOut(BaseModel):
+    id: IdType
+    user_id: Optional[IdType] = None
+    full_name: str
+    email: str
+    subject: str
+    message: str
+    status: str = "delivered"
+    delivery_status: str = "stored_in_support_inbox"
+    created_at: Optional[Union[datetime, str]] = None
+
+    @field_serializer('id', 'user_id', check_fields=False)
+    def serialize_id(self, v: Any, _info):
+        return str(v) if v is not None else None
+
+    class Config:
+        from_attributes = True
+        extra = "ignore"
+
+class ContactSupportResponse(BaseModel):
+    status: str
+    message: str
+    ticket_id: str
+    delivery_status: str = "stored_in_support_inbox"
+    category: Optional[str] = None

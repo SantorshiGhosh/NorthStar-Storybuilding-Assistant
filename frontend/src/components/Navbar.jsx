@@ -12,7 +12,8 @@ import {
   LogOut,
   Paperclip,
   Menu,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -29,7 +30,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const isDashboard = isDashboardProp ?? (location.pathname === '/dashboard');
+  const isDashboard = isDashboardProp ?? (location.pathname === '/dashboard' || location.pathname === '/support' || location.pathname === '/help');
   const projectId = currentProject?.id || currentProject?._id || routeProjectId;
   const authorName = user?.full_name || (user?.email ? user.email.split('@')[0] : 'Guest Author');
 
@@ -67,37 +68,75 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
 
           {/* CENTER: Clean navigation */}
           <nav className="hidden md:flex items-center space-x-6 text-[13.5px] font-medium text-[#636366] dark:text-[#8e8e93]">
-            <a
-              href="#projects"
-              onClick={(e) => {
-                if (location.pathname === '/dashboard') {
-                  e.preventDefault();
-                  document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              className="text-[#1c1c1e] dark:text-[#f5f5f7] font-medium transition-colors cursor-pointer"
+            {user ? (
+              <Link
+                to="/dashboard"
+                onClick={(e) => {
+                  if (location.pathname === '/dashboard') {
+                    e.preventDefault();
+                    document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className={`${
+                  location.pathname === '/dashboard'
+                    ? 'text-[#1c1c1e] dark:text-[#f5f5f7]'
+                    : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
+                } font-medium transition-colors cursor-pointer`}
+              >
+                My Projects
+              </Link>
+            ) : (
+              <Link
+                to="/"
+                className={`${
+                  location.pathname === '/'
+                    ? 'text-[#1c1c1e] dark:text-[#f5f5f7]'
+                    : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
+                } font-medium transition-colors cursor-pointer`}
+              >
+                Home
+              </Link>
+            )}
+            <Link
+              to="/support"
+              className={`${
+                location.pathname === '/support' || location.pathname === '/help'
+                  ? 'text-[#7b2d3b] dark:text-[#fca5a5] font-semibold'
+                  : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
+              } font-medium transition-colors cursor-pointer flex items-center space-x-1.5`}
             >
-              My Projects
-            </a>
+              <HelpCircle className="w-4 h-4" />
+              <span>Help &amp; Support</span>
+            </Link>
           </nav>
 
           {/* RIGHT: ThemeToggle + Solid button + User */}
           <div className="flex items-center space-x-2.5 shrink-0">
             <ThemeToggle className="h-8 w-8" />
 
-            <a
-              href="#projects"
-              onClick={(e) => {
-                if (location.pathname === '/dashboard') {
-                  e.preventDefault();
-                  document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              className="hidden sm:inline-flex btn btn-solid btn-sm text-[13px] shadow-2xs cursor-pointer"
-            >
-              <span>My Projects</span>
-              <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
-            </a>
+            {user ? (
+              <a
+                href="#projects"
+                onClick={(e) => {
+                  if (location.pathname === '/dashboard') {
+                    e.preventDefault();
+                    document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="hidden sm:inline-flex btn btn-solid btn-sm text-[13px] shadow-2xs cursor-pointer"
+              >
+                <span>My Projects</span>
+                <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+              </a>
+            ) : (
+              <Link
+                to="/auth"
+                className="hidden sm:inline-flex btn btn-solid btn-sm text-[13px] shadow-2xs cursor-pointer"
+              >
+                <span>Sign In</span>
+                <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+              </Link>
+            )}
 
             {user ? (
               <div className="hidden sm:flex items-center space-x-2 pl-2.5 border-l border-[#1c1c1e]/10 dark:border-white/10 shrink-0">
@@ -153,6 +192,19 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
               <FolderOpen className="w-4 h-4" />
               <span>My Story Projects</span>
             </button>
+
+            <Link
+              to="/support"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`w-full flex items-center space-x-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${
+                location.pathname === '/support' || location.pathname === '/help'
+                  ? 'bg-[#7b2d3b]/10 text-[#7b2d3b] dark:text-[#fca5a5] font-semibold'
+                  : 'text-[#636366] dark:text-[#8e8e93] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5'
+              }`}
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span>Help &amp; Support</span>
+            </Link>
 
             {user ? (
               <div className="pt-3 border-t border-[#1c1c1e]/10 dark:border-white/10 flex items-center justify-between">
@@ -328,6 +380,20 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
           {/* Theme toggle */}
           <ThemeToggle className="h-8 w-8 shrink-0" />
 
+          {/* Help & Support - Desktop */}
+          <Link
+            to="/support"
+            className={`hidden md:inline-flex items-center space-x-1 px-2.5 py-1 text-xs font-medium rounded-md transition-colors shrink-0 ${
+              location.pathname === '/support' || location.pathname === '/help'
+                ? 'bg-white dark:bg-[#222224] text-[#7b2d3b] dark:text-[#fca5a5] shadow-2xs font-semibold'
+                : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5'
+            }`}
+            title="Help & Support"
+          >
+            <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden xl:inline">Help &amp; Support</span>
+          </Link>
+
           {/* Projects - Desktop only */}
           <Link
             to="/dashboard"
@@ -456,7 +522,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
           )}
 
           {/* Projects Button */}
-          <div className="pt-2 border-t border-[#1c1c1e]/10 dark:border-white/10">
+          <div className="pt-2 border-t border-[#1c1c1e]/10 dark:border-white/10 space-y-2">
             <button
               type="button"
               onClick={() => handleMobileNav('/dashboard')}
@@ -464,6 +530,19 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
             >
               <FolderOpen className="w-4 h-4" />
               <span>All Projects Dashboard</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleMobileNav('/support')}
+              className={`w-full flex items-center space-x-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
+                location.pathname === '/support' || location.pathname === '/help'
+                  ? 'bg-[#7b2d3b]/10 text-[#7b2d3b] dark:text-[#fca5a5] font-semibold'
+                  : 'text-[#636366] dark:text-[#8e8e93] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5'
+              }`}
+            >
+              <HelpCircle className="w-4 h-4 text-[#8e8e93]" />
+              <span>Help &amp; Support</span>
             </button>
           </div>
 

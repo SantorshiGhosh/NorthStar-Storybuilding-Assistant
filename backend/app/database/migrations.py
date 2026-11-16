@@ -69,6 +69,8 @@ class MigrationManager:
             ("002_story_architect_extensions", self._mig_002_architect),
             ("003_auth_and_isolation", self._mig_003_auth_isolation),
             ("004_user_columns_and_defaults", self._mig_004_users),
+            ("005_support_messages", self._mig_005_support),
+            ("006_support_queries", self._mig_006_support_queries),
         ]
 
         for version, func in migrations:
@@ -133,6 +135,42 @@ class MigrationManager:
             ("users", "updated_at", "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"),
         ]
         self._add_columns_if_missing(columns)
+
+    def _mig_005_support(self):
+        """Ensures support_messages table exists."""
+        with engine.connect() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS support_messages (
+                    id VARCHAR(36) PRIMARY KEY,
+                    user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+                    full_name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    subject VARCHAR(255) NOT NULL,
+                    message TEXT NOT NULL,
+                    status VARCHAR(50) DEFAULT 'delivered',
+                    delivery_status VARCHAR(100) DEFAULT 'stored_in_support_inbox',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """))
+            conn.commit()
+
+    def _mig_006_support_queries(self):
+        """Ensures support_queries table exists."""
+        with engine.connect() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS support_queries (
+                    id VARCHAR(36) PRIMARY KEY,
+                    user_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+                    full_name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    subject VARCHAR(255) NOT NULL,
+                    category VARCHAR(100) NOT NULL DEFAULT 'General Inquiry',
+                    description TEXT NOT NULL,
+                    status VARCHAR(50) DEFAULT 'Pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """))
+            conn.commit()
 
     def _add_columns_if_missing(self, columns: List[Tuple[str, str, str]]):
         inspector = inspect(engine)

@@ -453,11 +453,14 @@ export default function Dashboard() {
             <Link to="/dashboard" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
               Workspaces
             </Link>
+            <Link to="/support" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
+              Help &amp; Support
+            </Link>
             <a href="mailto:codebrew@gmail.com" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
               codebrew@gmail.com
             </a>
             <a href="tel:+18005550199" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
-              9231456311
+              +919231456311
             </a>
             <span className="text-[#8e8e93]/60">&copy; {new Date().getFullYear()} NorthStar AI</span>
           </div>

@@ -434,3 +434,35 @@ class EntityMatchingCandidate(Base):
     status = Column(String(50), default="pending")  # pending, merged, kept_separate, linked, dismissed
     decision_history = Column(JSON, default=list)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SupportMessage(Base):
+    __tablename__ = "support_messages"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id = Column(Uuid(as_uuid=False), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    full_name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
+    subject = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    status = Column(String(50), default="delivered")  # delivered, pending, resolved
+    delivery_status = Column(String(100), default="stored_in_support_inbox")  # delivered_via_smtp, stored_in_support_inbox
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class SupportQuery(Base):
+    __tablename__ = "support_queries"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id = Column(Uuid(as_uuid=False), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    full_name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
+    subject = Column(String(255), nullable=False)
+    category = Column(String(100), nullable=False, default="General Inquiry")
+    description = Column(Text, nullable=False)
+    status = Column(String(50), default="Pending")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])

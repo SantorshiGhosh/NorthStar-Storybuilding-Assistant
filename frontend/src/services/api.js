@@ -663,4 +663,19 @@ export const authService = {
   },
 };
 
+export const supportService = {
+  submitContactForm: async (data) => {
+    const res = await api.post('/support/contact', data);
+    return res.data;
+  },
+  getUserQueries: async () => {
+    const res = await api.get('/support/queries');
+    return res.data;
+  },
+  getUserMessages: async () => {
+    const res = await api.get('/support/messages');
+    return res.data;
+  },
+};
+
 export default api;

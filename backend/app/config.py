@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     # Vault Storage
     VAULT_STORAGE_DIRECTORY: str = str(BASE_DIR / "storage" / "private_vault")
 
+    # Email & Official Support
+    SUPPORT_EMAIL: str = "codebrew@gmail.com"
+    SUPPORT_PHONE: str = "+919231456311"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True
+    SMTP_FROM_EMAIL: str = ""
+
     class Config:
         env_file = (str(BASE_DIR / ".env"), str(BASE_DIR / "backend" / ".env"))
         extra = "ignore"

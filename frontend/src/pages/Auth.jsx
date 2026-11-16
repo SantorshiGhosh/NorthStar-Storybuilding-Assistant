@@ -147,12 +147,12 @@ export default function Auth() {
             >
               About
             </a>
-            <a
-              href="mailto:codebrew@gmail.com"
+            <Link
+              to="/support"
               className="font-inter text-sm text-[#1c1815]/70 dark:text-[#8b949e] hover:text-[#1c1815] dark:hover:text-[#f0f6fc] transition-colors editorial-link-underline pb-0.5"
             >
               Help &amp; Support
-            </a>
+            </Link>
           </nav>
 
           {/* Right: ThemeToggle + Pill CTA */}

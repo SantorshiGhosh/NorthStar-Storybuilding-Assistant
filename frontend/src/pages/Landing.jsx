@@ -37,6 +37,15 @@ export default function Landing() {
             </span>
           </Link>
 
+          <nav className="hidden md:flex items-center space-x-6 text-xs font-medium text-[#1c1815]/70 dark:text-[#8b949e]">
+            <a href="/#features" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+              Features
+            </a>
+            <Link to="/support" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+              Help &amp; Support
+            </Link>
+          </nav>
+
           <div className="flex items-center space-x-3">
             <ThemeToggle className="h-8 w-8" />
             {user ? (
@@ -89,12 +98,19 @@ export default function Landing() {
                 </Link>
               </div>
             )}
+            <Link
+              to="/support"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg border border-[#1c1815]/15 dark:border-[#30363d] text-xs font-semibold text-[#1c1815] dark:text-[#f0f6fc] hover:bg-[#1c1815]/5 dark:hover:bg-white/5 transition-colors"
+            >
+              <span>Help &amp; Support</span>
+            </Link>
             <div className="pt-2 border-t border-[#1c1815]/10 dark:border-[#30363d] flex justify-between text-xs text-[#1c1815]/60 dark:text-[#8b949e]">
               <a href="mailto:codebrew@gmail.com" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5]">
                 codebrew@gmail.com
               </a>
               <a href="tel:+18005550199" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5]">
-                9231456311
+                +919231456311
               </a>
             </div>
           </div>
@@ -301,6 +317,11 @@ export default function Landing() {
             <h4 className="font-semibold text-xs text-[#1c1815] dark:text-[#f0f6fc] uppercase tracking-wider">Product</h4>
             <ul className="space-y-2 text-xs">
               <li>
+                <Link to="/support" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+                  Help &amp; Support
+                </Link>
+              </li>
+              <li>
                 <Link to={user ? "/dashboard" : "/auth"} className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
                   {user ? 'My Workspaces' : 'Get Started'}
                 </Link>
@@ -343,12 +364,16 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6 pt-6 border-t border-[#1c1815]/10 dark:border-[#30363d] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#1c1815]/50 dark:text-[#6e7681]">
           <p>&copy; {new Date().getFullYear()} NorthStar AI &bull; AI Continuity Guardian for Novelists &amp; Screenwriters</p>
           <div className="flex items-center space-x-4">
+            <Link to="/support" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+              Help &amp; Support
+            </Link>
+            <span>&bull;</span>
             <a href="mailto:codebrew@gmail.com" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
-              Support
+              codebrew@gmail.com
             </a>
             <span>&bull;</span>
             <a href="tel:+18005550199" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
-              9231456311
+              +919231456311
             </a>
           </div>
         </div>

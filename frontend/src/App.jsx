@@ -25,6 +25,7 @@ const Timeline = lazy(() => import('./pages/Timeline'));
 const StoryArchitect = lazy(() => import('./pages/StoryArchitect'));
 const EntityProfile = lazy(() => import('./pages/EntityProfile'));
 const AttachmentVault = lazy(() => import('./pages/AttachmentVault'));
+const HelpSupport = lazy(() => import('./pages/HelpSupport'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageSkeleton() {
@@ -112,6 +113,8 @@ export default function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/support" element={<HelpSupport />} />
+                <Route path="/help" element={<HelpSupport />} />
                 <Route
                   path="/orbital-cards"
                   element={

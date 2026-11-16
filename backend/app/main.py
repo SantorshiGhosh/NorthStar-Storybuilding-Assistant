@@ -8,7 +8,7 @@ from app.config import settings
 from app.database.connection import init_db, get_db
 from app.database import models
 from app.agents.orchestrator import orchestrator
-from app.routes import auth, projects, manuscripts, chapters, entities, continuity, architect
+from app.routes import auth, projects, manuscripts, chapters, entities, continuity, architect, support
 
 # Initialize Database tables
 init_db()
@@ -133,6 +133,7 @@ app.include_router(chapters.router, prefix="/api")
 app.include_router(entities.router, prefix="/api")
 app.include_router(continuity.router, prefix="/api")
 app.include_router(architect.router, prefix="/api")
+app.include_router(support.router, prefix="/api")
 
 # Also mount under root to strictly adhere to roadmap endpoint table
 app.include_router(auth.router)
@@ -142,6 +143,7 @@ app.include_router(chapters.router)
 app.include_router(entities.router)
 app.include_router(continuity.router)
 app.include_router(architect.router)
+app.include_router(support.router)
 
 if __name__ == "__main__":
     import uvicorn
