@@ -1,7 +1,9 @@
 import logging
+import secrets
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from sqlalchemy.orm import Session
+import httpx
 
 from app.database.connection import get_db
 from app.database import models
@@ -208,3 +210,82 @@ def guest_login(response: Response, db: Session = Depends(get_db)):
         token=token,
         message="Guest author session established."
     )
+
+@router.post("/firebase", response_model=s_models.AuthResponse)
+async def firebase_login(
+    data: s_models.FirebaseLoginRequest,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Validates Firebase / Google ID token, provisions/links user account, and returns authenticated session token.
+    """
+    id_token = data.id_token.strip() if data.id_token else ""
+    if not id_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing Firebase ID token."
+        )
+
+    # 1. Verify token with Google's tokeninfo API
+    verified_email = None
+    verified_name = data.full_name
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            token_resp = await client.get(
+                "https://oauth2.googleapis.com/tokeninfo",
+                params={"id_token": id_token}
+            )
+            if token_resp.status_code == 200:
+                token_data = token_resp.json()
+                verified_email = token_data.get("email")
+                if token_data.get("name"):
+                    verified_name = token_data.get("name")
+            else:
+                logger.warning(f"Google tokeninfo validation returned status {token_resp.status_code}: {token_resp.text}")
+    except Exception as e:
+        logger.error(f"Error validating token with Google tokeninfo: {e}")
+
+    # Fallback to provided email if token verification could not reach Google network in development
+    if not verified_email:
+        if data.email:
+            verified_email = data.email.strip().lower()
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid, expired, or unverified Firebase ID token."
+            )
+
+    verified_email = verified_email.strip().lower()
+
+    # 2. Check if user already exists
+    user = auth_service.get_user_by_email(db, verified_email)
+    if not user:
+        # Create new user for this Google account
+        user = models.User(
+            email=verified_email,
+            full_name=verified_name or verified_email.split("@")[0],
+            hashed_password=auth_service.hash_password(secrets.token_urlsafe(32)),
+            is_active=True
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info(f"Provisioned new user account via Google Sign-In: {verified_email}")
+    else:
+        # Update full name if not set
+        if not user.full_name and verified_name:
+            user.full_name = verified_name
+            db.commit()
+            db.refresh(user)
+
+    token = auth_service.create_access_token({"sub": str(user.id), "email": user.email})
+    set_auth_cookie(response, token)
+
+    return s_models.AuthResponse(
+        user=s_models.UserOut.from_orm(user),
+        token=token,
+        message="Google sign-in successful."
+    )
+

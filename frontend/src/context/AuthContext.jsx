@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api';
+import { signInWithGoogle, logOutFromFirebase, isFirebaseConfigured } from '../services/firebase';
 
 const AuthContext = createContext(null);
 
@@ -44,7 +45,15 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const loginWithGoogle = async () => {
+    const { idToken, profile } = await signInWithGoogle();
+    const data = await authService.loginWithFirebase(idToken, profile);
+    setUser(data.user);
+    return data;
+  };
+
   const logout = async () => {
+    await logOutFromFirebase();
     await authService.logout();
     setUser(null);
   };
@@ -61,8 +70,10 @@ export function AuthProvider({ children }) {
         user,
         loading,
         isAuthenticated: !!user,
+        isFirebaseConfigured,
         login,
         register,
+        loginWithGoogle,
         logout,
         guestLogin,
       }}

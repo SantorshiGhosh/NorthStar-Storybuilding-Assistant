@@ -646,6 +646,21 @@ export const authService = {
     }
     return res.data;
   },
+
+  loginWithFirebase: async (idToken, profile = {}) => {
+    invalidateCache();
+    const res = await api.post('/auth/firebase', {
+      id_token: idToken,
+      email: profile.email,
+      full_name: profile.displayName || profile.name,
+    });
+    if (res.data?.token) {
+      localStorage.setItem('northstar_token', res.data.token);
+      localStorage.setItem('story_bible_user', JSON.stringify(res.data.user));
+      invalidateCache();
+    }
+    return res.data;
+  },
 };
 
 export default api;

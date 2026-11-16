@@ -17,6 +17,11 @@ class UserLogin(BaseModel):
     email: str = Field(..., example="author@storybible.ai")
     password: str = Field(..., example="SecretPassword123")
 
+class FirebaseLoginRequest(BaseModel):
+    id_token: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+
 class UserOut(BaseModel):
     id: IdType
     email: str
