@@ -90,11 +90,11 @@ export default function Landing() {
               </div>
             )}
             <div className="pt-2 border-t border-[#1c1815]/10 dark:border-[#30363d] flex justify-between text-xs text-[#1c1815]/60 dark:text-[#8b949e]">
-              <a href="mailto:support@storybible.ai" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5]">
-                support@storybible.ai
+              <a href="mailto:codebrew@gmail.com" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5]">
+                codebrew@gmail.com
               </a>
               <a href="tel:+18005550199" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5]">
-                +1 (800) 555-0199
+                9231456311
               </a>
             </div>
           </div>
@@ -283,14 +283,14 @@ export default function Landing() {
             <div className="pt-2 flex flex-col space-y-1.5 text-xs">
               <div className="flex items-center space-x-2">
                 <span className="text-[#1c1815]/50 dark:text-[#6e7681]">Email:</span>
-                <a href="mailto:support@storybible.ai" className="text-[#7b2d3b] dark:text-[#fca5a5] hover:underline font-medium">
-                  support@storybible.ai
+                <a href="mailto:codebrew@gmail.com" className="text-[#7b2d3b] dark:text-[#fca5a5] hover:underline font-medium">
+                  codebrew@gmail.com
                 </a>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="text-[#1c1815]/50 dark:text-[#6e7681]">Phone:</span>
                 <a href="tel:+18005550199" className="text-[#7b2d3b] dark:text-[#fca5a5] hover:underline font-medium">
-                  +1 (800) 555-0199
+                  9231456311
                 </a>
               </div>
             </div>
@@ -343,12 +343,12 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6 pt-6 border-t border-[#1c1815]/10 dark:border-[#30363d] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#1c1815]/50 dark:text-[#6e7681]">
           <p>&copy; {new Date().getFullYear()} NorthStar AI &bull; AI Continuity Guardian for Novelists &amp; Screenwriters</p>
           <div className="flex items-center space-x-4">
-            <a href="mailto:support@storybible.ai" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
+            <a href="mailto:codebrew@gmail.com" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
               Support
             </a>
             <span>&bull;</span>
             <a href="tel:+18005550199" className="hover:text-[#7b2d3b] dark:hover:text-[#fca5a5] transition-colors">
-              +1 (800) 555-0199
+              9231456311
             </a>
           </div>
         </div>

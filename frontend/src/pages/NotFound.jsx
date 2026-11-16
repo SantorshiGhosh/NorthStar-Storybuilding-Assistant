@@ -96,12 +96,12 @@ export default function NotFound() {
         <div className="max-w-[1180px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <span>&copy; {new Date().getFullYear()} NorthStar AI &bull; AI Continuity Guardian</span>
           <div className="flex items-center space-x-4">
-            <a href="mailto:support@storybible.ai" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
-              support@storybible.ai
+            <a href="mailto:codebrew@gmail.com" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
+              codebrew@gmail.com
             </a>
             <span className="text-[#8e8e93]/40">&bull;</span>
             <a href="tel:+18005550199" className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors">
-              +1 (800) 555-0199
+              9231456311
             </a>
           </div>
         </div>
