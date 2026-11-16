@@ -126,6 +126,72 @@ export default function KnowledgeGraph() {
   const [editTraitsStr, setEditTraitsStr] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Layout calculation ensuring zero overlapping cards on initial load
+  const computeNonOverlappingGraphLayout = (nodesList) => {
+    if (!nodesList || nodesList.length === 0) return [];
+    const STRIDE_X = 330;
+    const STRIDE_Y = 250;
+
+    const groups = { character: [], location: [], object: [], other: [] };
+    nodesList.forEach((n) => {
+      const type = (n.data?.entity_type || '').toLowerCase();
+      if (groups[type]) groups[type].push(n);
+      else groups.other.push(n);
+    });
+
+    const maxCols = Math.max(3, Math.min(5, Math.ceil(Math.sqrt(nodesList.length) * 1.3)));
+    let currentY = 80;
+    let positioned = [];
+
+    ['character', 'location', 'object', 'other'].forEach((typeKey) => {
+      const items = groups[typeKey];
+      if (items.length === 0) return;
+
+      items.forEach((n, idx) => {
+        const col = idx % maxCols;
+        const row = Math.floor(idx / maxCols);
+        positioned.push({
+          ...n,
+          position: {
+            x: col * STRIDE_X + 100,
+            y: currentY + row * STRIDE_Y,
+          },
+        });
+      });
+      const rowsUsed = Math.ceil(items.length / maxCols);
+      currentY += rowsUsed * STRIDE_Y + 50;
+    });
+
+    // Anti-collision relaxation pass
+    for (let iter = 0; iter < 40; iter++) {
+      let collision = false;
+      for (let i = 0; i < positioned.length; i++) {
+        for (let j = i + 1; j < positioned.length; j++) {
+          const a = positioned[i];
+          const b = positioned[j];
+          let dx = b.position.x - a.position.x;
+          let dy = b.position.y - a.position.y;
+          if (Math.abs(dx) < STRIDE_X && Math.abs(dy) < STRIDE_Y) {
+            collision = true;
+            const overlapX = STRIDE_X - Math.abs(dx);
+            const overlapY = STRIDE_Y - Math.abs(dy);
+            if (overlapX < overlapY) {
+              const push = (overlapX / 2) * (dx >= 0 ? 1 : -1);
+              a.position.x -= push;
+              b.position.x += push;
+            } else {
+              const push = (overlapY / 2) * (dy >= 0 ? 1 : -1);
+              a.position.y -= push;
+              b.position.y += push;
+            }
+          }
+        }
+      }
+      if (!collision) break;
+    }
+    return positioned;
+  };
+
   // Load Graph Data in parallel
   const loadGraph = async () => {
     try {
@@ -136,9 +202,10 @@ export default function KnowledgeGraph() {
         entityService.getEntities(projectId)
       ]);
 
+      const spacedNodes = computeNonOverlappingGraphLayout(graphData.nodes || []);
       setProject(proj);
-      setNodes(graphData.nodes || []);
-      setAllNodes(graphData.nodes || []);
+      setNodes(spacedNodes);
+      setAllNodes(spacedNodes);
       setEdges(graphData.edges || []);
       setRawEntities(ents);
     } catch (err) {

@@ -97,7 +97,7 @@ def get_optional_user(
 
 def require_project_access(
     project_id: str,
-    user: models.User,
+    user: Optional[models.User],
     db: Session,
     require_write: bool = False
 ) -> models.Project:
@@ -110,8 +110,30 @@ def require_project_access(
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found.")
 
-    # Project owner has full access
-    if str(project.user_id) == str(user.id):
+    if user is None:
+        if require_write:
+            if project.is_demo:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Demo project is read-only. Duplicate or create your own project to edit."
+                )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required to modify this project."
+            )
+        if project.is_demo or project.user_id is None:
+            return project
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to access private project."
+        )
+
+    # Superuser has full access
+    if getattr(user, "is_superuser", False):
+        return project
+
+    # Project owner or unassigned project has full access
+    if project.user_id is None or str(project.user_id) == str(user.id):
         return project
 
     # Check project membership
@@ -129,7 +151,7 @@ def require_project_access(
 
     # Demo projects can be viewed by anyone, but not modified by other users
     if project.is_demo:
-        if require_write and not user.is_superuser:
+        if require_write:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Demo project is read-only. Duplicate or create your own project to edit."

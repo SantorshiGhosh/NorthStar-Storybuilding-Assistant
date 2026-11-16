@@ -953,9 +953,20 @@ class NarrativeMemoryService:
 
         # Normalize every row so it never fails Pydantic schema validation or frontend consumption
         normalized = []
+        seen_issue_signatures = set()
         for item in raw_issues:
             norm = self.normalize_issue(item)
             if norm:
+                # Deduplicate identical issues across the same passage
+                sig = (
+                    norm.get("issue_type"),
+                    str(norm.get("chapter_id") or ""),
+                    " ".join((norm.get("new_passage") or "").split()).lower()[:80]
+                )
+                if sig in seen_issue_signatures:
+                    continue
+                seen_issue_signatures.add(sig)
+
                 # Filter checks
                 if status and status.lower() != "all":
                     s = status.lower().strip()

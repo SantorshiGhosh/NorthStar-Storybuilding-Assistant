@@ -145,6 +145,12 @@ app.include_router(continuity.router)
 app.include_router(architect.router)
 app.include_router(support.router)
 
+# Mount Production V2 Router
+from app.production_v2.routes.production_router import router as production_v2_router
+app.include_router(production_v2_router, prefix="/api/v2/production")
+app.include_router(production_v2_router, prefix="/v2/production")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=True)

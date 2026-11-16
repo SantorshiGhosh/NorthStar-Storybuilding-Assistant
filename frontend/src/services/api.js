@@ -242,9 +242,39 @@ export const projectService = {
     }, { ttl: 30000, ...options });
   },
 
+  getJobStatus: async (projectId, jobId) => {
+    const res = await api.get(`/projects/${projectId}/jobs/${jobId}`);
+    return res.data;
+  },
+
+  getLatestJob: async (projectId) => {
+    const res = await api.get(`/projects/${projectId}/jobs/latest`);
+    return res.data;
+  },
+
+  listJobs: async (projectId) => {
+    const res = await api.get(`/projects/${projectId}/jobs`);
+    return res.data;
+  },
+
   seedDemo: async () => {
     const res = await api.post('/seed-demo');
     invalidateCache('projects:list');
+    return res.data;
+  },
+};
+
+export const jobService = {
+  getJobStatus: async (projectId, jobId) => {
+    const res = await api.get(`/projects/${projectId}/jobs/${jobId}`);
+    return res.data;
+  },
+  getLatestJob: async (projectId) => {
+    const res = await api.get(`/projects/${projectId}/jobs/latest`);
+    return res.data;
+  },
+  listJobs: async (projectId) => {
+    const res = await api.get(`/projects/${projectId}/jobs`);
     return res.data;
   },
 };

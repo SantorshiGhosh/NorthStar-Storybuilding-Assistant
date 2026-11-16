@@ -133,9 +133,9 @@ Evaluate:
 
         return {
             "character": character_name,
-            "voice_consistency": "stable",
-            "consistency_score": 0.90,
-            "notes": f"Dialogue for {character_name} maintains characteristic tone and vocabulary."
+            "voice_consistency": "unavailable",
+            "consistency_score": None,
+            "notes": "Voice analysis unavailable. AI provider analysis could not be completed."
         }
 
 character_agent = CharacterIntelligenceAgent()

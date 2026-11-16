@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -7,6 +8,9 @@ from app.database.connection import get_db
 from app.database import models
 from app.schemas import models as s_models
 from app.services.memory_service import memory_service
+from app.routes.auth import get_optional_user, require_project_access
+
+logger = logging.getLogger("entities_route")
 
 router = APIRouter(tags=["Entities & Relationships"])
 
@@ -15,8 +19,10 @@ def list_entities(
     project_id: str,
     entity_type: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    current_user: Optional[models.User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
+    require_project_access(project_id, current_user, db, require_write=False)
     try:
         return memory_service.get_entities(
             db=db,
@@ -29,7 +35,13 @@ def list_entities(
         return []
 
 @router.post("/projects/{project_id}/entities", response_model=s_models.EntityOut)
-def create_entity(project_id: str, data: s_models.EntityCreate, db: Session = Depends(get_db)):
+def create_entity(
+    project_id: str,
+    data: s_models.EntityCreate,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    require_project_access(project_id, current_user, db, require_write=True)
     entity = memory_service.save_or_update_entity(
         db=db,
         project_id=project_id,
@@ -42,17 +54,28 @@ def create_entity(project_id: str, data: s_models.EntityCreate, db: Session = De
     return entity
 
 @router.get("/entities/{entity_id}", response_model=s_models.EntityOut)
-def get_entity(entity_id: str, db: Session = Depends(get_db)):
+def get_entity(
+    entity_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     entity = db.query(models.Entity).filter(models.Entity.id == entity_id).first()
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
+    require_project_access(entity.project_id, current_user, db, require_write=False)
     return entity
 
 @router.patch("/entities/{entity_id}", response_model=s_models.EntityOut)
-def update_entity(entity_id: str, data: s_models.EntityUpdate, db: Session = Depends(get_db)):
+def update_entity(
+    entity_id: str,
+    data: s_models.EntityUpdate,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     entity = db.query(models.Entity).filter(models.Entity.id == entity_id).first()
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
+    require_project_access(entity.project_id, current_user, db, require_write=True)
 
     if data.name is not None and data.name.strip():
         entity.name = data.name.strip()
@@ -92,10 +115,15 @@ def update_entity(entity_id: str, data: s_models.EntityUpdate, db: Session = Dep
     return entity
 
 @router.delete("/entities/{entity_id}")
-def delete_entity(entity_id: str, db: Session = Depends(get_db)):
+def delete_entity(
+    entity_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     entity = db.query(models.Entity).filter(models.Entity.id == entity_id).first()
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
+    require_project_access(entity.project_id, current_user, db, require_write=True)
     if entity.protection_level >= 3:
         raise HTTPException(status_code=403, detail="Entity is Locked or Immutable. Unlock before deletion.")
 
@@ -115,10 +143,15 @@ def delete_entity(entity_id: str, db: Session = Depends(get_db)):
     return {"status": "deleted", "entity_id": entity_id}
 
 @router.get("/entities/{entity_id}/resolved-properties")
-def get_resolved_entity_properties(entity_id: str, db: Session = Depends(get_db)):
+def get_resolved_entity_properties(
+    entity_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     ent = db.query(models.Entity).filter(models.Entity.id == entity_id).first()
     if not ent:
         raise HTTPException(status_code=404, detail="Entity not found")
+    require_project_access(ent.project_id, current_user, db, require_write=False)
 
     own_props = dict(ent.custom_properties) if isinstance(ent.custom_properties, dict) else {}
 
@@ -162,7 +195,12 @@ def get_resolved_entity_properties(entity_id: str, db: Session = Depends(get_db)
 # --- Relationships Endpoints (Roadmap Section 10) ---
 
 @router.get("/projects/{project_id}/relationships")
-def list_relationships(project_id: str, db: Session = Depends(get_db)):
+def list_relationships(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    require_project_access(project_id, current_user, db, require_write=False)
     try:
         rels = db.query(models.Relationship).filter(models.Relationship.project_id == project_id).all()
         for r in rels:
@@ -179,8 +217,10 @@ def list_relationships(project_id: str, db: Session = Depends(get_db)):
 def create_relationship(
     project_id: str,
     data: s_models.RelationshipCreate,
+    current_user: Optional[models.User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
+    require_project_access(project_id, current_user, db, require_write=True)
     src = db.query(models.Entity).filter(models.Entity.id == data.source_entity_id, models.Entity.project_id == project_id).first()
     tgt = db.query(models.Entity).filter(models.Entity.id == data.target_entity_id, models.Entity.project_id == project_id).first()
     if not src or not tgt:
@@ -237,11 +277,13 @@ def create_relationship(
 def update_relationship(
     relationship_id: str,
     data: s_models.RelationshipUpdate,
+    current_user: Optional[models.User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     rel = db.query(models.Relationship).filter(models.Relationship.id == relationship_id).first()
     if not rel:
         raise HTTPException(status_code=404, detail="Relationship not found")
+    require_project_access(rel.project_id, current_user, db, require_write=True)
 
     if data.relation_type is not None and data.relation_type.strip():
         rel.relation_type = data.relation_type.strip()
@@ -259,10 +301,15 @@ def update_relationship(
     return rel
 
 @router.delete("/relationships/{relationship_id}")
-def delete_relationship(relationship_id: str, db: Session = Depends(get_db)):
+def delete_relationship(
+    relationship_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     rel = db.query(models.Relationship).filter(models.Relationship.id == relationship_id).first()
     if not rel:
         raise HTTPException(status_code=404, detail="Relationship not found")
+    require_project_access(rel.project_id, current_user, db, require_write=True)
     pid = str(rel.project_id)
     db.delete(rel)
     db.commit()

@@ -69,8 +69,13 @@ class MigrationManager:
             ("002_story_architect_extensions", self._mig_002_architect),
             ("003_auth_and_isolation", self._mig_003_auth_isolation),
             ("004_user_columns_and_defaults", self._mig_004_users),
+<<<<<<< HEAD
             ("005_support_messages", self._mig_005_support),
             ("006_support_queries", self._mig_006_support_queries),
+=======
+            ("005_narrative_intelligence_engine", self._mig_005_narrative_intelligence),
+            ("006_narrative_accuracy_overhaul", self._mig_006_narrative_accuracy),
+>>>>>>> 81f737c (Fixing the Backend)
         ]
 
         for version, func in migrations:
@@ -136,6 +141,7 @@ class MigrationManager:
         ]
         self._add_columns_if_missing(columns)
 
+<<<<<<< HEAD
     def _mig_005_support(self):
         """Ensures support_messages table exists."""
         with engine.connect() as conn:
@@ -171,6 +177,44 @@ class MigrationManager:
                 );
             """))
             conn.commit()
+=======
+    def _mig_005_narrative_intelligence(self):
+        """Ensures temporal versioning, manuscript versioning, and narrative state columns exist."""
+        columns = [
+            ("manuscripts", "version_number", "INTEGER DEFAULT 1"),
+            ("manuscripts", "is_active_version", "BOOLEAN DEFAULT TRUE"),
+            ("manuscripts", "superseded_at", "TIMESTAMP WITH TIME ZONE"),
+            ("story_facts", "valid_from_chapter", "INTEGER DEFAULT 1"),
+            ("story_facts", "valid_until_chapter", "INTEGER"),
+            ("story_facts", "canon_tier", "VARCHAR(50) DEFAULT 'established'"),
+            ("story_facts", "is_negated", "BOOLEAN DEFAULT FALSE"),
+            ("story_facts", "uncertainty_level", "VARCHAR(50) DEFAULT 'none'"),
+            ("story_facts", "subject_entity_id", "VARCHAR(36)"),
+            ("story_facts", "object_entity_id", "VARCHAR(36)"),
+            ("processing_jobs", "meta_info", "TEXT DEFAULT '{}'"),
+        ]
+        self._add_columns_if_missing(columns)
+
+    def _mig_006_narrative_accuracy(self):
+        """Ensures entity mentions table and salience scoring columns exist."""
+        columns = [
+            ("entities", "salience_score", "FLOAT DEFAULT 0.5"),
+            ("entities", "relevance_status", "VARCHAR(50) DEFAULT 'accepted'"),
+            ("entities", "narrative_role", "VARCHAR(50)"),
+            ("entity_mentions", "passage_id", "VARCHAR(36)"),
+            ("entity_mentions", "resolved_entity_id", "VARCHAR(36)"),
+            ("entity_mentions", "chapter_number", "INTEGER DEFAULT 1"),
+            ("entity_mentions", "version_number", "INTEGER DEFAULT 1"),
+            ("entity_mentions", "text_span", "VARCHAR(255)"),
+            ("entity_mentions", "grammatical_role", "VARCHAR(50)"),
+            ("entity_mentions", "context_sentence", "TEXT"),
+            ("entity_mentions", "is_ambiguous", "BOOLEAN DEFAULT FALSE"),
+            ("entity_mentions", "candidate_entity_ids", "JSON DEFAULT '[]'"),
+            ("entity_mentions", "rejection_reason", "VARCHAR(255)"),
+            ("entity_mentions", "metadata", "JSON DEFAULT '{}'"),
+        ]
+        self._add_columns_if_missing(columns)
+>>>>>>> 81f737c (Fixing the Backend)
 
     def _add_columns_if_missing(self, columns: List[Tuple[str, str, str]]):
         inspector = inspect(engine)

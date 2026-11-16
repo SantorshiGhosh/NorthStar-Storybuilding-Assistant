@@ -211,6 +211,153 @@ export default function StoryArchitect() {
     }
   }, [rfInstance, activeCanvas?.id, viewMode, nodes.length]);
 
+  // Anti-collision spacing constants for ReactFlow cards (w-60 is ~240px wide + ~200px tall)
+  const CARD_WIDTH = 250;
+  const CARD_HEIGHT = 210;
+  const MIN_GAP_X = 90;
+  const MIN_GAP_Y = 70;
+  const STRIDE_X = CARD_WIDTH + MIN_GAP_X; // 340px
+  const STRIDE_Y = CARD_HEIGHT + MIN_GAP_Y; // 280px
+
+  // Anti-collision AABB relaxation pass to guarantee 0 overlapping cards
+  const resolveCollisions = useCallback((nodesList) => {
+    if (!nodesList || nodesList.length <= 1) return nodesList || [];
+    const minDx = STRIDE_X;
+    const minDy = STRIDE_Y;
+    const list = nodesList.map((n) => ({ ...n, position: { ...n.position } }));
+
+    for (let iter = 0; iter < 50; iter++) {
+      let collisionFound = false;
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i];
+          const b = list[j];
+          let dx = b.position.x - a.position.x;
+          let dy = b.position.y - a.position.y;
+          const absX = Math.abs(dx);
+          const absY = Math.abs(dy);
+
+          if (absX < minDx && absY < minDy) {
+            collisionFound = true;
+            const overlapX = minDx - absX;
+            const overlapY = minDy - absY;
+
+            if (dx === 0 && dy === 0) {
+              dx = (j % 2 === 0 ? 1 : -1) * minDx;
+              dy = (j % 3 === 0 ? 1 : -1) * minDy;
+            }
+
+            if (overlapX < overlapY) {
+              const push = (overlapX / 2) * (dx >= 0 ? 1 : -1);
+              a.position.x -= push;
+              b.position.x += push;
+            } else {
+              const push = (overlapY / 2) * (dy >= 0 ? 1 : -1);
+              a.position.y -= push;
+              b.position.y += push;
+            }
+          }
+        }
+      }
+      if (!collisionFound) break;
+    }
+    return list;
+  }, []);
+
+  // Compute clean, spacious, collision-free layout for entities
+  const computeNonOverlappingLayout = useCallback((nodesList, mode = 'graph') => {
+    if (!nodesList || nodesList.length === 0) return [];
+
+    if (mode === 'family') {
+      return resolveCollisions(
+        nodesList.map((n, idx) => {
+          const level = n.data?.custom_properties?.generation ?? (idx % 3);
+          const col = idx % 3;
+          return {
+            ...n,
+            position: { x: col * STRIDE_X + 100, y: level * STRIDE_Y + 80 },
+          };
+        })
+      );
+    }
+
+    if (mode === 'plot') {
+      return resolveCollisions(
+        nodesList.map((n, idx) => {
+          const act = n.data?.custom_properties?.act ?? ((idx % 3) + 1);
+          const row = Math.floor(idx / 3);
+          return {
+            ...n,
+            position: { x: act * STRIDE_X + 60, y: row * STRIDE_Y + 80 },
+          };
+        })
+      );
+    }
+
+    if (mode === 'timeline') {
+      return resolveCollisions(
+        nodesList.map((n, idx) => {
+          const col = idx;
+          const row = idx % 2 === 0 ? 0 : 1;
+          return {
+            ...n,
+            position: { x: col * (STRIDE_X * 0.95) + 80, y: row * STRIDE_Y + 120 },
+          };
+        })
+      );
+    }
+
+    // Default 'graph' / 'relationship' Mode:
+    // Categorize entities into narrative tiers:
+    // 1. Characters & Figures
+    // 2. Key Locations & Settings
+    // 3. Artifacts, Objects & Items
+    // 4. Lore Rules, Factions & Others
+    const groups = {
+      character: [],
+      location: [],
+      object: [],
+      other: [],
+    };
+
+    nodesList.forEach((n) => {
+      const type = (n.data?.entity_type || '').toLowerCase();
+      if (groups[type]) {
+        groups[type].push(n);
+      } else {
+        groups.other.push(n);
+      }
+    });
+
+    const total = nodesList.length;
+    const maxCols = Math.max(3, Math.min(5, Math.ceil(Math.sqrt(total) * 1.3)));
+
+    let currentY = 80;
+    let positioned = [];
+
+    ['character', 'location', 'object', 'other'].forEach((typeKey) => {
+      const items = groups[typeKey];
+      if (items.length === 0) return;
+
+      items.forEach((n, idx) => {
+        const col = idx % maxCols;
+        const row = Math.floor(idx / maxCols);
+        positioned.push({
+          ...n,
+          position: {
+            x: col * STRIDE_X + 100,
+            y: currentY + row * STRIDE_Y,
+          },
+        });
+      });
+
+      const rowsUsed = Math.ceil(items.length / maxCols);
+      currentY += rowsUsed * STRIDE_Y + 60; // Extra 60px visual separator between categories
+    });
+
+    return resolveCollisions(positioned);
+  }, [resolveCollisions]);
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
@@ -232,8 +379,18 @@ export default function StoryArchitect() {
       const defaultCanvas = canvasList?.[0] || null;
       setActiveCanvas(defaultCanvas);
 
-      // Hydrate initial nodes and edges
-      hydrateGraph(graphData, entList || [], viewMode);
+      let savedCoords = null;
+      if (defaultCanvas) {
+        try {
+          const details = await architectService.getCanvasDetails(defaultCanvas.id);
+          if (details?.node_coords && Object.keys(details.node_coords).length > 0) {
+            savedCoords = details.node_coords;
+          }
+        } catch (_) {}
+      }
+
+      // Hydrate initial nodes and edges with collision-free layout
+      hydrateGraph(graphData, entList || [], viewMode, savedCoords);
     } catch (err) {
       console.error('Failed to load Story Architect data:', err);
     } finally {
@@ -242,35 +399,19 @@ export default function StoryArchitect() {
   };
 
   // Convert raw entities and graph data into layout-specific React Flow nodes and edges
-  const hydrateGraph = (graphData, entList, mode) => {
+  const hydrateGraph = (graphData, entList, mode, savedCoords = null) => {
     const rawNodes = graphData?.nodes || [];
     const rawEdges = graphData?.edges || [];
 
     // Map entity metadata into node data
     const entityMap = new Map((entList || []).map((e) => [String(e.id), e]));
+    const hasSavedCoords = savedCoords && Object.keys(savedCoords).length > 0;
 
     let flowNodes = rawNodes.map((n, idx) => {
       const ent = entityMap.get(String(n.id)) || {};
-      let x = n.position?.x ?? (idx % 4) * 260 + 50;
-      let y = n.position?.y ?? Math.floor(idx / 4) * 180 + 50;
-
-      // Apply Layout depending on viewMode
-      if (mode === 'family') {
-        // Hierarchical level
-        const level = ent.custom_properties?.generation || (idx % 3);
-        x = (idx % 3) * 280 + 100;
-        y = level * 200 + 80;
-      } else if (mode === 'plot') {
-        // Plot sequence
-        const act = ent.custom_properties?.act || ((idx % 3) + 1);
-        x = act * 300;
-        y = (idx % 4) * 160 + 80;
-      } else if (mode === 'timeline') {
-        // Horizontal chronological flow
-        const order = ent.first_appearance || idx + 1;
-        x = order * 260;
-        y = (idx % 2 === 0 ? 120 : 300);
-      }
+      const saved = hasSavedCoords ? savedCoords[String(n.id)] : null;
+      const x = saved?.x ?? (idx % 4) * STRIDE_X + 80;
+      const y = saved?.y ?? Math.floor(idx / 4) * STRIDE_Y + 80;
 
       return {
         id: String(n.id),
@@ -285,6 +426,13 @@ export default function StoryArchitect() {
         },
       };
     });
+
+    // If there are no saved canvas coordinates, calculate intelligent collision-free layout
+    if (!hasSavedCoords) {
+      flowNodes = computeNonOverlappingLayout(flowNodes, mode);
+    } else {
+      flowNodes = resolveCollisions(flowNodes);
+    }
 
     const flowEdges = rawEdges.map((e) => ({
       ...e,
@@ -306,6 +454,16 @@ export default function StoryArchitect() {
     });
   };
 
+  // Auto-arrange all nodes cleanly
+  const handleAutoArrange = () => {
+    const arranged = computeNonOverlappingLayout(nodes, viewMode);
+    setNodes(arranged);
+    toast.success('Nodes auto-arranged without overlaps');
+    setTimeout(() => {
+      rfInstance?.fitView({ padding: 0.18, duration: 400 });
+    }, 100);
+  };
+
   // Switch Active Canvas
   const handleSelectCanvas = async (canvas) => {
     setActiveCanvas(canvas);
@@ -320,11 +478,15 @@ export default function StoryArchitect() {
       }
       if (nodePosMap.size > 0) {
         setNodes((prev) =>
-          prev.map((node) => {
-            const pos = nodePosMap.get(String(node.id));
-            return pos ? { ...node, position: pos } : node;
-          })
+          resolveCollisions(
+            prev.map((node) => {
+              const pos = nodePosMap.get(String(node.id));
+              return pos ? { ...node, position: pos } : node;
+            })
+          )
         );
+      } else {
+        setNodes((prev) => computeNonOverlappingLayout(prev, viewMode));
       }
     } catch (err) {
       console.error('Failed to load canvas nodes:', err);
@@ -775,6 +937,16 @@ export default function StoryArchitect() {
           >
             <Save className="w-3.5 h-3.5 sm:mr-1 text-[#8e8e93]" />
             <span className="hidden sm:inline">Save Layout</span>
+          </button>
+
+          {/* Auto Layout Button */}
+          <button
+            onClick={handleAutoArrange}
+            className="btn btn-outline btn-sm text-[11.5px] px-2 sm:px-3 shrink-0"
+            title="Auto-arrange all nodes cleanly without overlaps"
+          >
+            <Grid className="w-3.5 h-3.5 sm:mr-1 text-[#8e8e93]" />
+            <span className="hidden md:inline">Auto Layout</span>
           </button>
 
           {/* Fit View Button on Mobile & Desktop */}

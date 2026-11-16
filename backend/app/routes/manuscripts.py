@@ -1,10 +1,15 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
+import threading
+from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, status
 from sqlalchemy.orm import Session
+
 from app.database.connection import get_db
 from app.database import models
 from app.config import settings
 from app.agents.orchestrator import orchestrator
+from app.routes.auth import get_optional_user, require_project_access
+from app.services.job_service import job_service
 
 router = APIRouter(tags=["Manuscripts"])
 
@@ -16,12 +21,11 @@ async def upload_manuscript(
     project_id: str,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    current_user: Optional[models.User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
-    # Verify project exists
-    project = db.query(models.Project).filter(models.Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    # Verify project exists and user has write access
+    project = require_project_access(project_id, current_user, db, require_write=True)
 
     filename = file.filename or "manuscript.txt"
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -40,6 +44,10 @@ async def upload_manuscript(
     vault_filename = f"{project_id}_{filename}.vault"
     vault_path = os.path.join(settings.VAULT_STORAGE_DIRECTORY, vault_filename)
 
+    # 1. Create persistent tracking job
+    job = job_service.create_job(db, project_id=project_id)
+    job_service.update_job_stage(db, job.id, "uploading", progress=5, message="Receiving and validating file...")
+
     try:
         manuscript = orchestrator.process_uploaded_manuscript(
             db=db,
@@ -48,19 +56,23 @@ async def upload_manuscript(
             file_bytes=file_bytes,
             file_ext=ext,
             vault_path=vault_path,
-            fast_mode=True
+            fast_mode=True,
+            job_id=job.id
         )
-        # Detached background thread so HTTP response returns immediately without proxy timeout
-        import threading
+        job.manuscript_id = manuscript.id
+        db.commit()
+
+        # Detached background thread so deep narrative enrichment runs asynchronously
         threading.Thread(
             target=orchestrator.enrich_project_with_ai,
-            args=(project_id,),
+            args=(project_id, job.id),
             daemon=True
         ).start()
     except Exception as e:
+        job_service.fail_job(db, job.id, f"Processing failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to process manuscript: {str(e)}")
 
-    # Fetch stats
+    # Fetch updated project statistics
     chapter_count = db.query(models.Chapter).filter(models.Chapter.project_id == project_id).count()
     entities_count = db.query(models.Entity).filter(models.Entity.project_id == project_id).count()
     issues_count = db.query(models.ContinuityIssue).filter(
@@ -70,9 +82,59 @@ async def upload_manuscript(
 
     return {
         "status": "success",
-        "manuscript_id": manuscript.id,
+        "job_id": str(job.id),
+        "manuscript_id": str(manuscript.id),
         "filename": manuscript.filename,
+        "version_number": manuscript.version_number,
         "chapters_extracted": chapter_count,
         "entities_identified": entities_count,
         "unresolved_issues": issues_count
+    }
+
+@router.get("/projects/{project_id}/jobs/latest")
+def get_latest_project_job(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the latest background processing job for a project.
+    """
+    require_project_access(project_id, current_user, db, require_write=False)
+    job = job_service.get_latest_project_job(db, project_id)
+    if not job:
+        return {"status": "none", "job": None}
+    return {"status": "success", "job": job_service.job_to_dict(job)}
+
+@router.get("/projects/{project_id}/jobs/{job_id}")
+def get_job_status(
+    project_id: str,
+    job_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns the live progress, current stage, and messages for a specific job.
+    """
+    require_project_access(project_id, current_user, db, require_write=False)
+    job = job_service.get_job(db, job_id)
+    if not job or str(job.project_id) != str(project_id):
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {"status": "success", "job": job_service.job_to_dict(job)}
+
+@router.get("/projects/{project_id}/jobs")
+def list_project_jobs(
+    project_id: str,
+    limit: int = 10,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Lists recent processing jobs for a project.
+    """
+    require_project_access(project_id, current_user, db, require_write=False)
+    jobs = job_service.list_jobs_for_project(db, project_id, limit=limit)
+    return {
+        "status": "success",
+        "jobs": [job_service.job_to_dict(j) for j in jobs]
     }

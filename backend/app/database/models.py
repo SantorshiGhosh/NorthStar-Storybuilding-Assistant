@@ -64,6 +64,11 @@ class Project(Base):
     attachments = relationship("EntityAttachment", back_populates="project", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="project", cascade="all, delete-orphan")
     snapshots = relationship("ProjectSnapshot", back_populates="project", cascade="all, delete-orphan")
+    processing_jobs = relationship("ProcessingJob", back_populates="project", cascade="all, delete-orphan")
+    entity_aliases = relationship("EntityAlias", back_populates="project", cascade="all, delete-orphan")
+    character_states = relationship("CharacterState", back_populates="project", cascade="all, delete-orphan")
+    object_custody_events = relationship("ObjectCustodyEvent", back_populates="project", cascade="all, delete-orphan")
+    entity_mentions = relationship("EntityMention", back_populates="project", cascade="all, delete-orphan")
 
 
 class Manuscript(Base):
@@ -78,6 +83,9 @@ class Manuscript(Base):
     encrypted = Column(Boolean, default=True)
     is_encrypted = Column(Boolean, default=True)
     status = Column(String(50), default="processed")  # uploaded, processing, processed, error
+    version_number = Column(Integer, default=1)
+    is_active_version = Column(Boolean, default=True)
+    superseded_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -157,14 +165,22 @@ class Entity(Base):
     custom_properties = Column(JSON, default=dict)
     is_archived = Column(Boolean, default=False)
     
+    # Narrative Relevance & Accuracy Extensions
+    salience_score = Column(Float, default=0.5)
+    relevance_status = Column(String(50), default="accepted")  # accepted, rejected, needs_review, temporary_mention
+    narrative_role = Column(String(50), nullable=True)  # protagonist, antagonist, supporting, minor, incidental, prop, mystery_object
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     project = relationship("Project", back_populates="entities")
     category = relationship("EntityCategory", back_populates="entities")
-    facts = relationship("StoryFact", back_populates="entity", cascade="all, delete-orphan")
+    facts = relationship("StoryFact", back_populates="entity", cascade="all, delete-orphan", foreign_keys="StoryFact.entity_id")
     canvas_nodes = relationship("CanvasNode", back_populates="entity", cascade="all, delete-orphan")
     attachment_links = relationship("EntityAttachmentLink", back_populates="entity", cascade="all, delete-orphan")
+    aliases = relationship("EntityAlias", back_populates="canonical_entity", cascade="all, delete-orphan")
+    character_states = relationship("CharacterState", back_populates="entity", cascade="all, delete-orphan")
+    mentions = relationship("EntityMention", back_populates="resolved_entity", cascade="all, delete-orphan")
 
 
 class Relationship(Base):
@@ -206,10 +222,17 @@ class StoryFact(Base):
     canon_status = Column(String(50), default="established")  # draft, planned, established, retired
     protection_level = Column(Integer, default=1)  # 1: unlocked, 2: protected, 3: locked, 4: immutable
     provenance = Column(String(50), default="manuscript_extracted")
+    valid_from_chapter = Column(Integer, default=1)
+    valid_until_chapter = Column(Integer, nullable=True)
+    canon_tier = Column(String(50), default="established")  # established, belief, rumour, unverified, proposed, rejected, superseded
+    is_negated = Column(Boolean, default=False)
+    uncertainty_level = Column(String(50), default="none")  # none, hypothetical, belief, rumour, question
+    subject_entity_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="SET NULL"), nullable=True)
+    object_entity_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="story_facts")
-    entity = relationship("Entity", back_populates="facts")
+    entity = relationship("Entity", back_populates="facts", foreign_keys=[entity_id])
 
 
 class TimelineEvent(Base):
@@ -436,6 +459,7 @@ class EntityMatchingCandidate(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+<<<<<<< HEAD
 class SupportMessage(Base):
     __tablename__ = "support_messages"
 
@@ -466,3 +490,110 @@ class SupportQuery(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", foreign_keys=[user_id])
+=======
+class ProcessingJob(Base):
+    __tablename__ = "processing_jobs"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    project_id = Column(Uuid(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    manuscript_id = Column(Uuid(as_uuid=False), ForeignKey("manuscripts.id", ondelete="SET NULL"), nullable=True)
+    stage = Column(String(50), default="queued")  # queued, validating, extracting, segmenting, extracting_entities, resolving_identities, building_memory, indexing_passages, running_continuity, enriching, completed, failed
+    status = Column(String(50), default="pending")  # pending, processing, completed, completed_with_warnings, failed, cancelled
+    progress = Column(Integer, default=0)  # 0 to 100
+    message = Column(Text, nullable=True)
+    error_details = Column(Text, nullable=True)
+    meta_info = Column("metadata", JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    project = relationship("Project", back_populates="processing_jobs")
+    manuscript = relationship("Manuscript")
+
+
+class EntityAlias(Base):
+    __tablename__ = "entity_aliases"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    project_id = Column(Uuid(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    canonical_entity_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False, index=True)
+    alias_name = Column(String(255), nullable=False, index=True)
+    alias_type = Column(String(50), default="nickname")  # full_name, nickname, title, former_name, disguise, typo
+    confidence = Column(Float, default=1.0)
+    source_quote = Column(Text, nullable=True)
+    is_author_confirmed = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project", back_populates="entity_aliases")
+    canonical_entity = relationship("Entity", back_populates="aliases", foreign_keys=[canonical_entity_id])
+
+
+class CharacterState(Base):
+    __tablename__ = "character_states"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    project_id = Column(Uuid(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    entity_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False, index=True)
+    category = Column(String(50), default="physical")  # physical, status, allegiance, identity, mental
+    state_description = Column(Text, nullable=False)
+    valid_from_chapter = Column(Integer, default=1)
+    valid_until_chapter = Column(Integer, nullable=True)  # None = currently valid
+    source_chapter_id = Column(Uuid(as_uuid=False), ForeignKey("chapters.id", ondelete="SET NULL"), nullable=True)
+    source_quote = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project", back_populates="character_states")
+    entity = relationship("Entity", back_populates="character_states", foreign_keys=[entity_id])
+
+
+class ObjectCustodyEvent(Base):
+    __tablename__ = "object_custody_events"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    project_id = Column(Uuid(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    object_entity_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="CASCADE"), nullable=False, index=True)
+    holder_entity_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="SET NULL"), nullable=True, index=True)
+    previous_holder_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="SET NULL"), nullable=True)
+    transfer_type = Column(String(50), default="transfer")  # initial_possession, transfer, theft, loss, discovery, destruction, creation
+    chapter_number = Column(Integer, default=1)
+    chapter_id = Column(Uuid(as_uuid=False), ForeignKey("chapters.id", ondelete="SET NULL"), nullable=True)
+    source_quote = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project", back_populates="object_custody_events")
+    object_entity = relationship("Entity", foreign_keys=[object_entity_id])
+    holder_entity = relationship("Entity", foreign_keys=[holder_entity_id])
+
+
+class EntityMention(Base):
+    __tablename__ = "entity_mentions"
+
+    id = Column(Uuid(as_uuid=False), primary_key=True, default=gen_uuid)
+    project_id = Column(Uuid(as_uuid=False), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    manuscript_id = Column(Uuid(as_uuid=False), ForeignKey("manuscripts.id", ondelete="SET NULL"), nullable=True, index=True)
+    chapter_id = Column(Uuid(as_uuid=False), ForeignKey("chapters.id", ondelete="SET NULL"), nullable=True, index=True)
+    passage_id = Column(Uuid(as_uuid=False), ForeignKey("passages.id", ondelete="SET NULL"), nullable=True, index=True)
+    resolved_entity_id = Column(Uuid(as_uuid=False), ForeignKey("entities.id", ondelete="SET NULL"), nullable=True, index=True)
+    
+    chapter_number = Column(Integer, default=1)
+    version_number = Column(Integer, default=1)
+    
+    text_span = Column(String(255), nullable=False)
+    mention_type = Column(String(50), default="proper_name")  # proper_name, pronoun, descriptive_ref, incidental_noun
+    char_start = Column(Integer, default=0)
+    char_end = Column(Integer, default=0)
+    grammatical_role = Column(String(50), nullable=True)  # subject, direct_object, indirect_object, prepositional, possessive
+    context_sentence = Column(Text, nullable=True)
+    
+    confidence = Column(Float, default=1.0)
+    resolution_status = Column(String(50), default="unresolved")  # resolved, ambiguous, unresolved, rejected
+    is_ambiguous = Column(Boolean, default=False)
+    candidate_entity_ids = Column(JSON, default=list)
+    rejection_reason = Column(String(255), nullable=True)
+    
+    meta_info = Column("metadata", JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project", back_populates="entity_mentions")
+    resolved_entity = relationship("Entity", back_populates="mentions", foreign_keys=[resolved_entity_id])
+>>>>>>> 81f737c (Fixing the Backend)

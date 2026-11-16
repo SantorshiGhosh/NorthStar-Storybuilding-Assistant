@@ -8,18 +8,30 @@ from app.schemas import models as s_models
 from app.agents.orchestrator import orchestrator
 from app.services.document_parser import document_parser
 from app.services.vector_service import vector_service
+from app.routes.auth import get_optional_user, require_project_access
 
 router = APIRouter(tags=["Chapters"])
 
 @router.get("/projects/{project_id}/chapters", response_model=List[s_models.ChapterOut])
-def list_chapters(project_id: str, db: Session = Depends(get_db)):
+def list_chapters(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    require_project_access(project_id, current_user, db, require_write=False)
     chapters = db.query(models.Chapter).filter(
         models.Chapter.project_id == project_id
     ).order_by(models.Chapter.chapter_number.asc()).all()
     return chapters
 
 @router.post("/projects/{project_id}/chapters", response_model=s_models.ChapterOut)
-def create_chapter(project_id: str, data: s_models.ChapterCreate, db: Session = Depends(get_db)):
+def create_chapter(
+    project_id: str,
+    data: s_models.ChapterCreate,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    require_project_access(project_id, current_user, db, require_write=True)
     chapter = models.Chapter(
         project_id=project_id,
         chapter_number=data.chapter_number,
@@ -58,18 +70,29 @@ def create_chapter(project_id: str, data: s_models.ChapterCreate, db: Session = 
     return chapter
 
 @router.get("/chapters/{chapter_id}", response_model=s_models.ChapterOut)
-def get_chapter(chapter_id: str, db: Session = Depends(get_db)):
+def get_chapter(
+    chapter_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     ch = db.query(models.Chapter).filter(models.Chapter.id == chapter_id).first()
     if not ch:
         raise HTTPException(status_code=404, detail="Chapter not found")
+    require_project_access(ch.project_id, current_user, db, require_write=False)
     return ch
 
 @router.put("/chapters/{chapter_id}", response_model=s_models.ChapterOut)
 @router.patch("/chapters/{chapter_id}", response_model=s_models.ChapterOut)
-def update_chapter(chapter_id: str, data: s_models.ChapterUpdate, db: Session = Depends(get_db)):
+def update_chapter(
+    chapter_id: str,
+    data: s_models.ChapterUpdate,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
     ch = db.query(models.Chapter).filter(models.Chapter.id == chapter_id).first()
     if not ch:
         raise HTTPException(status_code=404, detail="Chapter not found")
+    require_project_access(ch.project_id, current_user, db, require_write=True)
 
     if data.title is not None:
         ch.title = data.title
@@ -115,11 +138,13 @@ logger = logging.getLogger("chapters_route")
 def analyze_chapter(
     chapter_id: str,
     body: Optional[s_models.AnalyzeChapterRequest] = None,
+    current_user: Optional[models.User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     ch = db.query(models.Chapter).filter(models.Chapter.id == chapter_id).first()
     if not ch:
         raise HTTPException(status_code=404, detail="Chapter not found")
+    require_project_access(ch.project_id, current_user, db, require_write=True)
 
     # If updated content was sent in request body, persist it
     if body and body.content is not None and body.content.strip():
