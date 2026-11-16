@@ -306,9 +306,9 @@ export default function AttachmentVault() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#fbfbf9] dark:bg-neutral-950 flex flex-col font-sans">
+      <div className="min-h-screen bg-[#f6f6f4] dark:bg-[#161618] text-[#1c1c1e] dark:text-[#f5f5f7] flex flex-col font-sans transition-colors duration-200">
         <Navbar currentProject={project} />
-        <div className="flex-1 flex items-center justify-center text-xs text-neutral-400">
+        <div className="flex-1 flex items-center justify-center text-xs text-[#8e8e93]">
           Loading private narrative attachment vault...
         </div>
       </div>
@@ -316,37 +316,37 @@ export default function AttachmentVault() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fbfbf9] dark:bg-neutral-950 flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-[#f6f6f4] dark:bg-[#161618] text-[#1c1c1e] dark:text-[#f5f5f7] flex flex-col font-sans transition-colors duration-200">
       <Navbar currentProject={project} />
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Navigation & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-semibold text-neutral-500 mb-1">
+            <div className="flex items-center space-x-2 text-xs font-semibold text-[#8e8e93] mb-1">
               <Link
                 to={`/architect/${projectId}`}
-                className="hover:text-neutral-900 dark:hover:text-white transition-colors flex items-center space-x-1"
+                className="hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] transition-colors flex items-center space-x-1"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Story Architect</span>
               </Link>
               <span>/</span>
-              <span className="text-neutral-900 dark:text-white">Attachment Vault</span>
+              <span className="text-[#1c1c1e] dark:text-[#f5f5f7]">Attachment Vault</span>
             </div>
-            <h1 className="text-xl font-bold text-neutral-900 dark:text-white flex items-center space-x-2">
-              <Paperclip className="w-5 h-5 text-blue-600" />
+            <h1 className="text-xl font-bold text-[#1c1c1e] dark:text-[#f5f5f7] flex items-center space-x-2">
+              <Paperclip className="w-5 h-5 text-[#1c1c1e] dark:text-[#f5f5f7]" />
               <span>Private Narrative Attachment Vault</span>
             </h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-[#636366] dark:text-[#8e8e93] mt-0.5">
               Secure AES-256 encrypted media, blueprints, portraits, audio tracks, and reference documents.
             </p>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowLinkModal(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors shadow-2xs"
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] bg-white dark:bg-[#222224] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 transition-colors shadow-2xs cursor-pointer"
             >
               <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
               <span>Add URL Link</span>
@@ -360,7 +360,7 @@ export default function AttachmentVault() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center space-x-1.5 px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-2xs transition-colors"
+              className="flex items-center space-x-1.5 px-4 py-1.5 text-xs font-semibold btn btn-solid rounded-lg shadow-2xs transition-colors cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
               <span>Upload Files</span>

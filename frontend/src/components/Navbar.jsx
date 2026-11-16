@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Compass,
   GitFork,
@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext';
 export default function Navbar({ currentProject, onProjectChange, isDashboard: isDashboardProp }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { projectId: routeProjectId } = useParams();
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -29,8 +30,15 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
   }, [location.pathname]);
 
   const isDashboard = isDashboardProp ?? (location.pathname === '/dashboard');
-  const projectId = currentProject?.id;
+  const projectId = currentProject?.id || currentProject?._id || routeProjectId;
   const authorName = user?.full_name || (user?.email ? user.email.split('@')[0] : 'Guest Author');
+
+  const handleMobileNav = (targetPath) => {
+    if (targetPath) {
+      navigate(targetPath);
+    }
+    setMobileMenuOpen(false);
+  };
 
   const handleSignOut = async () => {
     await logout();
@@ -289,7 +297,8 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
           {navItems.map((item) => {
             if (!item.path) return null;
             const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path.split('/')[1]);
+            const itemRoot = '/' + item.path.split('/')[1];
+            const isActive = location.pathname.startsWith(itemRoot);
 
             return (
               <Link
@@ -378,10 +387,10 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                 Workspace Mode
               </span>
               <div className="grid grid-cols-2 gap-2">
-                <Link
-                  to={`/architect/${projectId}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center space-x-2 p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                <button
+                  type="button"
+                  onClick={() => handleMobileNav(`/architect/${projectId}`)}
+                  className={`flex items-center space-x-2 p-2.5 rounded-lg border text-xs font-medium transition-all text-left cursor-pointer ${
                     location.pathname.startsWith('/architect')
                       ? 'bg-white dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] border-[#1c1c1e]/20 dark:border-white/20 shadow-2xs font-semibold'
                       : 'border-[#1c1c1e]/10 dark:border-white/10 text-[#636366] dark:text-[#8e8e93]'
@@ -389,11 +398,11 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                 >
                   <Compass className="w-4 h-4 text-[#1c1c1e] dark:text-[#f5f5f7] shrink-0" />
                   <span>Story Architect</span>
-                </Link>
-                <Link
-                  to={`/workspace/${projectId}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center space-x-2 p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMobileNav(`/workspace/${projectId}`)}
+                  className={`flex items-center space-x-2 p-2.5 rounded-lg border text-xs font-medium transition-all text-left cursor-pointer ${
                     location.pathname.startsWith('/workspace')
                       ? 'bg-white dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] border-[#1c1c1e]/20 dark:border-white/20 shadow-2xs font-semibold'
                       : 'border-[#1c1c1e]/10 dark:border-white/10 text-[#636366] dark:text-[#8e8e93]'
@@ -401,7 +410,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                 >
                   <Feather className="w-4 h-4 text-[#1c1c1e] dark:text-[#f5f5f7] shrink-0" />
                   <span>Manuscript</span>
-                </Link>
+                </button>
               </div>
             </div>
           )}
@@ -416,21 +425,22 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                 {navItems.map((item) => {
                   if (!item.path) return null;
                   const Icon = item.icon;
-                  const isActive = location.pathname.startsWith(item.path.split('/')[1]);
+                  const itemRoot = '/' + item.path.split('/')[1];
+                  const isActive = location.pathname.startsWith(itemRoot);
 
                   return (
-                    <Link
+                    <button
                       key={item.label}
-                      to={item.path}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      type="button"
+                      onClick={() => handleMobileNav(item.path)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
                         isActive
                           ? 'bg-white dark:bg-[#222224] text-[#1c1c1e] dark:text-[#f5f5f7] border border-[#1c1c1e]/10 dark:border-white/10 font-semibold'
                           : 'text-[#636366] dark:text-[#8e8e93] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center space-x-2.5">
-                        <Icon className="w-4 h-4 text-[#8e8e93]" />
+                        <Icon className="w-4 h-4 text-[#8e8e93] shrink-0" />
                         <span>{item.label}</span>
                       </div>
                       {item.badge > 0 && (
@@ -438,7 +448,7 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                           {item.badge}
                         </span>
                       )}
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
@@ -447,14 +457,14 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
 
           {/* Projects Button */}
           <div className="pt-2 border-t border-[#1c1c1e]/10 dark:border-white/10">
-            <Link
-              to="/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full btn btn-solid btn-md flex items-center justify-center space-x-2 text-xs shadow-2xs"
+            <button
+              type="button"
+              onClick={() => handleMobileNav('/dashboard')}
+              className="w-full btn btn-solid btn-md flex items-center justify-center space-x-2 text-xs shadow-2xs cursor-pointer"
             >
               <FolderOpen className="w-4 h-4" />
               <span>All Projects Dashboard</span>
-            </Link>
+            </button>
           </div>
 
           {/* User Profile & Sign Out in Mobile Menu */}
@@ -486,13 +496,13 @@ export default function Navbar({ currentProject, onProjectChange, isDashboard: i
                 </button>
               </>
             ) : (
-              <Link
-                to="/auth"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full btn btn-outline btn-md text-xs text-center"
+              <button
+                type="button"
+                onClick={() => handleMobileNav('/auth')}
+                className="w-full btn btn-outline btn-md text-xs text-center cursor-pointer"
               >
                 Sign In
-              </Link>
+              </button>
             )}
           </div>
         </div>

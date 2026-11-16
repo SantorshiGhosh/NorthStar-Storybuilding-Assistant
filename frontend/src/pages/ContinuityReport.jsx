@@ -106,68 +106,68 @@ export default function ContinuityReport() {
   const resolvedCount = issues.filter((i) => i.status === 'resolved').length;
 
   return (
-    <div className="min-h-screen bg-[#fbfbf9] flex flex-col">
+    <div className="min-h-screen bg-[#f6f6f4] dark:bg-[#161618] text-[#1c1c1e] dark:text-[#f5f5f7] flex flex-col font-sans transition-colors duration-200">
       <Navbar currentProject={project} />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Header Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-neutral-200/80 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 border-b border-[#1c1c1e]/10 dark:border-white/10 gap-4">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full w-fit mb-2">
+            <div className="flex items-center space-x-2 text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] bg-[#1c1c1e]/5 dark:bg-white/10 border border-[#1c1c1e]/10 dark:border-white/10 px-2.5 py-0.5 rounded-full w-fit mb-2">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Full Narrative Audit</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1c1c1e] dark:text-[#f5f5f7] tracking-tight">
               Continuity Guardian Report
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-500 mt-1">
+            <p className="text-xs sm:text-sm text-[#636366] dark:text-[#8e8e93] mt-1">
               Complete registry of candidate contradictions detected between new passages and established story canon.
             </p>
           </div>
         </div>
 
         {/* Metric Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6">
-          <div className="bg-white rounded-xl border border-neutral-200/80 p-4 shadow-xs text-left">
-            <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block mb-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 my-6">
+          <div className="bg-[#fcfcfb] dark:bg-[#222224] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 p-4 shadow-2xs text-left">
+            <span className="text-[11px] font-medium text-[#8e8e93] uppercase tracking-wider block mb-1">
               Total Evaluated
             </span>
-            <span className="text-2xl font-bold text-neutral-900">{totalCount}</span>
+            <span className="text-2xl font-bold text-[#1c1c1e] dark:text-[#f5f5f7]">{totalCount}</span>
           </div>
 
-          <div className="bg-white rounded-xl border border-neutral-200/80 p-4 shadow-xs text-left">
-            <span className="text-[11px] font-medium text-amber-600 uppercase tracking-wider block mb-1">
+          <div className="bg-[#fcfcfb] dark:bg-[#222224] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 p-4 shadow-2xs text-left">
+            <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider block mb-1">
               Unresolved Warnings
             </span>
-            <span className="text-2xl font-bold text-amber-600">{unresolvedCount}</span>
+            <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">{unresolvedCount}</span>
           </div>
 
-          <div className="bg-white rounded-xl border border-neutral-200/80 p-4 shadow-xs text-left">
-            <span className="text-[11px] font-medium text-purple-600 uppercase tracking-wider block mb-1">
+          <div className="bg-[#fcfcfb] dark:bg-[#222224] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 p-4 shadow-2xs text-left">
+            <span className="text-[11px] font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider block mb-1">
               Intentional Twists
             </span>
-            <span className="text-2xl font-bold text-purple-600">{intentionalCount}</span>
+            <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{intentionalCount}</span>
           </div>
 
-          <div className="bg-white rounded-xl border border-neutral-200/80 p-4 shadow-xs text-left">
-            <span className="text-[11px] font-medium text-emerald-600 uppercase tracking-wider block mb-1">
+          <div className="bg-[#fcfcfb] dark:bg-[#222224] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 p-4 shadow-2xs text-left">
+            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block mb-1">
               Resolved Issues
             </span>
-            <span className="text-2xl font-bold text-emerald-600">{resolvedCount}</span>
+            <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{resolvedCount}</span>
           </div>
         </div>
 
         {/* Filter Navigation & Search Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white p-3 rounded-xl border border-neutral-200/80">
-          <div className="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-[#fcfcfb] dark:bg-[#222224] p-3 rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 shadow-2xs">
+          <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
             {filterTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
                   activeTab === tab.id
-                    ? 'bg-neutral-900 text-white shadow-2xs'
-                    : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'
+                    ? 'bg-[#1c1c1e] text-white dark:bg-white dark:text-[#1c1c1e] shadow-2xs font-semibold'
+                    : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5'
                 }`}
               >
                 {tab.label}
@@ -176,13 +176,13 @@ export default function ContinuityReport() {
           </div>
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-[#8e8e93] absolute left-2.5 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search evidence quotes or issues..."
-              className="pl-8 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-hidden focus:border-blue-500 w-full sm:w-64"
+              className="pl-8 pr-3 py-1.5 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 w-full sm:w-64"
             />
           </div>
         </div>
@@ -191,8 +191,8 @@ export default function ContinuityReport() {
         {loading && issues.length === 0 ? (
           <div className="space-y-4">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="bg-white rounded-xl border border-neutral-200/80 p-5 shadow-xs animate-pulse">
-                <div className="flex items-center justify-between pb-3 border-b border-neutral-100 mb-4">
+              <div key={n} className="bg-[#fcfcfb] dark:bg-[#222224] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 p-5 shadow-xs animate-pulse">
+                <div className="flex items-center justify-between pb-3 border-b border-[#1c1c1e]/10 dark:border-white/10 mb-4">
                   <div className="flex items-center space-x-2.5">
                     <div className="h-5 w-24 bg-neutral-200 rounded-full" />
                     <div className="h-4 w-32 bg-neutral-200 rounded" />

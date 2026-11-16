@@ -799,7 +799,7 @@ export default function StoryArchitect() {
       </div>
 
       {/* Main Workspace Body */}
-      <div className="flex-1 flex relative overflow-hidden">
+      <div className="flex-1 flex relative overflow-hidden min-h-0">
         {/* Mobile Backdrop for Hierarchy Sidebar */}
         {isGroupTreeOpen && (
           <div
@@ -867,7 +867,7 @@ export default function StoryArchitect() {
         </div>
 
         {/* Center: React Flow Canvas */}
-        <div className="flex-1 h-full relative bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden">
+        <div className="flex-1 h-full min-h-0 relative bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden">
           {/* Toggle sidebar button */}
           <button
             onClick={() => setIsGroupTreeOpen(!isGroupTreeOpen)}

@@ -228,25 +228,25 @@ export default function KnowledgeGraph() {
       <Navbar currentProject={project} />
 
       {/* Control Bar: Search & Type Filter Tabs */}
-      <div className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 z-10 shadow-2xs">
-        <div className="flex items-center space-x-2">
-          <div className="relative">
+      <div className="bg-[#fcfcfb] dark:bg-[#1c1c1e] border-b border-[#1c1c1e]/10 dark:border-white/10 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2.5 z-10 shadow-2xs">
+        <div className="flex items-center space-x-2 min-w-0 max-w-full overflow-x-auto no-scrollbar py-0.5">
+          <div className="relative shrink-0">
             <Search className="w-3.5 h-3.5 text-[#8e8e93] absolute left-2.5 top-2.5" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search narrative graph..."
-              className="pl-8 pr-3 py-1.5 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 w-52 sm:w-64"
+              className="pl-8 pr-3 py-1.5 text-xs bg-[#f6f6f4] dark:bg-[#161618] border border-[#1c1c1e]/10 dark:border-white/10 rounded-lg text-[#1c1c1e] dark:text-[#f5f5f7] placeholder-[#8e8e93] focus:outline-hidden focus:border-[#1c1c1e]/30 dark:focus:border-white/30 w-44 sm:w-64"
             />
           </div>
 
-          <div className="hidden sm:flex items-center space-x-1 pl-2">
+          <div className="flex items-center space-x-1 pl-1 shrink-0 overflow-x-auto no-scrollbar">
             {filterTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTypeFilter(tab.id)}
-                className={`px-2.5 py-1 rounded-md text-xs font-mono-cap transition-colors cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-xs font-mono-cap transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   activeTypeFilter === tab.id
                     ? 'bg-[#1c1c1e] text-white dark:bg-white dark:text-[#1c1c1e] shadow-2xs font-medium'
                     : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5'
@@ -258,15 +258,15 @@ export default function KnowledgeGraph() {
           </div>
         </div>
 
-        <div className="text-xs font-mono-cap text-[#8e8e93] flex items-center space-x-3">
-          <span>{nodes.length} entities visualized</span>
+        <div className="text-xs font-mono-cap text-[#8e8e93] flex items-center space-x-2 sm:space-x-3 shrink-0">
+          <span>{nodes.length} entities</span>
           <span>&bull;</span>
           <span>{edges.length} connections</span>
         </div>
       </div>
 
       {/* React Flow Canvas */}
-      <div className="flex-1 relative bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden">
+      <div className="flex-1 min-h-0 relative bg-[#f6f6f4] dark:bg-[#161618] overflow-hidden">
         <ReactFlow
           nodes={nodes}
           edges={edges}
