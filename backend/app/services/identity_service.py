@@ -46,7 +46,52 @@ class IdentityService:
 
     def __init__(self):
         self._spacy_nlp = None
+        self._project_sessions: Dict[str, Dict[str, Any]] = {}
         self._init_spacy()
+
+    def preload_project_identities(self, db: Session, project_id: str):
+        """
+        Preloads all entities and aliases for a project into a fast in-memory session index.
+        Eliminates N+1 database queries across batch chapter ingestion.
+        """
+        pid = str(project_id)
+        ents = db.query(models.Entity).filter(models.Entity.project_id == project_id).all()
+        aliases = db.query(models.EntityAlias).filter(models.EntityAlias.project_id == project_id).all()
+
+        alias_to_ent: Dict[str, models.Entity] = {}
+        alias_obj_map: Dict[Tuple[str, str], models.EntityAlias] = {}
+        ent_by_id = {str(e.id): e for e in ents}
+
+        for a in aliases:
+            canon = getattr(a, "canonical_entity", None) or ent_by_id.get(str(getattr(a, "canonical_entity_id", None)))
+            if canon:
+                alias_name = getattr(a, "alias_name", "") or ""
+                alias_to_ent[alias_name.lower().strip()] = canon
+            canon_id = str(getattr(a, "canonical_entity_id", ""))
+            alias_str = (getattr(a, "alias_name", "") or "").lower().strip()
+            alias_obj_map[(canon_id, alias_str)] = a
+
+        canonical_by_name: Dict[str, models.Entity] = {e.name.lower().strip(): e for e in ents}
+        ents_by_type: Dict[str, List[models.Entity]] = {}
+        for e in ents:
+            ents_by_type.setdefault(e.entity_type.lower().strip(), []).append(e)
+
+        self._project_sessions[pid] = {
+            "canonical_by_name": canonical_by_name,
+            "alias_to_ent": alias_to_ent,
+            "alias_obj_map": alias_obj_map,
+            "ents_by_type": ents_by_type,
+            "ent_by_id": ent_by_id
+        }
+
+    def clear_project_identities(self, project_id: Optional[str] = None):
+        """
+        Clears the in-memory identity session index for a project or all projects.
+        """
+        if project_id:
+            self._project_sessions.pop(str(project_id), None)
+        else:
+            self._project_sessions.clear()
 
     def _init_spacy(self):
         try:
@@ -181,21 +226,36 @@ class IdentityService:
         """
         name_clean = extracted_name.strip()
         name_lower = name_clean.lower()
+        session = self._project_sessions.get(str(project_id))
 
-        # 1. Exact match on canonical entity name
+        # 1. Fast in-memory session index lookup (canonical name or registered alias)
+        if session:
+            if name_lower in session["canonical_by_name"]:
+                return session["canonical_by_name"][name_lower]
+            if name_lower in session["alias_to_ent"]:
+                return session["alias_to_ent"][name_lower]
+
+        # 2. Database exact match on canonical entity name
         exact_ent = db.query(models.Entity).filter(
             models.Entity.project_id == project_id,
             models.Entity.name.ilike(name_clean)
         ).first()
         if exact_ent:
+            if session:
+                session["canonical_by_name"][name_lower] = exact_ent
+                session["canonical_by_name"][exact_ent.name.lower().strip()] = exact_ent
+                session["ent_by_id"][str(exact_ent.id)] = exact_ent
             return exact_ent
 
-        # 2. Match on registered entity aliases
+        # 3. Database match on registered entity aliases
+
         alias_record = db.query(models.EntityAlias).filter(
             models.EntityAlias.project_id == project_id,
             models.EntityAlias.alias_name.ilike(name_clean)
         ).first()
         if alias_record and alias_record.canonical_entity:
+            if session:
+                session["alias_to_ent"][name_lower] = alias_record.canonical_entity
             return alias_record.canonical_entity
 
         # 2b. Context-based alias resolution from source quote
@@ -329,6 +389,12 @@ class IdentityService:
                 source_quote=source_quote
             )
 
+        if session:
+            session["canonical_by_name"][canonical_name.lower().strip()] = new_ent
+            session["canonical_by_name"][name_lower] = new_ent
+            session["ent_by_id"][str(new_ent.id)] = new_ent
+            session["ents_by_type"].setdefault(entity_type.lower().strip(), []).append(new_ent)
+
         db.commit()
         db.refresh(new_ent)
         return new_ent
@@ -346,28 +412,49 @@ class IdentityService:
         """
         Saves or updates an alias linked to a canonical entity.
         """
+        session = self._project_sessions.get(str(project_id))
+        clean_alias = alias_name.strip()
+        alias_key = (str(canonical_entity_id), clean_alias.lower())
+
+        if session and alias_key in session["alias_obj_map"]:
+            existing = session["alias_obj_map"][alias_key]
+            existing.confidence = max(existing.confidence, confidence)
+            if source_quote and not existing.source_quote:
+                existing.source_quote = source_quote
+            return existing
+
         existing = db.query(models.EntityAlias).filter(
             models.EntityAlias.project_id == project_id,
             models.EntityAlias.canonical_entity_id == canonical_entity_id,
-            models.EntityAlias.alias_name.ilike(alias_name.strip())
+            models.EntityAlias.alias_name.ilike(clean_alias)
         ).first()
 
         if existing:
             existing.confidence = max(existing.confidence, confidence)
             if source_quote and not existing.source_quote:
                 existing.source_quote = source_quote
+            if session:
+                session["alias_obj_map"][alias_key] = existing
+                canon = session["ent_by_id"].get(str(canonical_entity_id))
+                if canon:
+                    session["alias_to_ent"][clean_alias.lower()] = canon
             return existing
 
         alias = models.EntityAlias(
             id=models.gen_uuid(),
             project_id=project_id,
             canonical_entity_id=canonical_entity_id,
-            alias_name=alias_name.strip(),
+            alias_name=clean_alias,
             alias_type=alias_type,
             confidence=confidence,
             source_quote=source_quote
         )
         db.add(alias)
+        if session:
+            session["alias_obj_map"][alias_key] = alias
+            canon = session["ent_by_id"].get(str(canonical_entity_id))
+            if canon:
+                session["alias_to_ent"][clean_alias.lower()] = canon
         return alias
 
     # -------------------------------------------------------------------------

@@ -21,7 +21,7 @@ import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import useDocumentTitle from '../hooks/useDocumentTitle';
-import { projectService, getCached, prefetchProjectWorkspace } from '../services/api';
+import { projectService, getCached, prefetchProjectWorkspace, subscribeProjectEvents } from '../services/api';
 
 const UPLOAD_STAGES = [
   {
@@ -121,12 +121,20 @@ export default function Dashboard() {
 
     let secondsInterval = null;
     let progressInterval = null;
+    let unsubscribeSSE = null;
 
     try {
       setUploading(true);
       setUploadError('');
       setUploadProgress(5);
       setUploadSeconds(0);
+
+      // Real-time progressive stage feedback from backend SSE stream
+      unsubscribeSSE = subscribeProjectEvents(selectedUploadProject.id, (event) => {
+        if (event && event.type === 'job:stage_change' && event.data?.progress) {
+          setUploadProgress((prev) => Math.max(prev, event.data.progress));
+        }
+      });
 
       secondsInterval = setInterval(() => {
         setUploadSeconds((prev) => prev + 1);
@@ -182,6 +190,7 @@ export default function Dashboard() {
       }
       setUploadError(formattedError);
     } finally {
+      if (unsubscribeSSE) unsubscribeSSE();
       setUploading(false);
     }
   };

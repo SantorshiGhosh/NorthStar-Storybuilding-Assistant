@@ -34,7 +34,7 @@ import IssueCard from '../components/IssueCard';
 import EntityMatchingDrawer from '../components/EntityMatchingDrawer';
 import { useToast } from '../context/ToastContext';
 import useDocumentTitle from '../hooks/useDocumentTitle';
-import { projectService, chapterService, architectService, getCached } from '../services/api';
+import { projectService, chapterService, architectService, getCached, subscribeProjectEvents } from '../services/api';
 
 const PANELS_STORAGE_KEY = 'northstar_workspace_panels';
 
@@ -156,6 +156,41 @@ export default function Workspace() {
     if (projectId) {
       loadWorkspaceData();
     }
+  }, [projectId]);
+
+  // Progressive real-time updates via Server-Sent Events (SSE)
+  useEffect(() => {
+    if (!projectId) return;
+
+    const unsubscribe = subscribeProjectEvents(projectId, (event) => {
+      if (!event || !event.type) return;
+
+      if (event.type === 'chapter:completed') {
+        chapterService.getChapters(projectId, { forceRefresh: true }).then((updatedChaps) => {
+          if (Array.isArray(updatedChaps) && updatedChaps.length > 0) {
+            setChapters(updatedChaps);
+          }
+        }).catch(() => {});
+      } else if (event.type === 'continuity:issues_found') {
+        const newIssues = event.data?.issues || [];
+        if (newIssues.length > 0) {
+          setIssues((prev) => {
+            const existingIds = new Set((prev || []).map((i) => i.id));
+            const fresh = newIssues.filter((i) => !existingIds.has(i.id));
+            return fresh.length > 0 ? [...fresh, ...prev] : prev;
+          });
+        }
+      } else if (event.type === 'job:completed') {
+        toast.success(event.data?.message || 'Narrative intelligence analysis complete.');
+        projectService.getIssues(projectId, {}, { forceRefresh: true }).then((finalIssues) => {
+          if (Array.isArray(finalIssues)) setIssues(finalIssues);
+        }).catch(() => {});
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [projectId]);
 
   // Handle chapter selection

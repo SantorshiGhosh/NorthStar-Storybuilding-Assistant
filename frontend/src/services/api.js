@@ -264,6 +264,68 @@ export const projectService = {
   },
 };
 
+/**
+ * Subscribes to real-time progressive Server-Sent Events (SSE) for a project.
+ * Automatically recovers missed events upon reconnection using Last-Event-ID.
+ */
+export function subscribeProjectEvents(projectId, onEvent, onError) {
+  if (!projectId || typeof window === 'undefined') return () => {};
+
+  const token = localStorage.getItem('northstar_token') || localStorage.getItem('sb_auth_token') || localStorage.getItem('supabase_token');
+  const query = token ? `?token=${encodeURIComponent(token)}` : '';
+  const url = `${API_BASE}/projects/${projectId}/events${query}`;
+
+  let eventSource = null;
+  let isClosed = false;
+
+  try {
+    eventSource = new EventSource(url, { withCredentials: true });
+
+    eventSource.onmessage = (e) => {
+      try {
+        const parsed = JSON.parse(e.data);
+        if (onEvent) onEvent({ type: 'message', data: parsed, lastEventId: e.lastEventId });
+      } catch (err) {
+        console.warn('[SSE] Generic message parse error:', err);
+      }
+    };
+
+    const eventTypes = [
+      'job:stage_change',
+      'chapter:completed',
+      'entities:discovered',
+      'continuity:issues_found',
+      'job:completed',
+      'job:failed'
+    ];
+
+    eventTypes.forEach((evType) => {
+      eventSource.addEventListener(evType, (e) => {
+        try {
+          const parsed = JSON.parse(e.data);
+          if (onEvent) onEvent({ type: evType, data: parsed, lastEventId: e.lastEventId });
+        } catch (err) {
+          console.warn(`[SSE] ${evType} parse error:`, err);
+        }
+      });
+    });
+
+    eventSource.onerror = (err) => {
+      if (isClosed) return;
+      if (onError) onError(err);
+    };
+  } catch (err) {
+    console.error('[SSE] Failed to establish EventSource connection:', err);
+  }
+
+  return () => {
+    isClosed = true;
+    if (eventSource) {
+      eventSource.close();
+    }
+  };
+}
+
 export const jobService = {
   getJobStatus: async (projectId, jobId) => {
     const res = await api.get(`/projects/${projectId}/jobs/${jobId}`);
@@ -275,6 +337,10 @@ export const jobService = {
   },
   listJobs: async (projectId) => {
     const res = await api.get(`/projects/${projectId}/jobs`);
+    return res.data;
+  },
+  retryJob: async (projectId, jobId) => {
+    const res = await api.post(`/projects/${projectId}/jobs/${jobId}/retry`);
     return res.data;
   },
 };
