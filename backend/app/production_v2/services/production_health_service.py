@@ -59,12 +59,21 @@ class ProductionHealthService:
             vector_status = {"status": "degraded", "error": str(e)}
 
         # 4. AI Service readiness
-        ai_configured = bool(settings.GEMINI_API_KEY and len(settings.GEMINI_API_KEY) > 5)
-        ai_status = {
-            "status": "ready" if ai_configured else "unconfigured",
-            "model": settings.GEMINI_MODEL,
-            "provider": "google-gemini"
-        }
+        is_groq = getattr(settings, "AI_PROVIDER", "gemini").lower() == "groq"
+        if is_groq:
+            ai_configured = bool(getattr(settings, "GROQ_API_KEY", "") and len(getattr(settings, "GROQ_API_KEY", "")) > 5)
+            ai_status = {
+                "status": "ready" if ai_configured else "unconfigured",
+                "model": getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b"),
+                "provider": "groq"
+            }
+        else:
+            ai_configured = bool(settings.GEMINI_API_KEY and len(settings.GEMINI_API_KEY) > 5)
+            ai_status = {
+                "status": "ready" if ai_configured else "unconfigured",
+                "model": settings.GEMINI_MODEL,
+                "provider": "google-gemini"
+            }
 
         overall_status = "healthy" if (
             db_status.get("status") == "healthy" and

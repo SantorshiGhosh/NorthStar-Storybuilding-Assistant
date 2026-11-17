@@ -27,8 +27,16 @@ class AIProviderService:
         "gemini-2.5-flash"
     ]
 
+    GROQ_CANDIDATE_MODELS = [
+        "openai/gpt-oss-120b",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768"
+    ]
+
     def __init__(self):
         self.api_key = ""
+        self.groq_api_key = ""
         self._genai_client = None
         self._legacy_configured = False
         self._init_client()
@@ -36,6 +44,9 @@ class AIProviderService:
     def _init_client(self):
         raw_key = settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
         self.api_key = raw_key.strip().strip('"').strip("'") if raw_key else ""
+        
+        raw_groq = getattr(settings, "GROQ_API_KEY", "") or os.getenv("GROQ_API_KEY", "")
+        self.groq_api_key = raw_groq.strip().strip('"').strip("'") if raw_groq else ""
         if not self.api_key or len(self.api_key) < 10:
             self._genai_client = None
             self._legacy_configured = False
@@ -58,9 +69,17 @@ class AIProviderService:
 
     def generate_json(self, prompt: str, system_instruction: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Sends structured prompt to Gemini with multi-model fallback and JSON fence stripping.
+        Sends structured prompt to configured AI provider (Groq or Gemini) with multi-model fallback and JSON fence stripping.
         Returns parsed dict/list or None if unavailable/quota-limited.
         """
+        current_env_groq_key = (getattr(settings, "GROQ_API_KEY", "") or os.getenv("GROQ_API_KEY", "")).strip().strip('"').strip("'")
+        if not self.groq_api_key or self.groq_api_key != current_env_groq_key:
+            self.groq_api_key = current_env_groq_key
+
+        provider = (getattr(settings, "AI_PROVIDER", "") or os.getenv("AI_PROVIDER", "groq")).lower().strip()
+        if provider == "groq" or (self.groq_api_key and not self.api_key):
+            return self._generate_json_groq(prompt, system_instruction=system_instruction)
+
         current_env_key = (settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")).strip().strip('"').strip("'")
         if not self.api_key or self.api_key != current_env_key:
             self._init_client()
@@ -142,6 +161,101 @@ class AIProviderService:
 
         if last_err:
             raise last_err
+        return ""
+
+    def _generate_json_groq(self, prompt: str, system_instruction: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Sends structured prompt to Groq API with multi-model fallback and JSON parsing.
+        """
+        if not self.groq_api_key or len(self.groq_api_key) < 10:
+            logger.debug("Valid GROQ_API_KEY is not configured; relying on deterministic agent logic.")
+            return None
+
+        # Build list of Groq models to try
+        models_to_try = []
+        configured_model = (getattr(settings, "GROQ_MODEL", "") or os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")).strip()
+        if configured_model:
+            models_to_try.append(configured_model)
+        for m in self.GROQ_CANDIDATE_MODELS:
+            if m not in models_to_try:
+                models_to_try.append(m)
+
+        for model_name in models_to_try:
+            try:
+                raw_text = self._call_groq_model(model_name, prompt, system_instruction=system_instruction)
+                if not raw_text or not raw_text.strip():
+                    continue
+
+                # Strip markdown code fences
+                clean_text = raw_text.strip()
+                clean_text = re.sub(r"^```(?:json)?\s*", "", clean_text, flags=re.MULTILINE)
+                clean_text = re.sub(r"\s*```$", "", clean_text, flags=re.MULTILINE)
+                clean_text = clean_text.strip()
+
+                # Extract JSON block if surrounded by extra conversational text
+                match = re.search(r"(\{.*\}|\[.*\])", clean_text, re.DOTALL)
+                if match:
+                    clean_text = match.group(1).strip()
+
+                parsed = json.loads(clean_text)
+                if isinstance(parsed, (dict, list)):
+                    return parsed
+            except Exception as e:
+                err_str = str(e).lower()
+                if "429" in err_str or "quota" in err_str or "rate limit" in err_str:
+                    logger.warning(f"Groq model '{model_name}' quota limited (429). Attempting fallback...")
+                elif "404" in err_str or "not found" in err_str or "model_not_found" in err_str:
+                    logger.warning(f"Groq model '{model_name}' not found (404). Attempting fallback...")
+                else:
+                    logger.warning(f"Groq model '{model_name}' call failed: {e}")
+                continue
+
+        logger.warning("All Groq candidate models failed or exhausted quota. Triggering deterministic fallback.")
+        return None
+
+    def _call_groq_model(self, model_name: str, prompt: str, system_instruction: Optional[str] = None) -> str:
+        """
+        Executes HTTP POST request to Groq OpenAI-compatible chat completions endpoint.
+        """
+        import httpx
+
+        api_key = self.groq_api_key or (getattr(settings, "GROQ_API_KEY", "") or os.getenv("GROQ_API_KEY", "")).strip().strip('"').strip("'")
+        if not api_key:
+            return ""
+
+        base_url = (getattr(settings, "GROQ_BASE_URL", "") or os.getenv("GROQ_BASE_URL", "") or "https://api.groq.com/openai/v1").rstrip("/")
+        url = f"{base_url}/chat/completions"
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        messages = []
+        if system_instruction:
+            messages.append({"role": "system", "content": f"{system_instruction}\nRespond in valid JSON only."})
+        else:
+            messages.append({"role": "system", "content": "You are a professional narrative intelligence assistant. Always respond in valid JSON."})
+        messages.append({"role": "user", "content": f"{prompt}\n\nIMPORTANT: Respond with valid, parseable JSON only."})
+
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": 0.2,
+            "response_format": {"type": "json_object"}
+        }
+
+        with httpx.Client(timeout=45.0) as client:
+            resp = client.post(url, headers=headers, json=payload)
+            if resp.status_code == 400 and ("response_format" in resp.text.lower() or "json" in resp.text.lower()):
+                # Fallback if model does not support json_object response_format
+                payload.pop("response_format", None)
+                resp = client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            choices = data.get("choices", [])
+            if choices and "message" in choices[0]:
+                return choices[0]["message"].get("content", "")
         return ""
 
 ai_provider = AIProviderService()
