@@ -364,7 +364,8 @@ class CentralAIOrchestrator:
 
         try:
             # 2. Extract memory from chapters with bounded concurrency & version-aware caching
-            concurrency = min(4, len(db_chapters), os.cpu_count() or 4)
+            # Fast mode (heuristic) runs across 4 threads; deep AI mode (cloud LLM) runs sequentially to honor 8k TPM limits
+            concurrency = min(4, len(db_chapters), os.cpu_count() or 4) if fast_mode else 1
 
             def _extract_worker(ch):
                 ch_hash = narrative_cache.compute_content_hash(ch.content)

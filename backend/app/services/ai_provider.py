@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import re
+import time
 from typing import Dict, Any, Optional, List
 from app.config import settings
 
@@ -29,9 +30,8 @@ class AIProviderService:
 
     GROQ_CANDIDATE_MODELS = [
         "openai/gpt-oss-120b",
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768"
+        "openai/gpt-oss-20b",
+        "qwen/qwen3.8-27b"
     ]
 
     def __init__(self):
@@ -246,16 +246,37 @@ class AIProviderService:
         }
 
         with httpx.Client(timeout=45.0) as client:
-            resp = client.post(url, headers=headers, json=payload)
-            if resp.status_code == 400 and ("response_format" in resp.text.lower() or "json" in resp.text.lower()):
-                # Fallback if model does not support json_object response_format
-                payload.pop("response_format", None)
+            resp = None
+            for attempt in range(3):
                 resp = client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            choices = data.get("choices", [])
-            if choices and "message" in choices[0]:
-                return choices[0]["message"].get("content", "")
+                if resp.status_code == 429:
+                    retry_after = 2.5
+                    try:
+                        ra = resp.headers.get("retry-after")
+                        if ra:
+                            retry_after = float(ra)
+                        else:
+                            reset_t = resp.headers.get("x-ratelimit-reset-tokens")
+                            if reset_t and "s" in reset_t:
+                                retry_after = float(reset_t.replace("s", ""))
+                    except Exception:
+                        pass
+                    sleep_time = min(max(retry_after, 1.5), 5.0)
+                    logger.info(f"Groq 429 rate limit hit for '{model_name}'. Backing off for {sleep_time:.1f}s before retry (attempt {attempt+1}/3)...")
+                    time.sleep(sleep_time)
+                    continue
+                if resp.status_code == 400 and ("response_format" in resp.text.lower() or "json" in resp.text.lower()):
+                    # Fallback if model does not support json_object response_format
+                    payload.pop("response_format", None)
+                    continue
+                break
+
+            if resp is not None:
+                resp.raise_for_status()
+                data = resp.json()
+                choices = data.get("choices", [])
+                if choices and "message" in choices[0]:
+                    return choices[0]["message"].get("content", "")
         return ""
 
 ai_provider = AIProviderService()
