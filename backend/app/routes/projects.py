@@ -10,6 +10,7 @@ from app.schemas import models as s_models
 from app.services.graph_service import graph_service
 from app.services.vector_service import vector_service
 from app.services.memory_service import memory_service
+from app.agents.orchestrator import orchestrator
 from app.routes.auth import get_current_user, get_optional_user, require_project_access
 
 logger = logging.getLogger("projects_route")
@@ -400,3 +401,41 @@ def get_project_issues(
     except Exception as e:
         logger.error(f"Error in get_project_issues: {e}")
         return []
+
+@router.post("/projects/{project_id}/continuity/analyze")
+def analyze_project_continuity(
+    project_id: str,
+    current_user: Optional[models.User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Runs full Continuity Guardian evaluation across all chapters in the project.
+    Evaluates chapters chronologically against prior established canon.
+    """
+    require_project_access(project_id, current_user, db, require_write=True)
+    chapters = db.query(models.Chapter).filter(
+        models.Chapter.project_id == project_id
+    ).order_by(models.Chapter.chapter_number.asc()).all()
+
+    if not chapters:
+        return {"status": "success", "issues_found": 0, "issues": []}
+
+    new_detected = []
+    # Evaluate chapters chronologically starting from chapter 2 (or all if only 1)
+    chapters_to_check = [c for c in chapters if c.chapter_number > 1] or chapters
+    for ch in chapters_to_check:
+        ch_issues = orchestrator.analyze_chapter_continuity(
+            db=db,
+            project_id=project_id,
+            chapter_id=ch.id,
+            skip_llm=False
+        )
+        new_detected.extend(ch_issues)
+
+    all_issues = memory_service.get_continuity_issues(db=db, project_id=project_id)
+    return {
+        "status": "success",
+        "issues_found": len(all_issues),
+        "new_issues_count": len(new_detected),
+        "issues": all_issues
+    }

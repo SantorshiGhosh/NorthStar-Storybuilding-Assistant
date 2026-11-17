@@ -242,6 +242,15 @@ export const projectService = {
     }, { ttl: 30000, ...options });
   },
 
+  analyzeContinuity: async (projectId) => {
+    const res = await api.post(`/projects/${projectId}/continuity/analyze`);
+    invalidateCache('issues:');
+    invalidateCache(`issues:${projectId}`);
+    invalidateCache('project:bundle:');
+    invalidateCache(`project:bundle:${projectId}`);
+    return res.data;
+  },
+
   getJobStatus: async (projectId, jobId) => {
     const res = await api.get(`/projects/${projectId}/jobs/${jobId}`);
     return res.data;

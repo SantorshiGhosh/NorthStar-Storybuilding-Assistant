@@ -29,8 +29,8 @@ class AIProviderService:
     ]
 
     GROQ_CANDIDATE_MODELS = [
-        "openai/gpt-oss-120b",
         "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
         "qwen/qwen3.8-27b"
     ]
 

@@ -226,10 +226,13 @@ MANUSCRIPT CONTENT:
 
             if injury_match:
                 subj_name = primary_subject
-                # Try extracting name from match groups
                 for g in injury_match.groups():
-                    if g and g.strip().title() in registered_characters:
-                        subj_name = g.strip().title()
+                    cand = g.strip() if g else ""
+                    if cand and cand.title() in registered_characters:
+                        subj_name = cand.title()
+                        break
+                    elif cand and not any(w.lower() in COMMON_STOP_WORDS for w in cand.split()) and len(cand) >= 3 and cand.lower() not in ["left", "right", "arm", "hand", "leg", "foot", "eye", "finger", "shoulder", "limb"]:
+                        subj_name = cand.title()
                         break
 
                 if subj_name:

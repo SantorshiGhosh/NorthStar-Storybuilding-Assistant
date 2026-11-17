@@ -59,18 +59,11 @@ async def upload_manuscript(
             file_bytes=file_bytes,
             file_ext=ext,
             vault_path=vault_path,
-            fast_mode=True,
+            fast_mode=False,
             job_id=job.id
         )
         job.manuscript_id = manuscript.id
         db.commit()
-
-        # Detached background thread so deep narrative enrichment runs asynchronously
-        threading.Thread(
-            target=orchestrator.enrich_project_with_ai,
-            args=(project_id, job.id),
-            daemon=True
-        ).start()
     except Exception as e:
         job_service.fail_job(db, job.id, f"Processing failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to process manuscript: {str(e)}")

@@ -32,20 +32,41 @@ class TemporalMemoryService:
         if idx != -1:
             return True, q_clean, idx, idx + len(q_clean)
 
-        # Normalized whitespace search
-        norm_source = re.sub(r'\s+', ' ', source_text)
-        norm_quote = re.sub(r'\s+', ' ', q_clean)
+        # Helper to normalize typography (curly quotes, dashes, whitespace)
+        def _norm(t: str) -> str:
+            t = re.sub(r'[\u201c\u201d\u201e\u201f\u00ab\u00bb]', '"', t)
+            t = re.sub(r'[\u2018\u2019\u201a\u201b`]', "'", t)
+            t = re.sub(r'[\u2013\u2014]', '-', t)
+            return re.sub(r'\s+', ' ', t).strip()
+
+        norm_source = _norm(source_text)
+        norm_quote = _norm(q_clean)
+
+        # Direct normalized match
         idx_norm = norm_source.find(norm_quote)
         if idx_norm != -1:
             return True, norm_quote, idx_norm, idx_norm + len(norm_quote)
 
+        # Check with surrounding quote marks stripped from the candidate quote
+        unquoted = norm_quote.strip('"\'')
+        if len(unquoted) >= 3:
+            idx_unquoted = norm_source.find(unquoted)
+            if idx_unquoted != -1:
+                return True, unquoted, idx_unquoted, idx_unquoted + len(unquoted)
+
         # Substring fuzzy match for quotes with slight punctuation variation
-        words = norm_quote.split()
+        words = unquoted.split()
         if len(words) >= 4:
             sub_quote = " ".join(words[:4])
             idx_sub = norm_source.find(sub_quote)
             if idx_sub != -1:
-                return True, norm_quote, idx_sub, idx_sub + len(norm_quote)
+                return True, unquoted, idx_sub, idx_sub + len(unquoted)
+            # Try last 4 words if longer
+            if len(words) >= 6:
+                sub_tail = " ".join(words[-4:])
+                idx_tail = norm_source.find(sub_tail)
+                if idx_tail != -1:
+                    return True, unquoted, idx_tail, idx_tail + len(unquoted)
 
         return False, q_clean, -1, -1
 

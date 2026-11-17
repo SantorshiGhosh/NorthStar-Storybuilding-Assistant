@@ -558,12 +558,19 @@ class CentralAIOrchestrator:
                     job_id=job_id
                 )
 
-            # Clear prior unresolved issues for fresh evaluation
+            # Clear prior unresolved issues only for the chapters being re-evaluated
+            ch_ids = [c.id for c in db_chapters]
             db.query(models.ContinuityIssue).filter(
                 models.ContinuityIssue.project_id == project_id,
+                models.ContinuityIssue.chapter_id.in_(ch_ids),
                 models.ContinuityIssue.status.in_(["unresolved", "open"])
             ).delete(synchronize_session=False)
             db.commit()
+
+            # Always load ALL project chapters in ascending chronological order for full continuity context
+            all_project_chapters = db.query(models.Chapter).filter(
+                models.Chapter.project_id == project_id
+            ).order_by(models.Chapter.chapter_number.asc()).all()
 
             all_chs_data = [
                 {
@@ -572,7 +579,7 @@ class CentralAIOrchestrator:
                     "title": c.title,
                     "content": c.content
                 }
-                for c in db_chapters
+                for c in (all_project_chapters or db_chapters)
             ]
 
             def _continuity_worker(chapter):

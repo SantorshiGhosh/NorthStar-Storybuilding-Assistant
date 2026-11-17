@@ -209,6 +209,22 @@ def analyze_chapter(
         skip_llm=False
     )
 
+    # If this is Chapter 1 and project has subsequent chapters, evaluate subsequent chapters against Chapter 1 canon
+    # so that contradictions across the story are immediately revealed to the author
+    if ch.chapter_number == 1:
+        subsequent_chapters = db.query(models.Chapter).filter(
+            models.Chapter.project_id == ch.project_id,
+            models.Chapter.chapter_number > 1
+        ).order_by(models.Chapter.chapter_number.asc()).all()
+        for sub_ch in subsequent_chapters:
+            sub_issues = orchestrator.analyze_chapter_continuity(
+                db=db,
+                project_id=ch.project_id,
+                chapter_id=sub_ch.id,
+                skip_llm=False
+            )
+            new_detected.extend(sub_issues)
+
     # Fetch all project issues from memory_service to update the full Guardian panel
     all_project_issues = memory_service.get_continuity_issues(db=db, project_id=ch.project_id)
     entities = memory_service.get_entities(db=db, project_id=ch.project_id)

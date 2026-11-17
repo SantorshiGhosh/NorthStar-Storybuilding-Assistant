@@ -165,8 +165,15 @@ class IdentityService:
                     register(cand, "character", confidence=0.92, desc=f"Character speaking in Chapter {chapter_number}")
 
         # Pattern 3: Proper names with character actions and possessives
+        action_verbs = (
+            "stepped|walked|ran|turned|reached|pulled|drew|stood|sat|looked|stared|watched|glanced|"
+            "smiled|frowned|hesitated|grabbed|held|opened|closed|entered|left|returned|felt|knew|"
+            "thought|wondered|remembered|noticed|lost|severed|crushed|struck|escaped|arrived|fought|"
+            "spoke|screamed|shouted|whispered|nodded|gasped|commanded|died|killed|survived|drank|"
+            "awoke|vanished|passed|climbed|leaped|rushed|fell"
+        )
         action_verb_names = re.findall(
-            r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:stepped|walked|ran|turned|reached|pulled|drew|stood|sat|looked|stared|watched|glanced|smiled|frowned|hesitated|grabbed|held|opened|closed|entered|left|returned|felt|knew|thought|wondered|remembered|noticed)\b',
+            rf'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:{action_verbs})\b',
             text
         )
         for cand in action_verb_names:
@@ -204,6 +211,17 @@ class IdentityService:
             cand = obj.strip()
             if not any(w.lower() in COMMON_STOP_WORDS for w in cand.split()):
                 register(cand, "object", confidence=0.88, desc=f"Object appearing in Chapter {chapter_number}")
+
+        # Pattern 6: Frequently mentioned proper noun characters across the chapter
+        proper_names = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', text)
+        name_counts: Dict[str, int] = {}
+        for pn in proper_names:
+            words = pn.split()
+            if not any(w.lower() in COMMON_STOP_WORDS for w in words) and len(pn) >= 3:
+                name_counts[pn] = name_counts.get(pn, 0) + 1
+        for name, count in name_counts.items():
+            if count >= 2:
+                register(name, "character", confidence=0.84)
 
         return list(entities.values())
 

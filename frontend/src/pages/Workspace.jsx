@@ -317,6 +317,30 @@ export default function Workspace() {
     }
   };
 
+  // Handle project-wide live Continuity Guardian scan
+  const handleRunContinuityScan = async () => {
+    try {
+      setAnalyzing(true);
+      setIsRightOpen(true);
+      const res = await projectService.analyzeContinuity(projectId);
+      if (res && Array.isArray(res.issues)) {
+        setIssues(res.issues);
+        if (res.issues.length > 0) {
+          toast.warning(`Continuity audit: ${res.issues.length} potential contradiction(s) found across manuscript`);
+        } else {
+          toast.success('Continuity audit passed: No contradictions detected across manuscript');
+        }
+      }
+      setIssueFilter('all');
+      projectService.getProject(projectId, { forceRefresh: true }).then(setProject).catch(console.error);
+    } catch (err) {
+      console.warn('Project continuity scan fallback to chapter audit:', err);
+      await handleAnalyzeChapter();
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   // Status update on an issue
   const handleStatusUpdate = (updatedIssue) => {
     setIssues(issues.map((i) => (i.id === updatedIssue.id ? updatedIssue : i)));
@@ -659,9 +683,9 @@ export default function Workspace() {
 
               <div className="flex items-center space-x-1">
                 <button
-                  onClick={handleAnalyzeChapter}
+                  onClick={handleRunContinuityScan}
                   disabled={analyzing}
-                  title="Run live continuity scan"
+                  title="Run live manuscript continuity scan"
                   className="p-1 text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7] hover:bg-[#1c1c1e]/5 dark:hover:bg-white/5 rounded-md transition-colors cursor-pointer"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${analyzing ? 'animate-spin' : ''}`} />
