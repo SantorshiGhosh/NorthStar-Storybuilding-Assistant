@@ -27,12 +27,12 @@ class NarrativeCacheService:
         normalized = " ".join(str(text or "").split())
         return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
-    def get_cached_extraction(self, project_id: str, chapter_hash: str) -> Optional[Dict[str, Any]]:
+    def get_cached_extraction(self, project_id: str, chapter_hash: str, mode: str = "deep") -> Optional[Dict[str, Any]]:
         """
         Retrieves cached extraction result for a specific chapter content hash in a project.
-        Guarantees strict project isolation.
+        Guarantees strict project isolation and mode isolation (fast vs deep).
         """
-        key = f"ext:{chapter_hash}"
+        key = f"ext:{mode}:{chapter_hash}"
         with self._lock:
             proj_cache = self._cache.get(str(project_id))
             if not proj_cache:
@@ -47,11 +47,11 @@ class NarrativeCacheService:
             # Return deepcopy or deserialized copy to prevent in-place mutation
             return json.loads(json.dumps(data))
 
-    def cache_extraction(self, project_id: str, chapter_hash: str, data: Dict[str, Any]) -> None:
+    def cache_extraction(self, project_id: str, chapter_hash: str, data: Dict[str, Any], mode: str = "deep") -> None:
         """
         Stores chapter extraction result under project-isolated cache.
         """
-        key = f"ext:{chapter_hash}"
+        key = f"ext:{mode}:{chapter_hash}"
         expiry = datetime.utcnow() + self._ttl
         with self._lock:
             if str(project_id) not in self._cache:
@@ -67,12 +67,14 @@ class NarrativeCacheService:
         self,
         project_id: str,
         chapter_hash: str,
-        prior_canon_hash: str
+        prior_canon_hash: str,
+        skip_llm: bool = False
     ) -> Optional[List[Dict[str, Any]]]:
         """
         Retrieves cached continuity issues for a chapter given its content and prior canon hash.
         """
-        key = f"cont:{chapter_hash}:{prior_canon_hash}"
+        mode = "fast" if skip_llm else "deep"
+        key = f"cont:{mode}:{chapter_hash}:{prior_canon_hash}"
         with self._lock:
             proj_cache = self._cache.get(str(project_id))
             if not proj_cache:
@@ -91,12 +93,14 @@ class NarrativeCacheService:
         project_id: str,
         chapter_hash: str,
         prior_canon_hash: str,
-        issues: List[Dict[str, Any]]
+        issues: List[Dict[str, Any]],
+        skip_llm: bool = False
     ) -> None:
         """
         Stores verified continuity issues in cache.
         """
-        key = f"cont:{chapter_hash}:{prior_canon_hash}"
+        mode = "fast" if skip_llm else "deep"
+        key = f"cont:{mode}:{chapter_hash}:{prior_canon_hash}"
         expiry = datetime.utcnow() + self._ttl
         with self._lock:
             if str(project_id) not in self._cache:

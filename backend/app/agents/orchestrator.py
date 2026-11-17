@@ -368,7 +368,8 @@ class CentralAIOrchestrator:
 
             def _extract_worker(ch):
                 ch_hash = narrative_cache.compute_content_hash(ch.content)
-                cached = narrative_cache.get_cached_extraction(project_id, ch_hash)
+                mode_str = "fast" if fast_mode else "deep"
+                cached = narrative_cache.get_cached_extraction(project_id, ch_hash, mode=mode_str)
                 if cached:
                     return ch, cached
                 if fast_mode:
@@ -383,7 +384,7 @@ class CentralAIOrchestrator:
                         chapter_number=ch.chapter_number,
                         chapter_title=ch.title
                     )
-                narrative_cache.cache_extraction(project_id, ch_hash, res)
+                narrative_cache.cache_extraction(project_id, ch_hash, res, mode=mode_str)
                 return ch, res
 
             raw_chapter_extractions = []
@@ -581,7 +582,7 @@ class CentralAIOrchestrator:
                 )
                 ch_hash = narrative_cache.compute_content_hash(chapter.content)
                 canon_hash = narrative_cache.compute_content_hash(str([f.get("fact") for f in prior_canon]))
-                cached_issues = narrative_cache.get_cached_continuity(project_id, ch_hash, canon_hash)
+                cached_issues = narrative_cache.get_cached_continuity(project_id, ch_hash, canon_hash, skip_llm=fast_mode)
                 if cached_issues is not None:
                     return chapter, cached_issues
 
@@ -601,7 +602,7 @@ class CentralAIOrchestrator:
                     all_chapters=all_chs_data,
                     skip_llm=fast_mode
                 )
-                narrative_cache.cache_continuity(project_id, ch_hash, canon_hash, detected)
+                narrative_cache.cache_continuity(project_id, ch_hash, canon_hash, detected, skip_llm=fast_mode)
                 return chapter, detected
 
             continuity_results = []
