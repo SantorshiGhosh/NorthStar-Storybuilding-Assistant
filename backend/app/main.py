@@ -10,9 +10,6 @@ from app.database import models
 from app.agents.orchestrator import orchestrator
 from app.routes import auth, projects, manuscripts, chapters, entities, continuity, architect, support
 
-# Initialize Database tables
-init_db()
-
 app = FastAPI(
     title="NorthStar — AI Continuity Guardian",
     description="Browser-based intelligent writing workspace with persistent, evidence-backed narrative memory.",
@@ -20,6 +17,13 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+@app.on_event("startup")
+def on_startup():
+    try:
+        init_db()
+    except Exception as e:
+        print(f"[Startup Warning] Database initialization deferred: {e}")
 
 # CORS setup
 origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip() and origin.strip() != "*"]

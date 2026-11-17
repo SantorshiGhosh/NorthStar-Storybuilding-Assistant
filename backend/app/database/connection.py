@@ -9,25 +9,39 @@ if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
 connect_args = {}
+engine_kwargs = {
+    "pool_pre_ping": True,
+}
 if db_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
+elif "postgres" in db_url:
+    connect_args = {
+        "connect_timeout": 5,
+        "options": "-c statement_timeout=5000 -c lock_timeout=3000"
+    }
+    engine_kwargs.update({
+        "pool_size": 5,
+        "max_overflow": 5,
+        "pool_timeout": 5,
+        "pool_recycle": 300
+    })
 
 # Attempt engine creation with automatic driver fallback (psycopg vs psycopg2)
 try:
     engine = create_engine(
         db_url,
         connect_args=connect_args,
-        pool_pre_ping=True
+        **engine_kwargs
     )
 except Exception as e:
     # If psycopg (v3) driver requested but missing, fallback to psycopg2
     if "postgresql+psycopg://" in db_url:
         fallback_url = db_url.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
-        engine = create_engine(fallback_url, connect_args=connect_args, pool_pre_ping=True)
+        engine = create_engine(fallback_url, connect_args=connect_args, **engine_kwargs)
     # If psycopg2 driver requested but missing, fallback to psycopg
     elif "postgresql+psycopg2://" in db_url:
         fallback_url = db_url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
-        engine = create_engine(fallback_url, connect_args=connect_args, pool_pre_ping=True)
+        engine = create_engine(fallback_url, connect_args=connect_args, **engine_kwargs)
     else:
         raise e
 
@@ -107,10 +121,18 @@ def init_db():
     try:
         inspector = inspect(engine)
         existing_tables = set(inspector.get_table_names())
+        # Pre-cache existing columns once per table to eliminate redundant network round-trips
+        table_columns_cache = {}
+        for t_name in existing_tables:
+            try:
+                table_columns_cache[t_name] = {c["name"] for c in inspector.get_columns(t_name)}
+            except Exception:
+                table_columns_cache[t_name] = set()
+
         with engine.connect() as conn:
             for table_name, col_name, col_type in columns_to_ensure:
                 if table_name in existing_tables:
-                    existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
+                    existing_cols = table_columns_cache.get(table_name, set())
                     if col_name not in existing_cols:
                         try:
                             stmt = f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type};"

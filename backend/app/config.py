@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # AI Provider ("groq" or "gemini")
     AI_PROVIDER: str = "groq"
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_MODEL: str = "openai/gpt-oss-20b"
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-flash"

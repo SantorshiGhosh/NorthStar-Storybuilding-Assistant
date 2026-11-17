@@ -11,7 +11,7 @@ logger = logging.getLogger("db_migrations")
 
 class MigrationManager:
     def __init__(self):
-        self._ensure_migration_table()
+        pass
 
     def _ensure_migration_table(self):
         with engine.connect() as conn:
@@ -57,6 +57,7 @@ class MigrationManager:
 
     def run_all(self):
         """Executes all pending migrations in transaction-safe manner."""
+        self._ensure_migration_table()
         applied = set(self.get_applied_versions())
         inspector = inspect(engine)
         existing_tables = set(inspector.get_table_names())
