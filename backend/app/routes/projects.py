@@ -421,9 +421,8 @@ def analyze_project_continuity(
         return {"status": "success", "issues_found": 0, "issues": []}
 
     new_detected = []
-    # Evaluate chapters chronologically starting from chapter 2 (or all if only 1)
-    chapters_to_check = [c for c in chapters if c.chapter_number > 1] or chapters
-    for ch in chapters_to_check:
+    # Evaluate all chapters chronologically (checking both intra-chapter and prior-chapter canon)
+    for ch in chapters:
         ch_issues = orchestrator.analyze_chapter_continuity(
             db=db,
             project_id=project_id,

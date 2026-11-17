@@ -54,6 +54,26 @@ export default function IssueCard({ issue, onStatusUpdate }) {
     review_later: 'bg-[#1c1c1e]/5 dark:bg-white/10 text-[#636366] dark:text-[#8e8e93] border-[#1c1c1e]/10 dark:border-white/10',
   }[issue.status.toLowerCase()] || 'bg-[#1c1c1e]/5 text-[#636366] border-[#1c1c1e]/10';
 
+  const getChapterBadgeText = () => {
+    const earlier = issue.earlier_chapter_number;
+    const current = issue.new_chapter_number;
+    if (earlier && current && earlier !== current) {
+      return `Ch ${earlier} ➔ Ch ${current}`;
+    }
+    if (current && earlier === current) {
+      return `Ch ${current} (Internal)`;
+    }
+    if (current) {
+      return `Chapter ${current}`;
+    }
+    if (earlier) {
+      return `Chapter ${earlier}`;
+    }
+    return null;
+  };
+
+  const chapterBadgeText = getChapterBadgeText();
+
   return (
     <div className="bg-white dark:bg-[#222224] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 p-4 sm:p-5 shadow-2xs hover:border-[#1c1c1e]/25 dark:hover:border-white/25 transition-all text-left">
       {/* Header: Issue Type, Severity, Status */}
@@ -65,6 +85,11 @@ export default function IssueCard({ issue, onStatusUpdate }) {
           <h4 className="text-xs sm:text-sm font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] capitalize tracking-tight">
             {issue.issue_type.replace(/_/g, ' ')}
           </h4>
+          {chapterBadgeText && (
+            <span className="text-[10px] font-mono-cap px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 font-semibold tracking-wide">
+              {chapterBadgeText}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center space-x-1.5">

@@ -20,19 +20,28 @@ class ContinuityGuardianAgent:
 
     SYSTEM_PROMPT = """
 You are the Continuity Guardian Agent in NorthStar.
-Your responsibility is to protect narrative consistency across chapters with verifiable source citations.
+Your responsibility is to protect narrative consistency across chapters and within chapters with verifiable source citations.
+
+Detect BOTH:
+1. Cross-Chapter Contradictions: Conflicts between new chapter actions/events and established canon from prior chapters.
+2. Intra-Chapter Contradictions: Internal self-contradictions, conflicting environmental/physical states, opposing statements, or impossible state transitions within the chapter itself.
 
 Categories of continuity issues to detect:
-1. "physical_continuity": An established injury, amputation, scar, or blindness is contradicted (e.g., character uses a severed hand, laterality flip, or claims an injury never troubled them without a stated recovery or prosthetic).
+1. "physical_continuity": An established injury, amputation, scar, or physical/environmental state is contradicted (e.g., character uses a severed hand, laterality flip; scorching summer heat immediately contradicted by a freezing blizzard with heavy snow; contradictory sensory descriptions).
 2. "death_continuity": A character established as deceased/killed appears active, speaking, or walking in the present without an explained resurrection or flashback.
-3. "lore_rule_violation": An established foundational world rule, ward, lock, or constraint is violated without an authorized key, bypass, or explanation.
-4. "location_conflict": A character or unique item is established in one place but appears in another impossible location simultaneously (bilocation).
-5. "timeline_inconsistency": Impossible travel speed, reversed cause-and-effect, or contradictory dates/ages.
+3. "lore_rule_violation": An established foundational world rule, ward, lock, or constraint is violated (e.g., doors established as welded shut with iron bars easily pushed open; only one portrait exists yet another portrait is introduced).
+4. "location_conflict": A character or unique item is established in one place but appears in another impossible location simultaneously (bilocation), or an item established in a painting also exists on a table with contradictory states.
+5. "timeline_inconsistency": Impossible travel speed, reversed cause-and-effect, impossible time of day (e.g. midday noon casting midnight shadows), or contradictory dates/ages.
 
 FALSE-POSITIVE CONTROLS:
-- Do NOT flag flashbacks, memories, dreams, illusions, or symbolic mentions as death contradictions.
+- Do NOT flag intentional flashbacks, memories, dreams, illusions, or symbolic mentions as death contradictions.
 - Do NOT flag character actions if an intervening event explained the transition (e.g. prosthetic hand, medical recovery, resurrection, retrieved object).
 - Do NOT flag ordinary metaphors or subjective character opinions.
+
+CRITICAL INSTRUCTIONS FOR CITATIONS:
+- "earlier_passage": Must be an EXACT, VERBATIM quote from the text establishing the premise or earlier state.
+- "new_passage": Must be an EXACT, VERBATIM quote from the text showing the contradiction.
+- If the contradiction occurs within the same chapter, quote the two contradicting sentences from that chapter.
 
 For every verified contradiction, return a JSON object matching this schema:
 {
@@ -43,8 +52,8 @@ For every verified contradiction, return a JSON object matching this schema:
       "confidence": 0.95,
       "classification": "confirmed_contradiction" | "likely_conflict" | "potential_inconsistency" | "intentional_exception_suspected",
       "explanation": "Clear explanation of the continuity conflict.",
-      "earlier_passage": "Verbatim quote from the earlier chapter establishing the canon.",
-      "new_passage": "Verbatim quote from the new chapter containing the contradiction.",
+      "earlier_passage": "Verbatim quote establishing the first rule/state.",
+      "new_passage": "Verbatim quote containing the conflicting rule/state.",
       "earlier_chapter_number": 1,
       "suggestions": [
         "Actionable suggestion 1 for the author",
@@ -114,25 +123,44 @@ For every verified contradiction, return a JSON object matching this schema:
         verified_issues = []
         seen_issue_signatures = set()
         for issue in issues:
-            new_pass = issue.get("new_passage", "")
-            early_pass = issue.get("earlier_passage", "")
+            new_pass = (issue.get("new_passage") or "").strip()
+            early_pass = (issue.get("earlier_passage") or "").strip()
 
             # Verify new_passage exists in new_content
             v_new, clean_new, _, _ = temporal_memory_service.verify_quote_against_source(new_pass, new_content)
+            if not v_new and earlier_corpus:
+                # Check if LLM swapped earlier_passage and new_passage
+                v_swap_new, clean_swap_new, _, _ = temporal_memory_service.verify_quote_against_source(early_pass, new_content)
+                v_swap_early, clean_swap_early, _, _ = temporal_memory_service.verify_quote_against_source(new_pass, earlier_corpus)
+                if v_swap_new and v_swap_early:
+                    new_pass, early_pass = early_pass, new_pass
+                    v_new = True
+
             if not v_new:
                 logger.info(f"Skipping issue with unverified new passage: {new_pass[:50]}")
                 continue
 
-            # Verify earlier_passage exists in earlier corpus or established facts
+            # Verify earlier_passage exists in earlier corpus, established facts, or current chapter (intra-chapter contradiction)
+            v_early = False
+            early_ch_num = issue.get("earlier_chapter_number")
             if earlier_corpus and early_pass:
                 v_early, clean_early, _, _ = temporal_memory_service.verify_quote_against_source(early_pass, earlier_corpus)
-                if not v_early:
-                    # Check in established_facts quotes
-                    fact_quotes = " ".join(f.get("source_quote", "") for f in facts)
-                    v_fact, _, _, _ = temporal_memory_service.verify_quote_against_source(early_pass, fact_quotes)
-                    if not v_fact:
-                        logger.info(f"Skipping issue with unverified earlier passage: {early_pass[:50]}")
-                        continue
+            if not v_early and facts and early_pass:
+                fact_quotes = " ".join(f.get("source_quote", "") for f in facts)
+                v_early, _, _, _ = temporal_memory_service.verify_quote_against_source(early_pass, fact_quotes)
+            if not v_early and early_pass:
+                # Check if earlier_passage is within the current chapter (intra-chapter contradiction!)
+                v_intra, clean_intra, _, _ = temporal_memory_service.verify_quote_against_source(early_pass, new_content)
+                if v_intra:
+                    v_early = True
+                    early_ch_num = new_chapter_number
+
+            if not v_early and early_pass:
+                logger.info(f"Skipping issue with unverified earlier passage: {early_pass[:50]}")
+                continue
+
+            if not early_ch_num:
+                early_ch_num = new_chapter_number if not earlier_corpus else 1
 
             # Deduplicate by issue_type and normalized new passage snippet
             norm_new = " ".join((new_pass or "").split()).lower()
@@ -148,7 +176,7 @@ For every verified contradiction, return a JSON object matching this schema:
             ev_list = []
             if early_pass:
                 ev_list.append({
-                    "chapter": issue.get("earlier_chapter_number") or 1,
+                    "chapter": early_ch_num,
                     "quote": early_pass
                 })
             if new_pass:
@@ -161,7 +189,10 @@ For every verified contradiction, return a JSON object matching this schema:
             issue["confidence"] = conf
             issue["classification"] = classification
             issue["status"] = "unresolved"
+            issue["earlier_chapter_number"] = early_ch_num
             issue["new_chapter_number"] = new_chapter_number
+            issue["earlier_passage"] = early_pass
+            issue["new_passage"] = new_pass
 
             verified_issues.append(issue)
 
@@ -491,16 +522,17 @@ For every verified contradiction, return a JSON object matching this schema:
         """
         facts_summary = "\n".join(
             f"- [Ch {f.get('source_chapter_number', '?')} | {f.get('category', 'general').upper()}]: {f.get('fact')} (Quote: \"{f.get('source_quote', '')}\")"
-            for f in established_facts[:50]
+            for f in established_facts[:25]
         ) or "None recorded."
 
         passages_summary = "\n".join(
-            f"- [Ch {p.get('chapter_number', '?')}]: \"{p.get('content', '')[:250]}...\""
-            for p in retrieved_passages[:8]
+            f"- [Ch {p.get('chapter_number', '?')}]: \"{p.get('content', '')[:200]}...\""
+            for p in retrieved_passages[:5]
         ) or "None retrieved."
 
         prompt = f"""
-EVALUATE CHAPTER {new_chapter_number} FOR CONTINUITY CONTRADICTIONS:
+EVALUATE CHAPTER {new_chapter_number} FOR ALL CONTINUITY CONTRADICTIONS:
+Check for both cross-chapter contradictions against prior canon AND internal self-contradictions within Chapter {new_chapter_number} itself.
 
 ESTABLISHED PRIOR CANON (Strictly established prior to Chapter {new_chapter_number}):
 {facts_summary}

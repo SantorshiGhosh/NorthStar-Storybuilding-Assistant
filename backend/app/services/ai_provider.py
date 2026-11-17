@@ -21,17 +21,17 @@ class AIProviderService:
     """
 
     CANDIDATE_MODELS = [
+        "gemini-3.1-flash-lite",
         "gemini-3.8-flash",
         "gemini-3.5-flash",
-        "gemini-3.1-flash-lite",
         "gemini-2.5-flash-lite",
         "gemini-2.5-flash"
     ]
 
     GROQ_CANDIDATE_MODELS = [
         "openai/gpt-oss-20b",
-        "openai/gpt-oss-120b",
-        "qwen/qwen3.8-27b"
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-120b"
     ]
 
     def __init__(self):
@@ -78,7 +78,14 @@ class AIProviderService:
 
         provider = (getattr(settings, "AI_PROVIDER", "") or os.getenv("AI_PROVIDER", "groq")).lower().strip()
         if provider == "groq" or (self.groq_api_key and not self.api_key):
-            return self._generate_json_groq(prompt, system_instruction=system_instruction)
+            groq_res = self._generate_json_groq(prompt, system_instruction=system_instruction)
+            if groq_res is not None:
+                return groq_res
+            # If Groq quota exhausted or failed, seamlessly fallback to Gemini if key available
+            current_env_gemini_key = (settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")).strip().strip('"').strip("'")
+            if not current_env_gemini_key or len(current_env_gemini_key) < 10:
+                return None
+            logger.info("Groq models exhausted. Seamlessly attempting Gemini fallback...")
 
         current_env_key = (settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")).strip().strip('"').strip("'")
         if not self.api_key or self.api_key != current_env_key:

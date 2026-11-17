@@ -358,6 +358,7 @@ export default function Workspace() {
     return (
       i.chapter_id === selectedChapterId ||
       i.new_chapter_number === chNum ||
+      i.earlier_chapter_number === chNum ||
       (Array.isArray(i.evidence) && i.evidence.some((ev) => ev.chapter === chNum))
     );
   });
@@ -370,6 +371,7 @@ export default function Workspace() {
       return (
         i.chapter_id === selectedChapterId ||
         i.new_chapter_number === chNum ||
+        i.earlier_chapter_number === chNum ||
         (Array.isArray(i.evidence) && i.evidence.some((ev) => ev.chapter === chNum))
       );
     }
@@ -704,6 +706,16 @@ export default function Workspace() {
             {/* Filter Pills */}
             <div className="px-4 py-2 border-b border-[#1c1c1e]/10 dark:border-white/10 flex items-center space-x-1.5 overflow-x-auto text-[11px] font-mono-cap bg-[#f6f6f4]/30 dark:bg-[#161618]/30">
               <button
+                onClick={() => setIssueFilter('current_chapter')}
+                className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                  issueFilter === 'current_chapter'
+                    ? 'bg-[#1c1c1e] dark:bg-white text-white dark:text-[#1c1c1e] font-medium shadow-2xs'
+                    : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
+                }`}
+              >
+                Ch {currentChapter?.chapter_number || 'Current'} ({currentChapterIssues.length})
+              </button>
+              <button
                 onClick={() => setIssueFilter('all')}
                 className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
                   issueFilter === 'all'
@@ -711,7 +723,7 @@ export default function Workspace() {
                     : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
                 }`}
               >
-                All ({issues.length})
+                All Manuscript ({issues.length})
               </button>
               <button
                 onClick={() => setIssueFilter('unresolved')}
@@ -723,16 +735,6 @@ export default function Workspace() {
               >
                 Unresolved ({unresolvedCount})
               </button>
-              <button
-                onClick={() => setIssueFilter('current_chapter')}
-                className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
-                  issueFilter === 'current_chapter'
-                    ? 'bg-[#1c1c1e] dark:bg-white text-white dark:text-[#1c1c1e] font-medium shadow-2xs'
-                    : 'text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
-                }`}
-              >
-                This Chapter ({currentChapterIssues.length})
-              </button>
             </div>
 
             {/* Issues List Body */}
@@ -743,9 +745,21 @@ export default function Workspace() {
                   <h4 className="text-xs font-semibold text-[#1c1c1e] dark:text-[#f5f5f7] mb-1">
                     Canon is Coherent
                   </h4>
-                  <p className="text-[11px] text-[#8e8e93] leading-relaxed max-w-xs">
-                    No active contradictions detected in this view. Click "Analyze Chapter" above to run a deep scan against established story facts.
-                  </p>
+                  {issueFilter === 'current_chapter' && issues.length > 0 ? (
+                    <p className="text-[11px] text-[#8e8e93] leading-relaxed max-w-xs">
+                      No active contradictions detected in Chapter {currentChapter?.chapter_number || 'this chapter'}.{' '}
+                      <button
+                        onClick={() => setIssueFilter('all')}
+                        className="text-[#1c1c1e] dark:text-[#f5f5f7] underline font-medium cursor-pointer"
+                      >
+                        View all {issues.length} contradiction(s) across manuscript
+                      </button>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-[#8e8e93] leading-relaxed max-w-xs">
+                      No active contradictions detected in this view. Click "Analyze Chapter" above to run a deep scan against established story facts.
+                    </p>
+                  )}
                 </div>
               ) : (
                 displayedIssues.map((issue) => (

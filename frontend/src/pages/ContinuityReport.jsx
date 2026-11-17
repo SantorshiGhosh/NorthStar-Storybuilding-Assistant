@@ -15,7 +15,7 @@ import Navbar from '../components/Navbar';
 import IssueCard from '../components/IssueCard';
 import { useToast } from '../context/ToastContext';
 import useDocumentTitle from '../hooks/useDocumentTitle';
-import { projectService, getCached } from '../services/api';
+import { projectService, chapterService, getCached } from '../services/api';
 
 export default function ContinuityReport() {
   const { projectId } = useParams();
@@ -23,25 +23,30 @@ export default function ContinuityReport() {
 
   const cachedProj = getCached(`project:${projectId}`);
   const cachedIssues = getCached(`issues:${projectId}:{}`) || getCached(`issues:${projectId}`);
+  const cachedChaps = getCached(`chapters:${projectId}`);
 
   const [project, setProject] = useState(() => cachedProj || null);
   useDocumentTitle(project?.name ? `${project.name} | Continuity Report` : 'Continuity Report');
+  const [chapters, setChapters] = useState(() => Array.isArray(cachedChaps) ? cachedChaps : []);
   const [issues, setIssues] = useState(() => cachedIssues || []);
   const [loading, setLoading] = useState(() => !cachedIssues);
 
   // Filters
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedChapterFilter, setSelectedChapterFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const loadIssues = async (showLoading = !issues.length) => {
     try {
       if (showLoading) setLoading(true);
-      const [proj, allIssues] = await Promise.all([
+      const [proj, allIssues, chaps] = await Promise.all([
         projectService.getProject(projectId),
-        projectService.getIssues(projectId)
+        projectService.getIssues(projectId),
+        chapterService.getChapters(projectId).catch(() => []),
       ]);
       setProject(proj);
       setIssues(allIssues);
+      if (Array.isArray(chaps)) setChapters(chaps);
     } catch (err) {
       console.error('Failed to load continuity issues:', err);
     } finally {
@@ -75,6 +80,16 @@ export default function ContinuityReport() {
   ];
 
   const filteredIssues = issues.filter((issue) => {
+    // Chapter filter
+    if (selectedChapterFilter !== 'all') {
+      const chNum = Number(selectedChapterFilter);
+      const matchesChapter =
+        issue.new_chapter_number === chNum ||
+        issue.earlier_chapter_number === chNum ||
+        (Array.isArray(issue.evidence) && issue.evidence.some((ev) => ev.chapter === chNum));
+      if (!matchesChapter) return false;
+    }
+
     // Tab filter
     if (activeTab === 'high' && issue.severity.toLowerCase() !== 'high') return false;
     if (activeTab === 'physical_continuity' && issue.issue_type !== 'physical_continuity') return false;
@@ -157,6 +172,47 @@ export default function ContinuityReport() {
           </div>
         </div>
 
+        {/* Chapter Scope Filter */}
+        {chapters.length > 0 && (
+          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar pb-2 mb-3">
+            <span className="text-[11px] font-semibold text-[#8e8e93] font-mono-cap flex items-center space-x-1 shrink-0 mr-1">
+              <Layers className="w-3.5 h-3.5" />
+              <span>Chapter:</span>
+            </span>
+            <button
+              onClick={() => setSelectedChapterFilter('all')}
+              className={`px-3 py-1 rounded-full text-xs font-mono-cap transition-colors cursor-pointer shrink-0 ${
+                selectedChapterFilter === 'all'
+                  ? 'bg-[#1c1c1e] text-white dark:bg-white dark:text-[#1c1c1e] font-semibold shadow-2xs'
+                  : 'bg-[#1c1c1e]/5 dark:bg-white/5 text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
+              }`}
+            >
+              All Chapters ({issues.length})
+            </button>
+            {chapters.map((ch) => {
+              const chIssueCount = issues.filter(
+                (i) =>
+                  i.new_chapter_number === ch.chapter_number ||
+                  i.earlier_chapter_number === ch.chapter_number ||
+                  (Array.isArray(i.evidence) && i.evidence.some((ev) => ev.chapter === ch.chapter_number))
+              ).length;
+              return (
+                <button
+                  key={ch.id}
+                  onClick={() => setSelectedChapterFilter(ch.chapter_number)}
+                  className={`px-3 py-1 rounded-full text-xs font-mono-cap transition-colors cursor-pointer shrink-0 ${
+                    selectedChapterFilter === ch.chapter_number
+                      ? 'bg-[#1c1c1e] text-white dark:bg-white dark:text-[#1c1c1e] font-semibold shadow-2xs'
+                      : 'bg-[#1c1c1e]/5 dark:bg-white/5 text-[#636366] dark:text-[#8e8e93] hover:text-[#1c1c1e] dark:hover:text-[#f5f5f7]'
+                  }`}
+                >
+                  Chapter {ch.chapter_number} ({chIssueCount})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Filter Navigation & Search Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-[#fcfcfb] dark:bg-[#222224] p-3 rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 shadow-2xs">
           <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
@@ -215,8 +271,20 @@ export default function ContinuityReport() {
             ))}
           </div>
         ) : filteredIssues.length === 0 ? (
-          <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center text-neutral-400 text-xs">
-            No continuity issues match the selected filter.
+          <div className="bg-[#fcfcfb] dark:bg-[#222224] rounded-xl border border-[#1c1c1e]/10 dark:border-white/10 p-12 text-center text-[#8e8e93] text-xs">
+            {selectedChapterFilter !== 'all' ? (
+              <p>
+                No continuity contradictions found for Chapter {selectedChapterFilter}.{' '}
+                <button
+                  onClick={() => setSelectedChapterFilter('all')}
+                  className="text-[#1c1c1e] dark:text-[#f5f5f7] underline font-medium cursor-pointer ml-1"
+                >
+                  View all chapters ({issues.length})
+                </button>
+              </p>
+            ) : (
+              'No continuity issues match the selected filter.'
+            )}
           </div>
         ) : (
           <div className="space-y-4">
